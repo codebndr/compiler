@@ -1,0 +1,1 @@
+/usr/share/arduino/hardware/arduino/cores/arduino/HardwareSerial.h

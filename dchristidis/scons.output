@@ -1,0 +1,63 @@
+scons: Reading SConscript files ...
+No Arduino version specified. Discovered version 0023 or below
+maximum size for hex file: 30720 bytes
+scons: done reading SConscript files.
+scons: Building targets ...
+scons: building associated VariantDir targets: build/local build
+avr-g++ -o build/core/HardwareSerial.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/HardwareSerial.cpp
+In file included from build/core/wiring_private.h:30,
+                 from build/core/HardwareSerial.cpp:28:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-g++ -o build/core/Print.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/Print.cpp
+avr-g++ -o build/core/Tone.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/Tone.cpp
+build/core/Tone.cpp:108: warning: only initialized variables can be placed into program memory area
+avr-gcc -o build/core/WInterrupts.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/WInterrupts.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/WInterrupts.c:34:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-g++ -o build/core/WMath.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/WMath.cpp
+avr-g++ -o build/core/WString.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/WString.cpp
+avr-gcc -o build/core/pins_arduino.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/pins_arduino.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/pins_arduino.c:26:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+build/core/pins_arduino.c:361: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:362: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:363: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:369: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:370: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:371: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:377: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:378: warning: initialization makes integer from pointer without a cast
+build/core/pins_arduino.c:379: warning: initialization makes integer from pointer without a cast
+avr-gcc -o build/core/wiring.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/wiring.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/wiring.c:25:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-gcc -o build/core/wiring_analog.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/wiring_analog.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/wiring_analog.c:27:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-gcc -o build/core/wiring_digital.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/wiring_digital.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/wiring_digital.c:27:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-gcc -o build/core/wiring_pulse.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/wiring_pulse.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/wiring_pulse.c:25:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+avr-gcc -o build/core/wiring_shift.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -std=gnu99 -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/core/wiring_shift.c
+In file included from build/core/wiring_private.h:30,
+                 from build/core/wiring_shift.c:25:
+/usr/lib/gcc/avr/4.3.5/../../../avr/include/avr/delay.h:36:2: warning: #warning "This file has been moved to <util/delay.h>."
+fnProcessing(["build/foo.cpp"], ["build/foo.pde"])
+void setup();
+void loop();
+/var/www/aceduino/symfony/compiler/foo.pde foo
+avr-g++ -o build/foo.o -c -ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os -mmcu=atmega328p -DARDUINO=23 -DF_CPU=16000000L -Ibuild/core build/foo.cpp
+avr-gcc -mmcu=atmega328p -Os -Wl,--gc-sections -o foo.elf build/foo.o build/core/wiring_shift.o build/core/pins_arduino.o build/core/wiring_pulse.o build/core/wiring_digital.o build/core/wiring_analog.o build/core/WInterrupts.o build/core/wiring.o build/core/Tone.o build/core/WMath.o build/core/HardwareSerial.o build/core/Print.o build/core/WString.o -lm
+avr-objcopy -O ihex -R .eeprom foo.elf foo.hex
+avr-size --target=ihex foo.hex
+   text	   data	    bss	    dec	    hex	filename
+      0	   2324	      0	   2324	    914	foo.hex
+scons: done building targets.
