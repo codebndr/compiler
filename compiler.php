@@ -54,7 +54,7 @@ function config_output($output, $filename, &$lines, &$output_string)
 function do_compile($filename, &$output, &$success, &$error)
 {
 	$path = "tempfiles/";
-	$LIBS_PATH = "../aceduino/symfony/libraries/";
+	$LIBS_PATH = "../aceduino/symfony/files/libraries/";
 	// Temporary: some error checking?
 	// This is ugly...
 	$error = 0;
