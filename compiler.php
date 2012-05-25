@@ -33,7 +33,7 @@ function config_output($output, $filename, &$lines, &$output_string)
 		$i = str_replace($fat1, " ", $i);
 		$i = str_replace($fat2, " ", $i);
 		
-		$i = str_replace($filename.":", " ", $i)."<br />\n";
+		$i = str_replace("tempfiles/".$filename.":", " ", $i)."\n";
 		// $i = $i."\n<br />";
 		$output_string .= $i;
 		$colon = strpos($i, ":");
