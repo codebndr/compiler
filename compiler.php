@@ -93,7 +93,8 @@ function do_compile($filename, &$output, &$success, &$error)
 	$output = $out;
 	
 	doit("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -Ibuild/core 2>&1", $out, $ret); // *.cpp -> *.o
-	// $output = $out;
+	if($output == "" && $out != "")
+		$output .= $out;
 	$success = !$ret;
 	if($success)
 	{
