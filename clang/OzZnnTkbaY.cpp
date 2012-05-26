@@ -23,7 +23,8 @@ void loop();
 #line 1 "tempfiles/OzZnnTkbaY"
 void setup()
 {
-int bla=5 
+int bla=5 ;
+	int helloWorld= 6
 }
 
 void loop()
