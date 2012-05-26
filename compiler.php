@@ -30,10 +30,10 @@ function config_output($output, $filename, &$lines, &$output_string)
 	{
 		$fat1 = "build/".$filename.":";
 		$fat2 = "build/core/";
-		$i = str_replace($fat1, " ", $i);
-		$i = str_replace($fat2, " ", $i);
+		$i = str_replace($fat1, "", $i);
+		$i = str_replace($fat2, "", $i);
 		
-		$i = str_replace("tempfiles/".$filename.":", " ", $i)."\n";
+		$i = str_replace("tempfiles/".$filename.":", "", $i)."\n";
 		// $i = $i."\n<br />";
 		$output_string .= $i;
 		$colon = strpos($i, ":");
@@ -81,13 +81,19 @@ function do_compile($filename, &$output, &$success, &$error)
 	// Where to places these? How to compile them?
 	$SOURCES = "build/core/wiring_shift.o build/core/wiring_pulse.o build/core/wiring_digital.o build/core/wiring_analog.o build/core/WInterrupts.o build/core/wiring.o build/core/Tone.o build/core/WMath.o build/core/HardwareSerial.o build/core/Print.o build/core/WString.o";
 
+	$CLANG_FLAGS = "-fsyntax-only -Os -Iclang/include -Ibuild/variants/standard -Ibuild/core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
+	
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
 
 	dothat("./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
 	$out = "";
-	doit("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -Ibuild/core 2>&1", $out, $ret); // *.cpp -> *.o
+
+	doit("clang $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
 	$output = $out;
+	
+	doit("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -Ibuild/core 2>&1", $out, $ret); // *.cpp -> *.o
+	// $output = $out;
 	$success = !$ret;
 	if($success)
 	{
