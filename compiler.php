@@ -51,7 +51,7 @@ function config_output($output, $filename, &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename, &$output, &$success, &$error)
+function do_compile($filename, $headers, &$output, &$success, &$error)
 {
 	$path = "tempfiles/";
 	$LIBS_PATH = "../aceduino/symfony/files/libraries/";
@@ -69,7 +69,12 @@ function do_compile($filename, &$output, &$success, &$error)
 	$LIBB .= " -I".$LIBS_PATH."EEPROM -I".$LIBS_PATH."Ethernet -I".$LIBS_PATH."Firmata -I".$LIBS_PATH."LiquidCrystal";
 	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
 	
-	$LIBBSOURCES = "".$LIBS_PATH."LiquidCrystal/LiquidCrystal.o";
+	$LIBBSOURCES = "";
+	foreach ($headers as $i)
+	{
+		$LIBBSOURCES .= $LIBS_PATH."$i/$i.o ";
+	}
+	// $LIBBSOURCES .= $LIBS_PATH."LiquidCrystal/LiquidCrystal.o";
 
 	// This is temporary too :(
 	$CPPFLAGS .= " -Ibuild/variants/standard";
@@ -79,7 +84,8 @@ function do_compile($filename, &$output, &$success, &$error)
 	$LDFLAGS .= " -mmcu=atmega328p";
 
 	// Where to places these? How to compile them?
-	$SOURCES = "build/core/wiring_shift.o build/core/wiring_pulse.o build/core/wiring_digital.o build/core/wiring_analog.o build/core/WInterrupts.o build/core/wiring.o build/core/Tone.o build/core/WMath.o build/core/HardwareSerial.o build/core/Print.o build/core/WString.o";
+	$SOURCES_PATH = "build/core/";
+	$SOURCES = $SOURCES_PATH."wiring_shift.o ".$SOURCES_PATH."wiring_pulse.o ".$SOURCES_PATH."wiring_digital.o ".$SOURCES_PATH."wiring_analog.o ".$SOURCES_PATH."WInterrupts.o ".$SOURCES_PATH."wiring.o ".$SOURCES_PATH."Tone.o ".$SOURCES_PATH."WMath.o ".$SOURCES_PATH."HardwareSerial.o ".$SOURCES_PATH."Print.o ".$SOURCES_PATH."WString.o";
 
 	$CLANG_FLAGS = "-fsyntax-only -Os -Iclang/include -Ibuild/variants/standard -Ibuild/core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
 	
@@ -88,8 +94,9 @@ function do_compile($filename, &$output, &$success, &$error)
 
 	dothat("./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
 	$out = "";
+	$size = "";
 
-	doit("clang $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
+	doit("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
 	$output = $out;
 	
 	doit("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -Ibuild/core 2>&1", $out, $ret); // *.cpp -> *.o
@@ -100,7 +107,9 @@ function do_compile($filename, &$output, &$success, &$error)
 	{
 		dothat("avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1", $out, $ret); $error |= $ret; // *.o -> *.elf
 		dothat("objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1", $out, $ret); $error |= $ret; // *.elf -> *.hex
-		dothat("avr-size --target=ihex $filename.hex 2>&1", $out, $ret); $error |= $ret; // We should be checking this.
+		$out = "";
+		dothat("avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $out, $ret); $error |= $ret; // We should be checking this.
+		$size = $out[0];
 	}
 	if ($filename != $path."foo") // VERY TERMPORARY
 	{
@@ -115,6 +124,17 @@ function do_compile($filename, &$output, &$success, &$error)
 	if(file_exists($filename.".elf")) unlink($filename.".elf");	
 	// Remeber to suggest a cronjob, in case something goes wrong...
 	// find $path -name $filename.{o,cpp,elf,hex} -mtime +1 -delete
+	return $size;
+}
 
+function parse_headers($code)
+{
+	$matches = "";
+	$code = explode("\n", $code);
+	$headers = array();
+	foreach ($code as $i)
+		if(preg_match('/^\s*#\s*include\s*[<"]\s*(.*)\.h\s*[>"]/', $i, $matches))
+			$headers[] = $matches[1];
+	return $headers;
 }
 ?>

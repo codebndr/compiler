@@ -20,7 +20,9 @@ if($file)
 	fclose($file);
 }
 include("compiler.php");
-do_compile($filename, $output, $success, $error);
+$headers = parse_headers($value);
+
+$size = do_compile($filename, $headers, $output, $success, $error);
 
 if($error)
 {
@@ -34,12 +36,12 @@ if($success)
 	fclose($file);
 	unlink($directory.$filename.".hex");
 	
-	echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'hex' => $value)));
-	
+	echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $size, 'hex' => $value)));
 }
 else
 {
 	config_output($output, $filename, $lines, $output_string);
+	$output_string = htmlspecialchars($output_string);
 	echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
 }
 
