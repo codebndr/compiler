@@ -21,8 +21,12 @@ clang -fsyntax-only -Os -I/Applications/Arduino.app/Contents/Resources/Java/hard
 
 clang -fsyntax-only -Os -Iinclude -I../build/variants/standard -I../build/core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes OzZnnTkbaY.cpp
 
+clang -fsyntax-only -Os -I/Applications/Arduino.app/Contents/Resources/Java/hardware/tools/avr/avr/include -I/Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/variants -I/Applications/Arduino.app/Contents/Resources/Java/hardware/arduino/cores/arduino -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes OzZnnTkbaY.cpp
+
 CHECK FOR A BETTER WAY TO SUPRESS ATTRIBUTES WARNING, INSTEAD OF USING -Wno-attributes
 
 */
 
 ?>
+
+
