@@ -70,9 +70,19 @@ function do_compile($filename, $headers, &$output, &$success, &$error)
 	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
 	
 	$LIBBSOURCES = "";
+	$allowed=array("o");
 	foreach ($headers as $i)
 	{
-		$LIBBSOURCES .= $LIBS_PATH."$i/$i.o ";
+		$it = new RecursiveDirectoryIterator($LIBS_PATH."$i/");
+		foreach(new RecursiveIteratorIterator($it) as $file) 
+		{
+		    if(in_array(substr($file, strrpos($file, '.') + 1),$allowed))
+			{
+		        // echo $file ."\n";
+				$LIBBSOURCES .= "$file ";
+		    }
+		}
+		// $LIBBSOURCES .= $LIBS_PATH."$i/$i.o ";
 	}
 	// $LIBBSOURCES .= $LIBS_PATH."LiquidCrystal/LiquidCrystal.o";
 
