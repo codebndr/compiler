@@ -9,11 +9,14 @@
 # Where is this included?
 
 function dothis($cmd, &$ret) { echo "\$ $cmd\n"; passthru($cmd, $ret); }
-function dothat($cmd, &$out, &$ret)
+function dothat($filename, $cmd, &$out, &$ret)
 {
 	exec($cmd, $out, $ret); 
 	if($ret)
+	{
+		cleanDir($filename);
 		die("\$ $cmd\n ret: $ret out: $out");
+	}
 }
 
 function doit($cmd, &$out, &$ret)
@@ -22,7 +25,7 @@ function doit($cmd, &$out, &$ret)
 }
 
 
-function config_output($output, $filename, &$lines, &$output_string)
+function config_output($output, $filename,  &$lines, &$output_string)
 {
 	$output_string = "";
 	$lines = array();
@@ -51,7 +54,7 @@ function config_output($output, $filename, &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename, $headers, &$output, &$success, &$error)
+function do_compile($filename,  $headers, &$output, &$success, &$error)
 {
 	$path = "tempfiles/";
 	$LIBS_PATH = "arduino-files/libraries/";
@@ -102,7 +105,7 @@ function do_compile($filename, $headers, &$output, &$success, &$error)
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
 
-	dothat("./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
+	dothat($filename, "./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
 	$out = "";
 	$size = "";
 
@@ -115,12 +118,29 @@ function do_compile($filename, $headers, &$output, &$success, &$error)
 	$success = !$ret;
 	if($success)
 	{
-		dothat("avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1", $out, $ret); $error |= $ret; // *.o -> *.elf
-		dothat("objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1", $out, $ret); $error |= $ret; // *.elf -> *.hex
+		dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1", $out, $ret); $error |= $ret; // *.o -> *.elf
+		dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1", $out, $ret); $error |= $ret; // *.elf -> *.hex
 		$out = "";
-		dothat("avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $out, $ret); $error |= $ret; // We should be checking this.
+		dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $out, $ret); $error |= $ret; // We should be checking this.
 		$size = $out[0];
 	}
+	cleanDir($filename);
+	return $size;
+}
+
+function parse_headers($code)
+{
+	$matches = "";
+	$code = explode("\n", $code);
+	$headers = array();
+	foreach ($code as $i)
+		if(preg_match('/^\s*#\s*include\s*[<"]\s*(.*)\.h\s*[>"]/', $i, $matches))
+			$headers[] = $matches[1];
+	return $headers;
+}
+
+function cleanDir($filename)
+{
 	if ($filename != $path."foo") // VERY TERMPORARY
 	{
 		if(file_exists($filename)) unlink($filename);	
@@ -134,17 +154,5 @@ function do_compile($filename, $headers, &$output, &$success, &$error)
 	if(file_exists($filename.".elf")) unlink($filename.".elf");	
 	// Remeber to suggest a cronjob, in case something goes wrong...
 	// find $path -name $filename.{o,cpp,elf,hex} -mtime +1 -delete
-	return $size;
-}
-
-function parse_headers($code)
-{
-	$matches = "";
-	$code = explode("\n", $code);
-	$headers = array();
-	foreach ($code as $i)
-		if(preg_match('/^\s*#\s*include\s*[<"]\s*(.*)\.h\s*[>"]/', $i, $matches))
-			$headers[] = $matches[1];
-	return $headers;
 }
 ?>
