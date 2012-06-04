@@ -1,0 +1,3 @@
+[submodule "arduino-files"]
+	path = arduino-files
+	url = https://github.com/codebendercc/arduino-files.git
