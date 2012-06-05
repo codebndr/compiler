@@ -8,7 +8,6 @@
 
 # Where is this included?
 
-function dothis($cmd, &$ret) { echo "\$ $cmd\n"; passthru($cmd, $ret); }
 function dothat($filename, $cmd, &$out, &$ret)
 {
 	exec($cmd, $out, $ret); 
@@ -105,24 +104,22 @@ function do_compile($filename,  $headers, &$output, &$success, &$error)
 	// Different error code, depending where it failed?
 
 	dothat($filename, "./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
-	$out = "";
-	$size = "";
 
-	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
+
+	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $output, $ret);
 	$output = $out;
 	
-	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $out, $ret); // *.cpp -> *.o
-	if($output == "" && $out != "")
-		$output = $out;
+	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $output2, $ret); // *.cpp -> *.o
+	if($output == "" && $output2 != "")
+		$output = $output2;
 	
 	$success = !$ret;
 	if($success)
 	{
 		dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1", $out, $ret); $error |= $ret; // *.o -> *.elf
 		dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1", $out, $ret); $error |= $ret; // *.elf -> *.hex
-		$out = "";
-		dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $out, $ret); $error |= $ret; // We should be checking this.
-		$size = $out[0];
+		dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $output_size, $ret); $error |= $ret; // We should be checking this.
+		$size = $output_size[0];
 	}
 	cleanDir($filename);
 	return $size;
