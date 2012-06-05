@@ -21,7 +21,7 @@ function dothat($filename, $cmd, &$out, &$ret)
 
 function doit($cmd, &$out, &$ret)
 {
-	exec($cmd, $out, $ret); 
+	 
 }
 
 
@@ -57,6 +57,8 @@ function config_output($output, $filename,  &$lines, &$output_string)
 function do_compile($filename,  $headers, &$output, &$success, &$error)
 {
 	$path = "tempfiles/";
+	$BUILD_PATH = "build/"
+	$SOURCES_PATH = $BUILD_PATH."core/";
 	$LIBS_PATH = "arduino-files/libraries/";
 	// Temporary: some error checking?
 	// This is ugly...
@@ -85,22 +87,19 @@ function do_compile($filename,  $headers, &$output, &$success, &$error)
 				$LIBBSOURCES .= "$file ";
 		    }
 		}
-		// $LIBBSOURCES .= $LIBS_PATH."$i/$i.o ";
 	}
-	// $LIBBSOURCES .= $LIBS_PATH."LiquidCrystal/LiquidCrystal.o";
 
 	// This is temporary too :(
-	$CPPFLAGS .= " -Ibuild/variants/standard";
+	$CPPFLAGS .= " -I".$BUILD_PATH."variants/standard";
 
 	// Append project-specific stuff.
 	$CPPFLAGS .= " -mmcu=atmega328p -DARDUINO=100 -DF_CPU=16000000L";
 	$LDFLAGS .= " -mmcu=atmega328p";
 
 	// Where to places these? How to compile them?
-	$SOURCES_PATH = "build/core/";
 	$SOURCES = $SOURCES_PATH."wiring_shift.o ".$SOURCES_PATH."wiring_pulse.o ".$SOURCES_PATH."wiring_digital.o ".$SOURCES_PATH."wiring_analog.o ".$SOURCES_PATH."WInterrupts.o ".$SOURCES_PATH."wiring.o ".$SOURCES_PATH."Tone.o ".$SOURCES_PATH."WMath.o ".$SOURCES_PATH."HardwareSerial.o ".$SOURCES_PATH."Print.o ".$SOURCES_PATH."WString.o ".$SOURCES_PATH."IPAddress.o";
 
-	$CLANG_FLAGS = "-fsyntax-only -Os -Iclang/include -Ibuild/variants/standard -Ibuild/core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
+	$CLANG_FLAGS = "-fsyntax-only -Os -Iclang/include -I".$BUILD_PATH."variants/standard -I".$SOURCES_PATH."core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
 	
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
@@ -109,12 +108,13 @@ function do_compile($filename,  $headers, &$output, &$success, &$error)
 	$out = "";
 	$size = "";
 
-	doit("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
+	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $out, $ret);
 	$output = $out;
 	
-	doit("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -Ibuild/core 2>&1", $out, $ret); // *.cpp -> *.o
+	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $out, $ret); // *.cpp -> *.o
 	if($output == "" && $out != "")
-		$output .= $out;
+		$output = $out;
+	
 	$success = !$ret;
 	if($success)
 	{
