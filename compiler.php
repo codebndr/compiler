@@ -59,6 +59,7 @@ function do_compile($filename,  $headers, &$output, &$success, &$size)
 	$BUILD_PATH = "build/";
 	$SOURCES_PATH = $BUILD_PATH."core/";
 	$LIBS_PATH = "arduino-files/libraries/";
+	$CLANG_INCL_PATH = "clang/include";
 	// Temporary: some error checking?
 	// This is ugly...
 	$error = 0;
@@ -98,7 +99,7 @@ function do_compile($filename,  $headers, &$output, &$success, &$size)
 	// Where to places these? How to compile them?
 	$SOURCES = $SOURCES_PATH."wiring_shift.o ".$SOURCES_PATH."wiring_pulse.o ".$SOURCES_PATH."wiring_digital.o ".$SOURCES_PATH."wiring_analog.o ".$SOURCES_PATH."WInterrupts.o ".$SOURCES_PATH."wiring.o ".$SOURCES_PATH."Tone.o ".$SOURCES_PATH."WMath.o ".$SOURCES_PATH."HardwareSerial.o ".$SOURCES_PATH."Print.o ".$SOURCES_PATH."WString.o ".$SOURCES_PATH."IPAddress.o";
 
-	$CLANG_FLAGS = "-fsyntax-only -Os -Iclang/include -I".$BUILD_PATH."variants/standard -I".$SOURCES_PATH."core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
+	$CLANG_FLAGS = "-fsyntax-only -Os -I".$CLANG_INCL_PATH." -I".$BUILD_PATH."variants/standard -I".$SOURCES_PATH."core -D__AVR_ATmega328P__ -DARDUINO=100 -DF_CPU=16000000L -Wno-unknown-attributes -Wno-attributes";
 	
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
