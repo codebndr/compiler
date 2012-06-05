@@ -14,7 +14,7 @@ function dothat($filename, $cmd)
 	if($ret)
 	{
 		cleanDir($filename);
-		return array("error" => true, "cmd" => $cmd, "output" => $out, "dump" => var_dump($out));
+		return array("error" => true, "cmd" => $cmd, "output" => $out, "dump" => var_export($out, true));
 	}
 	return array("error" => false);
 }
