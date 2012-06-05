@@ -107,9 +107,7 @@ function do_compile($filename,  $headers, &$output, &$success, &$size)
 	dothat($filename, "./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
 
 
-	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $output, $ret);
-	$output = $out;
-	
+	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $output, $ret);	
 	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $output2, $ret); // *.cpp -> *.o
 	if($output == "" && $output2 != "")
 		$output = $output2;
