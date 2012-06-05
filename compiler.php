@@ -144,14 +144,8 @@ function parse_headers($code)
 
 function cleanDir($filename)
 {
-	if ($filename != $path."foo") // VERY TERMPORARY
-	{
-		if(file_exists($filename)) unlink($filename);	
-	}
-	else
-	{
-		if(file_exists($filename.".hex")) unlink($filename.".hex");	
-	}
+	
+	if(file_exists($filename)) unlink($filename);	
 	if(file_exists($filename.".o")) unlink($filename.".o");	
 	if(file_exists($filename.".cpp")) unlink($filename.".cpp");	
 	if(file_exists($filename.".elf")) unlink($filename.".elf");	
