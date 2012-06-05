@@ -8,14 +8,15 @@
 
 # Where is this included?
 
-function dothat($filename, $cmd, &$out, &$ret)
+function dothat($filename, $cmd)
 {
 	exec($cmd, $out, $ret); 
 	if($ret)
 	{
 		cleanDir($filename);
-		die("\$ $cmd\n ret: $ret out: $out");
+		return array("error" => true, "output" => $out, "dump" => var_dump($out));
 	}
+	return array("error" => false);
 }
 
 function doit($cmd, &$out, &$ret)
@@ -53,16 +54,13 @@ function config_output($output, $filename,  &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename,  $headers, &$output, &$success, &$size)
+function do_compile($filename,  $headers)
 {
 	$path = "tempfiles/";
 	$BUILD_PATH = "build/";
 	$SOURCES_PATH = $BUILD_PATH."core/";
 	$LIBS_PATH = "arduino-files/libraries/";
 	$CLANG_INCL_PATH = "clang/include";
-	// Temporary: some error checking?
-	// This is ugly...
-	$error = 0;
 	
 	$filename = $path.$filename;
 
@@ -104,8 +102,8 @@ function do_compile($filename,  $headers, &$output, &$success, &$size)
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
 
-	dothat($filename, "./preprocess.py $filename 2>&1", $out, $ret); $error |= $ret; // *.pde -> *.cpp
-
+	$output = dothat($filename, "./preprocess.py $filename 2>&1");
+	die(var_dump($output))
 
 	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $output, $ret);	
 	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $output2, $ret); // *.cpp -> *.o
