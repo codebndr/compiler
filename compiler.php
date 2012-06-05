@@ -14,7 +14,7 @@ function dothat($filename, $cmd)
 	if($ret)
 	{
 		cleanDir($filename);
-		return array("error" => true, "output" => $out, "dump" => var_dump($out));
+		return array("error" => true, "cmd" => $cmd, "output" => $out, "dump" => var_dump($out));
 	}
 	return array("error" => false);
 }
@@ -103,23 +103,32 @@ function do_compile($filename,  $headers)
 	// Different error code, depending where it failed?
 
 	$output = dothat($filename, "./preprocess.py $filename 2>&1");
-	die(var_dump($output))
+	if($output["error"])
+		return $output;
 
-	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $output, $ret);	
-	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $output2, $ret); // *.cpp -> *.o
-	if($output == "" && $output2 != "")
-		$output = $output2;
+	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $compiler_output, $ret);	
+	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $compiler_output2, $ret); // *.cpp -> *.o
+	if($compiler_output == "" && $compiler_output2 != "")
+		$compiler_output = $compiler_output2;
 	
-	$success = !$ret;
-	if($success)
+	$compiler_success = !$ret;
+	if($compiler_success)
 	{
-		dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1", $out, $ret); $error |= $ret; // *.o -> *.elf
-		dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1", $out, $ret); $error |= $ret; // *.elf -> *.hex
-		dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'", $output_size, $ret); $error |= $ret; // We should be checking this.
-		$size = $output_size[0];
+		$output = dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1"); // *.o -> *.elf
+		if($output["error"])
+			return $output;
+		$output = dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1"); // *.elf -> *.hex
+		if($output["error"])
+			return $output;
+		$output = dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'"); // We should be checking this.
+		if($output["error"])
+			return $output;
+		$size = $output["output"][0];
 	}
+	$output["compiler_success"] = $compiler_success;
+	$output["compiler_output"] = $compiler_output;
 	cleanDir($filename);
-	return $error;
+	return $output;
 }
 
 function parse_headers($code)

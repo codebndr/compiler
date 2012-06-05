@@ -22,25 +22,27 @@ if($file)
 include("compiler.php");
 $headers = parse_headers($value);
 
-$error = do_compile($filename, $headers, $output, $success, $size);
+$output = do_compile($filename, $headers);
 
-if($error)
+if($output["error"])
 {
-	echo(json_encode(array('success' => 0, 'text' => "Uknown Compile Error!", 'output' => $output)));
+	$output["success"] = 0;
+	$output["text"] = "Uknown Compile Error!";
+	echo(json_encode($output));
 }
 
-if($success)
+if($output["compiler_success"])
 {
 	$file = fopen($directory.$filename.".hex", 'r');
 	$value = fread($file, filesize($directory.$filename.".hex"));
 	fclose($file);
 	unlink($directory.$filename.".hex");
 	
-	echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $size, 'hex' => $value)));
+	echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'hex' => $value)));
 }
 else
 {
-	config_output($output, $filename, $lines, $output_string);
+	config_output($output["compiler_output"], $filename, $lines, $output_string);
 	$output_string = htmlspecialchars($output_string);
 	echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
 }
