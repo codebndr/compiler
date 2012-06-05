@@ -30,21 +30,23 @@ if($output["error"])
 	$output["text"] = "Uknown Compile Error!";
 	echo(json_encode($output));
 }
-
-if($output["compiler_success"])
-{
-	$file = fopen($directory.$filename.".hex", 'r');
-	$value = fread($file, filesize($directory.$filename.".hex"));
-	fclose($file);
-	unlink($directory.$filename.".hex");
-	
-	echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'hex' => $value)));
-}
 else
 {
-	config_output($output["compiler_output"], $filename, $lines, $output_string);
-	$output_string = htmlspecialchars($output_string);
-	echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
+	if($output["compiler_success"])
+	{
+		$file = fopen($directory.$filename.".hex", 'r');
+		$value = fread($file, filesize($directory.$filename.".hex"));
+		fclose($file);
+		unlink($directory.$filename.".hex");
+
+		echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'hex' => $value)));
+	}
+	else
+	{
+		config_output($output["compiler_output"], $filename, $lines, $output_string);
+		$output_string = htmlspecialchars($output_string);
+		echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
+	}
 }
 
 function genRandomString($length)
