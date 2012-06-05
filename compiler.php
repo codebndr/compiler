@@ -57,7 +57,7 @@ function config_output($output, $filename,  &$lines, &$output_string)
 function do_compile($filename,  $headers, &$output, &$success, &$error)
 {
 	$path = "tempfiles/";
-	$BUILD_PATH = "build/"
+	$BUILD_PATH = "build/";
 	$SOURCES_PATH = $BUILD_PATH."core/";
 	$LIBS_PATH = "arduino-files/libraries/";
 	// Temporary: some error checking?
