@@ -28,6 +28,7 @@ if($output["error"])
 {
 	$output["success"] = 0;
 	$output["text"] = "Uknown Compile Error!";
+	$output["lines"] = array(0);
 	echo(json_encode($output));
 }
 else
