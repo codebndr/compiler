@@ -53,7 +53,7 @@ function config_output($output, $filename,  &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename,  $headers, &$output, &$success, &$error)
+function do_compile($filename,  $headers, &$output, &$success, &$size)
 {
 	$path = "tempfiles/";
 	$BUILD_PATH = "build/";
@@ -122,7 +122,7 @@ function do_compile($filename,  $headers, &$output, &$success, &$error)
 		$size = $output_size[0];
 	}
 	cleanDir($filename);
-	return $size;
+	return $error;
 }
 
 function parse_headers($code)

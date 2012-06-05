@@ -22,11 +22,11 @@ if($file)
 include("compiler.php");
 $headers = parse_headers($value);
 
-$size = do_compile($filename, $headers, $output, $success, $error);
+$error = do_compile($filename, $headers, $output, $success, $size);
 
 if($error)
 {
-	echo(json_encode(array('success' => 0, 'text' => "UNHANDLED COMPILE ERROR!")));
+	echo(json_encode(array('success' => 0, 'text' => "Uknown Compile Error!", 'output' => $output)));
 }
 
 if($success)
