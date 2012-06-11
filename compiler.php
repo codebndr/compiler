@@ -107,7 +107,7 @@ function do_compile($filename,  $headers)
 		return $output;
 
 	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $compiler_output, $ret);	
-	exec("avr-g++ $LIBB $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $compiler_output2, $ret); // *.cpp -> *.o
+	exec("avr-g++ $LIBB $CLANG_INCL_PATH $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $compiler_output2, $ret); // *.cpp -> *.o
 	if($compiler_output == "" && $compiler_output2 != "")
 		$compiler_output = $compiler_output2;
 	
@@ -120,7 +120,7 @@ function do_compile($filename,  $headers)
 		$output = dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1"); // *.elf -> *.hex
 		if($output["error"])
 			return $output;
-		$output = dothat($filename, "avr-size --target=ihex $filename.elf 2>&1 | awk 'FNR == 2 {print $1+$2}'"); // We should be checking this.
+		$output = dothat($filename, "avr-size --target=ihex $filename.elf | awk 'FNR == 2 {print $1+$2}' 2>&1"); // We should be checking this.
 		if($output["error"])
 			return $output;
 		$size = $output["output"][0];
