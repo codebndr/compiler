@@ -24,6 +24,8 @@ $headers = parse_headers($value);
 
 $output = do_compile($filename, $headers);
 
+die($output["size"]);
+
 if($output["error"])
 {
 	$output["success"] = 0;
