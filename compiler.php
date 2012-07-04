@@ -125,6 +125,7 @@ function do_compile($filename,  $headers)
 			return $output;
 		$size = $output["output"][0];
 	}
+	$output["size"] = $size;
 	$output["compiler_success"] = $compiler_success;
 	$output["compiler_output"] = $compiler_output;
 	cleanDir($filename);
