@@ -11,13 +11,13 @@
 function dothat($filename, $cmd)
 {
 	exec($cmd, $out, $ret); 
-	return_val = false;
+	$return_val = false;
 	if($ret)
 	{
 		cleanDir($filename);
-		return_val = true;
+		$return_val = true;
 	}
-	return array("error" => return_val, "cmd" => $cmd, "output" => $out);
+	return array("error" => $return_val, "cmd" => $cmd, "output" => $out);
 }
 
 function doit($cmd, &$out, &$ret)
