@@ -68,7 +68,7 @@ function do_compile($filename,  $headers)
 	// General flags. Theese are common for all projects. Should be moved to a higher-level configuration.
 	// Got these from original SConstruct. Get a monkey to check them?
 	$CPPFLAGS = "-ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os";
-	$LDFLAGS = "-Os -Wl,--gc-sections -lm";
+	$LDFLAGS = "-Os -Wl,--gc-sections -lm -lc";
 	$LIBB = "";
 	$LIBB .= " -I".$LIBS_PATH."EEPROM -I".$LIBS_PATH."Ethernet -I".$LIBS_PATH."Firmata -I".$LIBS_PATH."LiquidCrystal";
 	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
