@@ -1,9 +1,9 @@
 <?php
 $directory = "tempfiles/";
-if(!isset($_GET['data']))
+if(!isset($_REQUEST['data']))
 	die(json_encode(array('success' => 0, 'text' => "NO DATA!")));
 
-$value = $_GET['data'];
+$value = $_REQUEST['data'];
 
 // echo($value);
 
