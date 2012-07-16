@@ -147,7 +147,7 @@ function add_libraries($LIBS_PATH, $headers)
 			}
 		} catch (Exception $e)
 		{
-		    return array("success"=> false, "text" => "Library Error: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
+		    return array("success"=> false, "text" => "Library Not Found: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
 		}
 		
 	}
