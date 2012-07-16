@@ -55,7 +55,7 @@ function config_output($output, $filename,  &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename,  $headers)
+function do_compile($filename,  $LIBBSOURCES)
 {
 	$path = "tempfiles/";
 	$BUILD_PATH = "build/";
@@ -72,12 +72,6 @@ function do_compile($filename,  $headers)
 	$LIBB = "";
 	$LIBB .= " -I".$LIBS_PATH."EEPROM -I".$LIBS_PATH."Ethernet -I".$LIBS_PATH."Firmata -I".$LIBS_PATH."LiquidCrystal";
 	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
-
-	$output = add_libraries($LIBS_PATH, $headers);
-	if($output["error"])
-		return $output;
-	else
-		$LIBBSOURCES = $output["output"];
 
 	// This is temporary too :(
 	$CPPFLAGS .= " -I".$BUILD_PATH."variants/standard";
@@ -153,7 +147,7 @@ function add_libraries($LIBS_PATH, $headers)
 			}
 		} catch (Exception $e)
 		{
-		    return array("error"=>true, "cmd" => 'Caught exception: '.$e->getMessage()."\n", "output"=> "Library Error: $i");
+		    return array("error"=>true, "compiler_success"=> false, "compiler_output" => "Library Error: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n");
 		}
 		
 	}

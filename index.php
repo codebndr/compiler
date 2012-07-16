@@ -22,7 +22,15 @@ if($file)
 include("compiler.php");
 $headers = parse_headers($value);
 
-$output = do_compile($filename, $headers);
+$LIBS_PATH = "arduino-files/libraries/";
+$output = add_libraries($LIBS_PATH, $headers);
+if($output["error"])
+	die(json_encode($output));
+
+$LIBBSOURCES = $output["output"];
+
+
+$output = do_compile($filename, $LIBBSOURCES);
 
 if($output["error"])
 {
