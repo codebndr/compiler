@@ -24,7 +24,7 @@ $headers = parse_headers($value);
 
 $LIBS_PATH = "arduino-files/libraries/";
 $output = add_libraries($LIBS_PATH, $headers);
-if($output["error"])
+if(!$output["success"])
 	die(json_encode($output));
 
 $LIBBSOURCES = $output["output"];

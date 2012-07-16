@@ -147,11 +147,11 @@ function add_libraries($LIBS_PATH, $headers)
 			}
 		} catch (Exception $e)
 		{
-		    return array("error"=>true, "success"=> false, "text" => "Library Error: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n");
+		    return array("success"=> false, "text" => "Library Error: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n");
 		}
 		
 	}
-	return array("error"=>false, "output"=>$LIBBSOURCES);
+	return array("success"=> true, "output"=>$LIBBSOURCES);
 }
 
 function cleanDir($filename)
