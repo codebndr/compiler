@@ -61,6 +61,7 @@ function do_compile($filename,  $LIBBSOURCES)
 	$BUILD_PATH = "build/";
 	$SOURCES_PATH = $BUILD_PATH."core/";
 	$LIBS_PATH = "arduino-files/libraries/";
+	$EXTRA_LIBS_PATH = "arduino-files/extra-libraries/";
 	$CLANG_INCL_PATH = "clang/include";
 	
 	$filename = $path.$filename;
@@ -70,8 +71,19 @@ function do_compile($filename,  $LIBBSOURCES)
 	$CPPFLAGS = "-ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os";
 	$LDFLAGS = "-Os -Wl,--gc-sections";
 	$LIBB = "";
-	$LIBB .= " -I".$LIBS_PATH."EEPROM -I".$LIBS_PATH."Ethernet -I".$LIBS_PATH."Firmata -I".$LIBS_PATH."LiquidCrystal";
-	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
+
+	$extras = iterate_dir($LIBS_PATH);
+	foreach($extras as $extra)
+	{
+		$LIBB .=" -I".$LIBS_PATH.$extra;
+	}
+
+	$extras = iterate_dir($EXTRA_LIBS_PATH);
+	foreach($extras as $extra)
+	{
+		$LIBB .=" -I".$EXTRA_LIBS_PATH.$extra;
+	}
+	// die($LIBB);
 
 	// This is temporary too :(
 	$CPPFLAGS .= " -I".$BUILD_PATH."variants/standard";
@@ -164,4 +176,27 @@ function cleanDir($filename)
 	// Remeber to suggest a cronjob, in case something goes wrong...
 	// find $path -name $filename.{o,cpp,elf,hex} -mtime +1 -delete
 }
+
+function iterate_dir($directory)
+{
+	$dir = opendir($directory);
+	$iter = readdir($dir);
+	$array = array();
+	while(!($iter === FALSE))
+	{
+		$array[] = $iter;
+		// echo $dir."<br />";
+		$iter = readdir();
+	}
+	for($i = 0; $i <= count($array); $i++ )
+	{
+		if($array[$i] == "." || $array[$i] == "..")
+			unset($array[$i]);
+	}
+
+	sort($array);
+	closedir($dir);
+	return $array;
+}
+
 ?>
