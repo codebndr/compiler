@@ -110,8 +110,8 @@ function do_compile($filename,  $LIBBSOURCES)
 		if($output["error"])
 			return $output;
 		$size = $output["output"][0];
+		$output["size"] = $size;
 	}
-	$output["size"] = $size;
 	$output["compiler_success"] = $compiler_success;
 	$output["compiler_output"] = $compiler_output;
 	cleanDir($filename);
@@ -147,7 +147,7 @@ function add_libraries($LIBS_PATH, $headers)
 			}
 		} catch (Exception $e)
 		{
-		    return array("success"=> false, "text" => "Library Not Found: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
+		    // return array("success"=> false, "text" => "Library Not Found: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
 		}
 		
 	}
