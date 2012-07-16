@@ -72,21 +72,12 @@ function do_compile($filename,  $headers)
 	$LIBB = "";
 	$LIBB .= " -I".$LIBS_PATH."EEPROM -I".$LIBS_PATH."Ethernet -I".$LIBS_PATH."Firmata -I".$LIBS_PATH."LiquidCrystal";
 	$LIBB .= " -I".$LIBS_PATH."SD -I".$LIBS_PATH."SPI -I".$LIBS_PATH."Servo -I".$LIBS_PATH."SoftwareSerial -I".$LIBS_PATH."Stepper -I".$LIBS_PATH."Wire";
-	
-	$LIBBSOURCES = "";
-	$allowed=array("o");
-	foreach ($headers as $i)
-	{
-		$it = new RecursiveDirectoryIterator($LIBS_PATH."$i/");
-		foreach(new RecursiveIteratorIterator($it) as $file) 
-		{
-		    if(in_array(substr($file, strrpos($file, '.') + 1),$allowed))
-			{
-		        // echo $file ."\n";
-				$LIBBSOURCES .= "$file ";
-		    }
-		}
-	}
+
+	$output = add_libraries($LIBS_PATH, $headers);
+	if($output["error"])
+		return $output;
+	else
+		$LIBBSOURCES = $output["output"];
 
 	// This is temporary too :(
 	$CPPFLAGS .= " -I".$BUILD_PATH."variants/standard";
@@ -142,6 +133,31 @@ function parse_headers($code)
 		if(preg_match('/^\s*#\s*include\s*[<"]\s*(.*)\.h\s*[>"]/', $i, $matches))
 			$headers[] = $matches[1];
 	return $headers;
+}
+
+function add_libraries($LIBS_PATH, $headers)
+{
+	$LIBBSOURCES = "";
+	$allowed=array("o");
+	foreach ($headers as $i)
+	{
+		try {
+			$it = new RecursiveDirectoryIterator($LIBS_PATH."$i/");
+			foreach(new RecursiveIteratorIterator($it) as $file) 
+			{
+			    if(in_array(substr($file, strrpos($file, '.') + 1),$allowed))
+				{
+			        // echo $file ."\n";
+					$LIBBSOURCES .= "$file ";
+			    }
+			}
+		} catch (Exception $e)
+		{
+		    return array("error"=>true, "cmd" => 'Caught exception: '.$e->getMessage()."\n", "output"=> "Library Error: $i");
+		}
+		
+	}
+	return array("error"=>false, "output"=>$LIBBSOURCES);
 }
 
 function cleanDir($filename)
