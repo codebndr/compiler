@@ -112,7 +112,7 @@ function do_compile($filename,  $LIBBSOURCES)
 	$compiler_success = !$ret;
 	if($compiler_success)
 	{
-		$output = dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES 2>&1"); // *.o -> *.elf
+		$output = dothat($filename, "avr-gcc $LDFLAGS -o $filename.elf $filename.o $SOURCES $LIBBSOURCES -lm 2>&1"); // *.o -> *.elf
 		if($output["error"])
 			return $output;
 		$output = dothat($filename, "objcopy -O ihex -R .eeprom $filename.elf $filename.hex 2>&1"); // *.elf -> *.hex
