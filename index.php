@@ -12,7 +12,7 @@ do
 {
 	$filename = genRandomString(10);
 }
-while(file_exists($filename));
+while(file_exists($directory.$filename));
 $file = fopen($directory.$filename, 'x');
 if($file)
 {
