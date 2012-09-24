@@ -55,7 +55,7 @@ function config_output($output, $filename,  &$lines, &$output_string)
 		
 	}
 }
-function do_compile($filename,  $LIBBSOURCES)
+function do_compile($filename,  $LIBBSOURCES, $LIBB)
 {
 	$path = "tempfiles/";
 	$BUILD_PATH = "build/";
@@ -68,19 +68,7 @@ function do_compile($filename,  $LIBBSOURCES)
 	// Got these from original SConstruct. Get a monkey to check them?
 	$CPPFLAGS = "-ffunction-sections -fdata-sections -fno-exceptions -funsigned-char -funsigned-bitfields -fpack-struct -fshort-enums -Os";
 	$LDFLAGS = "-Os -Wl,--gc-sections";
-	$LIBB = "";
 
-	$extras = iterate_dir(getenv("ARDUINO_LIBS_DIR"));
-	foreach($extras as $extra)
-	{
-		$LIBB .=" -I".getenv("ARDUINO_LIBS_DIR").$extra;
-	}
-
-	$extras = iterate_dir(getenv("ARDUINO_EXTRA_LIBS_DIR"));
-	foreach($extras as $extra)
-	{
-		$LIBB .=" -I".getenv("ARDUINO_EXTRA_LIBS_DIR").$extra;
-	}
 	// die($LIBB);
 
 	// This is temporary too :(
@@ -162,6 +150,28 @@ function add_libraries($LIBS_PATH, $headers)
 		
 	}
 	return array("success"=> true, "output"=>$LIBBSOURCES);
+}
+
+function add_paths($LIBS_PATH, $headers)
+{
+	$LIBB = "";
+	// $extras = iterate_dir(getenv("ARDUINO_LIBS_DIR"));
+	// foreach($extras as $extra)
+	// {
+	// 	$LIBB .=" -I".getenv("ARDUINO_LIBS_DIR").$extra;
+	// }
+	foreach ($headers as $dirname)
+	{
+		if(file_exists($LIBS_PATH.$dirname))
+			$LIBB.=" -I".$LIBS_PATH.$dirname;
+	}
+
+	// $extras = iterate_dir(getenv("ARDUINO_EXTRA_LIBS_DIR"));
+	// foreach($extras as $extra)
+	// {
+	// 	$LIBB .=" -I".getenv("ARDUINO_EXTRA_LIBS_DIR").$extra;
+	// }
+	return $LIBB;
 }
 
 function cleanDir($filename)

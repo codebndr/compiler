@@ -37,7 +37,10 @@ if(!$output["success"])
 
 $LIBBSOURCES .= $output["output"];
 
-$output = do_compile($filename, $LIBBSOURCES);
+$LIBB = add_paths(getenv("ARDUINO_LIBS_DIR"), $headers);
+$LIBB .= add_paths(getenv("ARDUINO_EXTRA_LIBS_DIR"), $headers);
+
+$output = do_compile($filename, $LIBBSOURCES, $LIBB);
 
 if($output["error"])
 {
