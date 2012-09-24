@@ -1,6 +1,7 @@
 <?php
 
 include("config.php");
+$time = microtime(TRUE);
 
 $directory = "tempfiles/";
 if(!isset($_REQUEST['data']))
@@ -58,7 +59,7 @@ else
 		fclose($file);
 		unlink($directory.$filename.".hex");
 
-		echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'hex' => $value)));
+		echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'time'=> microtime(TRUE)-$time, 'hex' => $value)));
 	}
 	else
 	{
