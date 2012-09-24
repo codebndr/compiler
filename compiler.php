@@ -60,8 +60,6 @@ function do_compile($filename,  $LIBBSOURCES)
 	$path = "tempfiles/";
 	$BUILD_PATH = "build/";
 	$SOURCES_PATH = $BUILD_PATH."core/";
-	$LIBS_PATH = "arduino-files/libraries/";
-	$EXTRA_LIBS_PATH = "arduino-files/extra-libraries/";
 	$CLANG_INCL_PATH = "clang/include";
 	
 	$filename = $path.$filename;
@@ -72,16 +70,16 @@ function do_compile($filename,  $LIBBSOURCES)
 	$LDFLAGS = "-Os -Wl,--gc-sections";
 	$LIBB = "";
 
-	$extras = iterate_dir($LIBS_PATH);
+	$extras = iterate_dir(getenv("ARDUINO_LIBS_DIR"));
 	foreach($extras as $extra)
 	{
-		$LIBB .=" -I".$LIBS_PATH.$extra;
+		$LIBB .=" -I".getenv("ARDUINO_LIBS_DIR").$extra;
 	}
 
-	$extras = iterate_dir($EXTRA_LIBS_PATH);
+	$extras = iterate_dir(getenv("ARDUINO_EXTRA_LIBS_DIR"));
 	foreach($extras as $extra)
 	{
-		$LIBB .=" -I".$EXTRA_LIBS_PATH.$extra;
+		$LIBB .=" -I".getenv("ARDUINO_EXTRA_LIBS_DIR").$extra;
 	}
 	// die($LIBB);
 

@@ -1,4 +1,7 @@
 <?php
+
+include("config.php");
+
 $directory = "tempfiles/";
 if(!isset($_REQUEST['data']))
 	die(json_encode(array('success' => 0, 'text' => "NO DATA!")));
@@ -22,16 +25,13 @@ if($file)
 include("compiler.php");
 $headers = parse_headers($value);
 
-$LIBS_PATH = "arduino-files/libraries/";
-$EXTRA_LIBS_PATH = "arduino-files/extra-libraries/";
-
-$output = add_libraries($LIBS_PATH, $headers);
+$output = add_libraries(getenv("ARDUINO_LIBS_DIR"), $headers);
 if(!$output["success"])
 	die(json_encode($output));
 
 $LIBBSOURCES = $output["output"];
 
-$output = add_libraries($EXTRA_LIBS_PATH, $headers);
+$output = add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $headers);
 if(!$output["success"])
 	die(json_encode($output));
 
