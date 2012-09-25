@@ -24,22 +24,27 @@ if($file)
 	fclose($file);
 }
 include("compiler.php");
+// echo microtime(TRUE)."<br />\n";
 $headers = parse_headers($value);
 
-$output = add_libraries(getenv("ARDUINO_LIBS_DIR"), $headers);
-if(!$output["success"])
-	die(json_encode($output));
 
-$LIBBSOURCES = $output["output"];
+$tempheaders = $headers;
+// $output = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
+// if(!$output["success"])
+// die(json_encode($output));
+// $LIBBSOURCES = $output["output"];
+$LIBBSOURCES = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
 
-$output = add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $headers);
-if(!$output["success"])
-	die(json_encode($output));
+// $output = add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
+// if(!$output["success"])
+// die(json_encode($output));
 
-$LIBBSOURCES .= $output["output"];
+// $LIBBSOURCES .= $output["output"];
+$LIBBSOURCES .= add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
 
-$LIBB = add_paths(getenv("ARDUINO_LIBS_DIR"), $headers);
-$LIBB .= add_paths(getenv("ARDUINO_EXTRA_LIBS_DIR"), $headers);
+$tempheaders = $headers;
+$LIBB = add_paths(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
+$LIBB .= add_paths(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
 
 $output = do_compile($filename, $LIBBSOURCES, $LIBB);
 

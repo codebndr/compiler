@@ -127,50 +127,44 @@ function parse_headers($code)
 	return $headers;
 }
 
-function add_libraries($LIBS_PATH, $headers)
-{
-	$LIBBSOURCES = "";
-	$allowed=array("o");
-	foreach ($headers as $i)
-	{
-		try {
-			$it = new RecursiveDirectoryIterator($LIBS_PATH."$i/");
-			foreach(new RecursiveIteratorIterator($it) as $file) 
-			{
-			    if(in_array(substr($file, strrpos($file, '.') + 1),$allowed))
-				{
-			        // echo $file ."\n";
-					$LIBBSOURCES .= "$file ";
-			    }
-			}
-		} catch (Exception $e)
-		{
-		    // return array("success"=> false, "text" => "Library Not Found: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
-		}
-		
-	}
-	return array("success"=> true, "output"=>$LIBBSOURCES);
-}
+// function add_libraries($LIBS_PATH, &$headers)
+// {
+// 	$LIBBSOURCES = "";
+// 	$allowed=array("o");
+// 	foreach ($headers as $key=>&$i)
+// 	{
+// 		try {
+// 			$it = new RecursiveDirectoryIterator($LIBS_PATH."$i/");
+// 			foreach(new RecursiveIteratorIterator($it) as $file) 
+// 			{
+// 			    if(in_array(substr($file, strrpos($file, '.') + 1),$allowed))
+// 				{
+// 			        // echo $file ."\n";
+// 					$LIBBSOURCES .= "$file ";
+// 					if(isset($headers[$key])) unset($headers[$key]);
+// 			    }
+// 			}
+// 		} catch (Exception $e)
+// 		{
+// 		    // return array("success"=> false, "text" => "Library Not Found: $i", "cmd" => 'Caught exception: '.$e->getMessage()."\n", "lines" => array(0));
+// 		}
+//
+// 	}
+// 	return array("success"=> true, "output"=>$LIBBSOURCES);
+// }
 
-function add_paths($LIBS_PATH, $headers)
+function add_paths($LIBS_PATH, &$headers)
 {
 	$LIBB = "";
-	// $extras = iterate_dir(getenv("ARDUINO_LIBS_DIR"));
-	// foreach($extras as $extra)
-	// {
-	// 	$LIBB .=" -I".getenv("ARDUINO_LIBS_DIR").$extra;
-	// }
-	foreach ($headers as $dirname)
+	foreach ($headers as $key=>$dirname)
 	{
 		if(file_exists($LIBS_PATH.$dirname))
+		{
 			$LIBB.=" -I".$LIBS_PATH.$dirname;
+			unset($headers[$key]);
+		}
 	}
 
-	// $extras = iterate_dir(getenv("ARDUINO_EXTRA_LIBS_DIR"));
-	// foreach($extras as $extra)
-	// {
-	// 	$LIBB .=" -I".getenv("ARDUINO_EXTRA_LIBS_DIR").$extra;
-	// }
 	return $LIBB;
 }
 
@@ -185,6 +179,48 @@ function cleanDir($filename)
 	// find $path -name $filename.{o,cpp,elf,hex} -mtime +1 -delete
 }
 
+
+function add_libraries($LIBS_PATH, $headers)
+{
+	$LIBBSOURCES = "";
+	foreach ($headers as $key=>$dirname)
+	{
+		$path = realpath($LIBS_PATH."/".$dirname);
+		if(is_dir($path))
+		{
+			$array = recurse_dir($path);
+			foreach($array as $file)
+			{
+				$LIBBSOURCES .= "$file ";
+				if(isset($headers[$key])) unset($headers[$key]);
+			}
+		}
+	}
+	return $LIBBSOURCES;
+}
+
+function recurse_dir($directory)
+{
+	$array = iterate_dir($directory);
+	foreach($array as $key => $dir)
+	{
+		if(is_dir($dir))
+		{
+			unset($array[$key]);
+			if(strpos($dir, "examples") === FALSE)
+			{
+				$new_array=recurse_dir($dir);
+				$array = array_merge($array, $new_array);
+			}
+		}
+		else if(strpos($dir, ".o") === FALSE)
+		{
+			unset($array[$key]);
+		}
+	}
+	return $array;
+}
+
 function iterate_dir($directory)
 {
 	$dir = opendir($directory);
@@ -193,13 +229,14 @@ function iterate_dir($directory)
 	while(!($iter === FALSE))
 	{
 		$array[] = $iter;
-		// echo $dir."<br />";
 		$iter = readdir();
 	}
-	for($i = 0; $i <= count($array); $i++ )
+	foreach($array as $key => $value)
 	{
-		if($array[$i] == "." || $array[$i] == "..")
-			unset($array[$i]);
+		if($value == "." || $value == "..")
+			unset($array[$key]);
+		else
+			$array[$key] = realpath($directory."/".$value);
 	}
 
 	sort($array);
