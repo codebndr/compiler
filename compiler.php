@@ -116,14 +116,40 @@ function do_compile($filename,  $LIBBSOURCES, $LIBB)
 	return $output;
 }
 
+/**
+\brief Extracts included headers from source code.
+
+Takes a string containing the source code of a C/C++ program, parses the
+preprocessor directives and makes a list of header files to include.
+
+\param code The program's source code.
+\return An array of headers.
+
+Example usage:
+\code
+$headers = parse_headers($code);
+\endcode
+
+\warning Currently the postfix <b>.h</b> is removed from the header files. This
+behavior might change in the future.
+*/
 function parse_headers($code)
 {
-	$matches = "";
+	// Matches preprocessor include directives, has high tolerance to
+	// spaces. The actual header (without the postfix .h) is stored in
+	// register 1.
+	//
+	// Examples:
+	// #include<stdio.h>
+	// # include "proto.h"
+	$REGEX = "/^\s*#\s*include\s*[<\"]\s*(\w*)\.h\s*[>\"]/";
+
 	$code = explode("\n", $code);
 	$headers = array();
-	foreach ($code as $i)
-		if(preg_match('/^\s*#\s*include\s*[<"]\s*(.*)\.h\s*[>"]/', $i, $matches))
+	foreach ($code as $line)
+		if(preg_match($REGEX, $line, $matches))
 			$headers[] = $matches[1];
+
 	return $headers;
 }
 
