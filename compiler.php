@@ -86,9 +86,7 @@ function do_compile($filename,  $LIBBSOURCES, $LIBB)
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
 
-	$output = dothat($filename, "./preprocess.py $filename 2>&1");
-	if($output["error"])
-		return $output;
+	fnProcessing("$filename.cpp", $filename, NULL);
 
 	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $compiler_output, $ret);	
 	exec("avr-g++ $LIBB $CLANG_INCL_PATH $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $compiler_output2, $ret); // *.cpp -> *.o
@@ -268,6 +266,46 @@ function iterate_dir($directory)
 	sort($array);
 	closedir($dir);
 	return $array;
+}
+
+function fnProcessing($target, $source, $env)
+{
+	$ARDUINO_SKEL = "build/core/main.cpp";
+
+	$wp = fopen($target, "wb");
+
+	// Firstly, included the contents of ARDUINO_SKEL.
+	$skel = fopen($ARDUINO_SKEL, "rb");
+	$skel_contents = fread($skel, filesize($ARDUINO_SKEL));
+	fclose($skel);
+	fwrite($wp, $skel_contents);
+
+	// Secondly, add generated function prototypes.
+	$void = "void";
+	$types = "$void|int|char|word|long|float|double|byte|long|boolean|uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t"; // can't get uglier than this line...
+	$regex = "/^\s*(?:$types)\s*\**\s*\w+\s*\((?:\s*(?:$void|(?:$types)\s*\**\s*\w+\s*,?)\s*)*\)/"; // well, I was wrong :P
+	$file = fopen($source, "rb");
+	while(!feof($file))
+	{
+		$line = fgets($file);
+		if (preg_match($regex, $line, &$match))
+		{
+			fwrite($wp, $match[0] . ";\n");
+		}
+	}
+	fclose($file);
+
+	// Thirdly, add preprocessor directive for line numbering.
+	$sourcePath = str_replace("\\", "\\\\", $source);
+	fwrite($wp, "#line 1 \"" . $sourcePath . "\"\r\n");
+
+	// Lastly, include the input file.
+	$sh = fopen($source, "rb");
+	$sh_contents = fread($sh, filesize($source));
+	fclose($sh);
+	fwrite($wp, $sh_contents);
+
+	fclose($wp);
 }
 
 ?>
