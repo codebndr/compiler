@@ -1,39 +1,5 @@
 <?php
 
-putenv("ARDUINO_FILES_DIR=/mnt/codebender-testing/arduino-files-static");
-putenv("ARDUINO_LIBS_DIR=arduino-files/libraries/");
-putenv("ARDUINO_EXTRA_LIBS_DIR=".getenv("ARDUINO_FILES_DIR")."/extra-libraries/");
-$time = microtime(TRUE);
-
-$directory = "tempfiles/";
-if(!isset($_REQUEST['data']))
-	die(json_encode(array('success' => 0, 'text' => "NO DATA!")));
-
-$value = $_REQUEST['data'];
-
-// echo($value);
-
-$filename = "";
-do
-{
-	$filename = genRandomString(10);
-}
-while(file_exists($directory.$filename));
-$file = fopen($directory.$filename, 'x');
-if($file)
-{
-	fwrite($file, $value);
-	fclose($file);
-}
-
-# Assertions:
-#     - Source file exists and is a valid *.pde file
-#     - Source file uses only core libraries
-#     - Source file does NOT have an *.pde extension
-#     - Core libraries are already compiled in build/core
-
-# Where is this included?
-
 function dothat($filename, $cmd)
 {
 	exec($cmd, $out, $ret); 
@@ -398,57 +364,6 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 	return $new_code;
 }
 
-// echo microtime(TRUE)."<br />\n";
-$headers = parse_headers($value);
-
-
-$tempheaders = $headers;
-// $output = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
-// if(!$output["success"])
-// die(json_encode($output));
-// $LIBBSOURCES = $output["output"];
-$LIBBSOURCES = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
-
-// $output = add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
-// if(!$output["success"])
-// die(json_encode($output));
-
-// $LIBBSOURCES .= $output["output"];
-$LIBBSOURCES .= add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
-
-$tempheaders = $headers;
-$LIBB = add_paths(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
-$LIBB .= add_paths(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
-
-$output = do_compile($filename, $LIBBSOURCES, $LIBB);
-
-if($output["error"])
-{
-	$output["success"] = 0;
-	$output["text"] = "Uknown Compile Error!";
-	$output["lines"] = array(0);
-	echo(json_encode($output));
-}
-else
-{
-	if($output["compiler_success"])
-	{
-		$file = fopen($directory.$filename.".hex", 'r');
-		$value = fread($file, filesize($directory.$filename.".hex"));
-		fclose($file);
-		unlink($directory.$filename.".hex");
-
-		echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'time'=> microtime(TRUE)-$time, 'hex' => $value)));
-	}
-	else
-	{
-		config_output($output["compiler_output"], $filename, $lines, $output_string);
-		$output_string = htmlspecialchars($output_string);
-		$output_string = ansi2HTML($output_string);
-		echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
-	}
-}
-
 function genRandomString($length)
 {
     // $length = 10;
@@ -557,6 +472,91 @@ function ansi2HTML($text)
 		$text .= array_pop($stack);
 
 	return $text;
+}
+
+putenv("ARDUINO_FILES_DIR=/mnt/codebender-testing/arduino-files-static");
+putenv("ARDUINO_LIBS_DIR=arduino-files/libraries/");
+putenv("ARDUINO_EXTRA_LIBS_DIR=".getenv("ARDUINO_FILES_DIR")."/extra-libraries/");
+$time = microtime(TRUE);
+
+$directory = "tempfiles/";
+if(!isset($_REQUEST['data']))
+	die(json_encode(array('success' => 0, 'text' => "NO DATA!")));
+
+$value = $_REQUEST['data'];
+
+// echo($value);
+
+$filename = "";
+do
+{
+	$filename = genRandomString(10);
+}
+while(file_exists($directory.$filename));
+$file = fopen($directory.$filename, 'x');
+if($file)
+{
+	fwrite($file, $value);
+	fclose($file);
+}
+
+# Assertions:
+#     - Source file exists and is a valid *.pde file
+#     - Source file uses only core libraries
+#     - Source file does NOT have an *.pde extension
+#     - Core libraries are already compiled in build/core
+
+# Where is this included?
+
+// echo microtime(TRUE)."<br />\n";
+$headers = parse_headers($value);
+
+
+$tempheaders = $headers;
+// $output = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
+// if(!$output["success"])
+// die(json_encode($output));
+// $LIBBSOURCES = $output["output"];
+$LIBBSOURCES = add_libraries(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
+
+// $output = add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
+// if(!$output["success"])
+// die(json_encode($output));
+
+// $LIBBSOURCES .= $output["output"];
+$LIBBSOURCES .= add_libraries(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
+
+$tempheaders = $headers;
+$LIBB = add_paths(getenv("ARDUINO_LIBS_DIR"), $tempheaders);
+$LIBB .= add_paths(getenv("ARDUINO_EXTRA_LIBS_DIR"), $tempheaders);
+
+$output = do_compile($filename, $LIBBSOURCES, $LIBB);
+
+if($output["error"])
+{
+	$output["success"] = 0;
+	$output["text"] = "Uknown Compile Error!";
+	$output["lines"] = array(0);
+	echo(json_encode($output));
+}
+else
+{
+	if($output["compiler_success"])
+	{
+		$file = fopen($directory.$filename.".hex", 'r');
+		$value = fread($file, filesize($directory.$filename.".hex"));
+		fclose($file);
+		unlink($directory.$filename.".hex");
+
+		echo(json_encode(array('success' => 1, 'text' => "Compiled successfully!", 'size' => $output["size"], 'time'=> microtime(TRUE)-$time, 'hex' => $value)));
+	}
+	else
+	{
+		config_output($output["compiler_output"], $filename, $lines, $output_string);
+		$output_string = htmlspecialchars($output_string);
+		$output_string = ansi2HTML($output_string);
+		echo(json_encode(array('success' => 0, 'text' => $output_string, 'lines' => $lines)));
+	}
 }
 
 ?>
