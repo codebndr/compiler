@@ -112,7 +112,16 @@ function do_compile($filename,  $LIBBSOURCES, $LIBB)
 	// Handle object files from libraries. Different CFLAGS? HELP!
 	// Different error code, depending where it failed?
 
-	fnProcessing("$filename.cpp", $filename, NULL);
+	$skel_fh = fopen("build/core/main.cpp", "r");
+	$skel_contents = fread($skel_fh, filesize("build/core/main.cpp"));
+	$input_fh = fopen($filename, "r");
+	$input_contents = fread($input_fh, filesize($filename));
+	$output_fh = fopen($filename . ".cpp", "w");
+	$output_contents = ino_to_cpp($skel_contents, $input_contents, $filename);
+	fwrite($output_fh, $output_contents);
+	fclose($skel_fh);
+	fclose($input_fh);
+	fclose($output_fh);
 
 	exec("clang $LIBB $CLANG_FLAGS $filename.cpp 2>&1", $compiler_output, $ret);	
 	exec("avr-g++ $LIBB $CLANG_INCL_PATH $CPPFLAGS -c -o $filename.o $filename.cpp -I".$SOURCES_PATH." 2>&1", $compiler_output2, $ret); // *.cpp -> *.o
@@ -294,44 +303,99 @@ function iterate_dir($directory)
 	return $array;
 }
 
-function fnProcessing($target, $source, $env)
+/**
+\brief Generates valid C++ code from Arduino source code.
+
+\param skel The contents of the Arduino skeleton file.
+\param code The input source code.
+\param filename (optional) The name of the input file.
+\return Valid C++ code, the result of processing the input.
+
+Arduino source code files are simplified C++ files. Thus, some preprocessing has
+to be done to convert them to valid C++ code for the compiler to read. Some of
+these "simplifications" include:
+  - lack of a main() function
+  - lack of function prototypes
+
+A skeleton file is provided in the Arduino core files that contains a main()
+function. Its contents have to be at the top of the output file. The prototypes
+of the functions defined in the input file should be added beneath that. This
+is to avoid compiler complaints regarding references to undefined functions.
+
+The programmer is not aware of this modifications to his code. In case of a
+compiler error, the line numbering would be wrong. To avoid this issue, a #line
+preprocessor directive is used. Thus it is ensured that the line numbering in
+the output file will be the same as the input file.
+
+A regular expression is used to match function definitions in the input file.
+Consequently this process will never be as sophisticated as a lexical analyzer.
+Thus, some valid constructs cannot be matched. These include:
+  - definitions that are split across multiple lines
+  - definitions for variadic functions
+  - typedefs for the return value or the parameters
+  - pointers to functions
+  - arrays, structs, and unions (might be supported in the future)
+
+Example usage:
+\code
+$skel_fh = fopen($ARDUINO_SKEL, "r");
+$skel_contents = fread($skel_fh, filesize($ARDUINO_SKEL));
+$input_fh = fopen($INPUT_FILE, "r+");
+$input_contents = fread($input_fh, filesize($INPUT_FILE));
+$new_code = ino_to_cpp($skel_contents, $input_contents, $INPUT_FILE);
+fwrite($input_fh, $new_code);
+fclose($skel_fh);
+fclose($input_fh);
+\endcode
+
+\todo Support arrays, structs and unions.
+*/
+function ino_to_cpp($skel, $code, $filename = NULL)
 {
-	$ARDUINO_SKEL = "build/core/main.cpp";
+	// Supported primitives for parameters and return values. They are put
+	// in a string, separated by "|" to be used in regular expressions.
+	// Type "void" is put in its own variable to be more readable later on
+	// in $REGEX.
+	$VOID = "void";
+	$TYPES = array($VOID, "int", "char", "word", "long", "float", "byte",
+		"boolean", "uint8_t", "uint16_t", "uint32_t", "int8_t",
+		"int16_t", "int32_t");
+	$TYPES = implode("|", $TYPES);
+	// Matches C/C++ function definitions, has high tolerance to whitespace
+	// characters. Grouping constructs are used but no value is stored in
+	// the registers.
+	//
+	// The limitations of this regular expression are described in the
+	// comments above the function definition.
+	//
+	// Examples:
+	// int foo()
+	// int foo(void)
+	// int foo(int bar)
+	// int *foo(int bar)
+	// int *foo(int *bar, int baz)
+	$REGEX = "/^\s*(?:$TYPES)\s*\**\s*\w+\s*\((?:\s*(?:$VOID|(?:$TYPES)\s*\**\s*\w+\s*,?)\s*)*\)/";
 
-	$wp = fopen($target, "wb");
+	$new_code = "";
 
-	// Firstly, included the contents of ARDUINO_SKEL.
-	$skel = fopen($ARDUINO_SKEL, "rb");
-	$skel_contents = fread($skel, filesize($ARDUINO_SKEL));
-	fclose($skel);
-	fwrite($wp, $skel_contents);
+	// Firstly, include the contents of the skeleton file.
+	$new_code .= $skel;
 
-	// Secondly, add generated function prototypes.
-	$void = "void";
-	$types = "$void|int|char|word|long|float|double|byte|long|boolean|uint8_t|uint16_t|uint32_t|int8_t|int16_t|int32_t"; // can't get uglier than this line...
-	$regex = "/^\s*(?:$types)\s*\**\s*\w+\s*\((?:\s*(?:$void|(?:$types)\s*\**\s*\w+\s*,?)\s*)*\)/"; // well, I was wrong :P
-	$file = fopen($source, "rb");
-	while(!feof($file))
-	{
-		$line = fgets($file);
-		if (preg_match($regex, $line, &$match))
-		{
-			fwrite($wp, $match[0] . ";\n");
-		}
-	}
-	fclose($file);
+	// Secondly, generate and add the function prototypes.
+	foreach (explode("\n", $code) as $line)
+		if (preg_match($REGEX, $line, $matches))
+			$new_code .= $matches[0] . ";\n";
 
-	// Thirdly, add preprocessor directive for line numbering.
-	$sourcePath = str_replace("\\", "\\\\", $source);
-	fwrite($wp, "#line 1 \"" . $sourcePath . "\"\r\n");
+	// Thirdly, add a preprocessor directive for line numbering.
+	if ($filename)
+		$new_code .= "#line 1 \"$filename\"\n";
+	else
+		$new_code .= "#line 1\n";
 
-	// Lastly, include the input file.
-	$sh = fopen($source, "rb");
-	$sh_contents = fread($sh, filesize($source));
-	fclose($sh);
-	fwrite($wp, $sh_contents);
+	// Lastly, include the input source code.
+	$new_code .= $code;
 
-	fclose($wp);
+	return $new_code;
 }
 
 // echo microtime(TRUE)."<br />\n";
