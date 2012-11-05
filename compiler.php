@@ -506,6 +506,10 @@ function main($request)
 			$headers = read_headers($code);
 			$file_directories = add_directories($headers, array("$ROOT/libraries", "$ROOT/external-libraries"));
 
+			// From hereon, $file is shell escaped and thus should only be used in calls
+			// to exec().
+			$file = escapeshellarg($file);
+
 			$include_directories = "";
 			foreach ($files["dir"] as $directory)
 				$include_directories .= " -I$directory";
@@ -585,7 +589,7 @@ function main($request)
 	// Step 7: Link all object files and create executable.
 	$object_files = "";
 	foreach ($files["o"] as $object)
-		$object_files .= " $object.o";
+		$object_files .= " " . escapeshellarg("$object.o");
 	exec("$LD $LDFLAGS $target_arch $object_files -o $dir/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
 	if ($ret_link)
 		return array(
