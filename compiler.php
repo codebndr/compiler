@@ -370,6 +370,9 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 	// Type qualifiers for declarators.
 	$QUALS = array("const", "volatile");
 	$QUALS = implode("|", $QUALS);
+	// Type specifiers for declarators.
+	$SPECS = array("signed", "unsigned");
+	$SPECS = implode("|", $SPECS);
 	// Matches C/C++ function definitions, has high tolerance to whitespace
 	// characters. Grouping constructs are used but no value is stored in
 	// the registers.
@@ -383,7 +386,7 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 	// int foo(int bar)
 	// int *foo(const int bar)
 	// int *foo(volatile int *bar, int baz)
-	$REGEX = "/^\s*(?:$TYPES)\s*\**\s*\w+\s*\((?:\s*(?:$VOID|((?:$QUALS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*,?)\s*)*\)/";
+	$REGEX = "/^\s*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*\((?:\s*(?:$VOID|((?:$QUALS)\s*)*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*,?)\s*)*\)/";
 
 	$new_code = "";
 
