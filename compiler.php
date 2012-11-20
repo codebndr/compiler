@@ -181,7 +181,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 
 		// For every source file and set of build options there is a
 		// corresponding object file. If that object is missing, a new
-                // compile request is sent to the service.
+		// compile request is sent to the service.
 		$object_file = "$directory/${mcu}_${f_cpu}_${core}_${variant}__" . pathinfo($filename, PATHINFO_FILENAME);
 		if (!file_exists("$object_file.o"))
 		{
