@@ -363,8 +363,8 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 	// Type "void" is put in its own variable to be more readable later on
 	// in $REGEX.
 	$VOID = "void";
-	$TYPES = array($VOID, "int", "char", "word", "long", "float", "byte",
-		"boolean", "uint8_t", "uint16_t", "uint32_t", "int8_t",
+	$TYPES = array($VOID, "int", "char", "word", "short", "long", "float",
+		"byte", "boolean", "uint8_t", "uint16_t", "uint32_t", "int8_t",
 		"int16_t", "int32_t");
 	$TYPES = implode("|", $TYPES);
 	// Type qualifiers for declarators.
