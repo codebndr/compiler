@@ -521,24 +521,15 @@ function main($request)
 				$include_directories .= " -I$directory";
 			foreach ($file_directories as $directory)
 				$include_directories .= " -I$directory";
-			if ($format == "syntax")
-			{
-				exec("$CLANG $CLANG_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-			}
-			else
-			{
-				if ($ext == "c")
-					exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-				elseif ($ext == "cpp")
-					exec("$CPP $CPPFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-			}
+
+			if ($ext == "c")
+				exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+			elseif ($ext == "cpp")
+				exec("$CPP $CPPFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 			if ($ret_compile)
 			{
-				if ($format != "syntax")
-				{
-					unset($output);
-					exec("$CLANG $CLANG_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-				}
+				unset($output);
+				exec("$CLANG $CLANG_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				$output = str_replace("$dir/", "", $output); // XXX
 				$output = ansi_to_html(implode("\n", $output));
 				return array(
