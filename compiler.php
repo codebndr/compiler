@@ -7,7 +7,7 @@
 \author Dimitrios Christidis
 \author Vasilis Georgitzikis
 
-\copyright (c) 2012, The Codebender Development Team
+\copyright (c) 2012-2013, The Codebender Development Team
 \copyright Licensed under the Simplified BSD License
 */
 
@@ -659,14 +659,27 @@ function read_headers($code)
 }
 
 /**
-\brief Decodes a JSON string.
+\brief Decodes and performs validation checks on input data.
 
 \param string $request The JSON-encoded compile request.
 \return The value encoded in JSON in appropriate PHP type or <b>NULL</b>.
 */
 function validate_input($request)
 {
-	return json_decode($request); // FIXME
+	$request = json_decode($request);
+
+	// Request must be successfully decoded.
+	if ($request === NULL)
+		return NULL;
+
+	// Values used as command-line arguments may not contain any special
+	// characters. This is a serious security risk.
+	foreach (array("mcu", "f_cpu", "core", "variant") as $i)
+		if (escapeshellcmd($request->build->$i) != $request->build->$i)
+			return NULL;
+
+	// Request is valid.
+	return $request;
 }
 
 ?>
