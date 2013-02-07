@@ -194,8 +194,8 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 				foreach($header_files as $header_filename)
 				{
 					$request_template["files"][] = array(
-						"filename" => pathinfo($header_filename, PATHINFO_FILENAME),
-						"content" => file_get_contents($header_filename));
+						"filename" => pathinfo($header_filename, PATHINFO_BASENAME),
+						"content" => file_get_contents("$directory/$header_filename"));
 				}
 			}
 
@@ -577,7 +577,7 @@ function main($request)
 	// Step 6: Create objects for libraries.
 	foreach ($files["dir"] as $directory)
 	{
-		$library_objects = create_objects($directory, NULL, FALSE, $mcu, $f_cpu, $core, $variant);
+		$library_objects = create_objects($directory, NULL, TRUE, $mcu, $f_cpu, $core, $variant);
 		if (array_key_exists("success", $library_objects))
 			return $library_objects;
 		$files["o"] = array_merge($files["o"], $library_objects);
