@@ -125,6 +125,7 @@ function ansi_to_html($text)
 				break;
 			default:
 				error_log(__FUNCTION__ . "(): Unhandled ANSI code '$mode' in " . __FILE__);
+				break;
 			}
 		}
 		$text = preg_replace($REGEX, $replacement, $text, 1);
