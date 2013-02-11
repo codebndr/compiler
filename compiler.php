@@ -680,11 +680,28 @@ function validate_input($request)
 	// Request must be successfully decoded.
 	if ($request === NULL)
 		return NULL;
+	// Request must contain certain entities.
+	if (!(array_key_exists("format", $request)
+		&& array_key_exists("build", $request)
+		&& array_key_exists("files", $request)
+		&& is_object($request->build)
+		&& array_key_exists("mcu", $request->build)
+		&& array_key_exists("f_cpu", $request->build)
+		&& array_key_exists("core", $request->build)
+		&& array_key_exists("variant", $request->build)
+		&& is_array($request->files)))
+		return NULL;
+
+	// Leonardo-specific flags.
+	if ($request->build->variant == "leonardo")
+		if (!(array_key_exists("vid", $request->build)
+			&& array_key_exists("pid", $request->build)))
+			return NULL;
 
 	// Values used as command-line arguments may not contain any special
 	// characters. This is a serious security risk.
 	foreach (array("mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
-		if (escapeshellcmd($request->build->$i) != $request->build->$i)
+		if (isset($request->build->$i) && escapeshellcmd($request->build->$i) != $request->build->$i)
 			return NULL;
 
 	// Request is valid.
