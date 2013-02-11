@@ -147,12 +147,14 @@ function ansi_to_html($text)
 \param string $f_cpu <b>f_cpu</b> build flag.
 \param string $core <b>core</b> build flag.
 \param string $variant <b>variant</b> build flag.
+\param string $vid <b>vid</b> build flag (Leonardo).
+\param string $pid <b>pid</b> build flag (Leonardo).
 \return An array of object files or a reply message in case of error.
 
 In case of error, the return value is an array that has a key <b>success</b>
 and contains the response to be sent back to the user.
 */
-function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu, $core, $variant)
+function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 {
 	if ($exclude_files)
 	{
@@ -168,7 +170,9 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			"mcu" => $mcu,
 			"f_cpu" => $f_cpu,
 			"core" => $core,
-			"variant" => $variant));
+			"variant" => $variant,
+			"vid" => $vid,
+			"pid" => $pid));
 
 	$object_files = array();
 	exec("ls $directory | grep -E '\.(c|cpp)$'", $sources); // FIXME
@@ -182,7 +186,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 		// For every source file and set of build options there is a
 		// corresponding object file. If that object is missing, a new
 		// compile request is sent to the service.
-		$object_file = "$directory/${mcu}_${f_cpu}_${core}_${variant}__" . pathinfo($filename, PATHINFO_FILENAME);
+		$object_file = "$directory/${mcu}_${f_cpu}_${core}_${variant}" . (($variant == "leonardo") ? "_${vid}_${pid}" : "") . "__" . pathinfo($filename, PATHINFO_FILENAME);
 		if (!file_exists("$object_file.o"))
 		{
 			// Include any header files in the request.
@@ -459,6 +463,15 @@ function main($request)
 	$core = $request->build->core;
 	$variant = $request->build->variant;
 
+	// Set the appropriate variables for vid and pid (Leonardo).
+	$vid = "";
+	$pid = "";
+
+	if(isset($request->build->vid))
+		$vid = $request->build->vid;
+	if(isset($request->build->pid))
+		$pid = $request->build->pid;
+
 	// Create a temporary directory to place all the files needed to process
 	// the compile request. This directory is created in $TMPDIR or /tmp by
 	// default and is automatically removed upon execution completion.
@@ -499,7 +512,7 @@ function main($request)
 	}
 
 	include "mcu.php";
-	$target_arch = "-mmcu=$mcu -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
+	$target_arch = "-mmcu=$mcu -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 	$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
 
 	// Step 3, 4: Syntax-check and compile source files.
@@ -566,7 +579,7 @@ function main($request)
 	}
 
 	// Step 5: Create objects for core files.
-	$core_objects = create_objects("$ROOT/$core/core", $ARDUINO_SKEL, FALSE, $mcu, $f_cpu, $core, $variant);
+	$core_objects = create_objects("$ROOT/$core/core", $ARDUINO_SKEL, FALSE, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 	if (array_key_exists("success", $core_objects))
 		return $core_objects;
 	$files["o"] = array_merge($files["o"], $core_objects);
@@ -577,7 +590,7 @@ function main($request)
 	// Step 6: Create objects for libraries.
 	foreach ($files["dir"] as $directory)
 	{
-		$library_objects = create_objects($directory, NULL, TRUE, $mcu, $f_cpu, $core, $variant);
+		$library_objects = create_objects($directory, NULL, TRUE, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		if (array_key_exists("success", $library_objects))
 			return $library_objects;
 		$files["o"] = array_merge($files["o"], $library_objects);
@@ -674,7 +687,7 @@ function validate_input($request)
 
 	// Values used as command-line arguments may not contain any special
 	// characters. This is a serious security risk.
-	foreach (array("mcu", "f_cpu", "core", "variant") as $i)
+	foreach (array("mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
 		if (escapeshellcmd($request->build->$i) != $request->build->$i)
 			return NULL;
 
