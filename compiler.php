@@ -465,13 +465,8 @@ function main($request)
 	$variant = $request->build->variant;
 
 	// Set the appropriate variables for vid and pid (Leonardo).
-	$vid = "";
-	$pid = "";
-
-	if(isset($request->build->vid))
-		$vid = $request->build->vid;
-	if(isset($request->build->pid))
-		$pid = $request->build->pid;
+	$vid = ($variant == "leonardo") ? $request->build->vid : "";
+	$pid = ($variant == "leonardo") ? $request->build->pid : "";
 
 	// Create a temporary directory to place all the files needed to process
 	// the compile request. This directory is created in $TMPDIR or /tmp by
