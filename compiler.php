@@ -444,7 +444,7 @@ function main($request)
 	// The name of the Arduino skeleton file.
 	$ARDUINO_SKEL = "main.cpp";
 	// The version of the Arduino files.
-	$ARDUINO_VERSION = "100";
+	$ARDUINO_VERSION = "103";
 
 	$start_time = microtime(TRUE);
 
