@@ -511,6 +511,9 @@ function main($request)
 	$target_arch = "-mmcu=$mcu -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 	$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
 
+	if ($format == "syntax")
+		$CPPFLAGS .= " -fsyntax-only";
+
 	// Step 3, 4: Syntax-check and compile source files.
 	$libraries = array();
 	foreach(array("c", "cpp") as $ext)
