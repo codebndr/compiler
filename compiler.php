@@ -176,7 +176,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			"pid" => $pid));
 
 	$object_files = array();
-	exec("ls $directory | grep -E '\.(c|cpp)$'", $sources); // FIXME
+	$sources = get_files_by_extension($directory, array("c", "cpp"));
 
 	foreach ($sources as $filename)
 	{
@@ -194,7 +194,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			if ($send_headers && !array_key_exists("files", $request_template))
 			{
 				$request_template["files"] = array();
-				exec("ls $directory | grep -E '\.(h)$'", $header_files); // FIXME
+				$header_files = get_files_by_extension($directory, "h");
 
 				foreach($header_files as $header_filename)
 				{
@@ -324,6 +324,26 @@ function extract_files($directory, $request_files)
 	}
 
 	// All files were extracted successfully.
+	return $files;
+}
+
+/**
+\brief Searches for files with specific extensions in a directory.
+
+\param string $directory The directory to search for files.
+\param mixed $extensions An array of strings, the extensions to look for.
+\return A list of files that have the appropriate extension.
+*/
+function get_files_by_extension($directory, $extensions)
+{
+	if (is_string($extensions))
+		$extensions = array($extensions);
+
+	$files = array();
+	foreach (scandir($directory) as $entry)
+		if (is_file("$directory/$entry") && in_array(pathinfo("$directory/$entry", PATHINFO_EXTENSION), $extensions))
+			$files[] = $entry;
+
 	return $files;
 }
 
