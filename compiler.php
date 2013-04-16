@@ -15,6 +15,8 @@
 // needed to process the compile request are stored.
 require_once "System.php";
 
+// Local files, part of the Codebender compiler backend.
+require_once "config.php";
 require_once "mcu.php";
 
 /**
@@ -445,31 +447,32 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 */
 function main($request)
 {
-	global $MCU;
+	// Structures defined in config.php and mcu.php.
+	global $compiler_config, $MCU;
 
 	// External binaries.
-	$CC = "/usr/bin/avr-gcc";
-	$CPP = "/usr/bin/avr-g++";
-	$LD = "/usr/bin/avr-gcc";
-	$CLANG = "/usr/bin/clang";
-	$OBJCOPY = "/usr/bin/avr-objcopy";
-	$SIZE = "/usr/bin/avr-size";
+	$CC = $compiler_config["cc"];
+	$CPP = $compiler_config["cpp"];
+	$LD = $compiler_config["ld"];
+	$CLANG = $compiler_config["clang"];
+	$OBJCOPY = $compiler_config["objcopy"];
+	$SIZE = $compiler_config["size"];
 	// Standard command-line arguments used by the binaries.
-	$CFLAGS = "-Os -ffunction-sections -fdata-sections";
-	$CPPFLAGS = "-Os -ffunction-sections -fdata-sections -fno-exceptions";
-	$LDFLAGS = "-Os -Wl,--gc-sections";
-	$LDFLAGS_TAIL = "-lm -lc";
-	$CLANG_FLAGS = "-w -fsyntax-only -fcolor-diagnostics -I/usr/lib/avr/include";
-	$OBJCOPY_FLAGS = "-R .eeprom";
-	$SIZE_FLAGS = "";
+	$CFLAGS = $compiler_config["cflags"];
+	$CPPFLAGS = $compiler_config["cppflags"];
+	$LDFLAGS = $compiler_config["ldflags"];
+	$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
+	$CLANG_FLAGS = $compiler_config["clang_flags"];
+	$OBJCOPY_FLAGS = $compiler_config["objcopy_flags"];
+	$SIZE_FLAGS = $compiler_config["size_flags"];
 	// The default name of the output file.
-	$OUTPUT = "output";
+	$OUTPUT = $compiler_config["output"];
 	// Path to arduino-files repository.
-	$ROOT = "/mnt/codebender_libraries";
+	$ROOT = $compiler_config["root"];
 	// The name of the Arduino skeleton file.
-	$ARDUINO_SKEL = "main.cpp";
+	$ARDUINO_SKEL = $compiler_config["arduino_skel"];
 	// The version of the Arduino files.
-	$ARDUINO_VERSION = "103";
+	$ARDUINO_VERSION = $compiler_config["arduino_version"];
 
 	$start_time = microtime(TRUE);
 
