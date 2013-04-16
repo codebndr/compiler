@@ -15,6 +15,8 @@
 // needed to process the compile request are stored.
 require_once "System.php";
 
+require_once "mcu.php";
+
 /**
 \brief Searches for header files in a list of directories.
 
@@ -443,6 +445,8 @@ function ino_to_cpp($skel, $code, $filename = NULL)
 */
 function main($request)
 {
+	global $MCU;
+
 	// External binaries.
 	$CC = "/usr/bin/avr-gcc";
 	$CPP = "/usr/bin/avr-g++";
@@ -527,7 +531,6 @@ function main($request)
 		$files["cpp"][] = array_shift($files["ino"]);
 	}
 
-	include "mcu.php";
 	$target_arch = "-mmcu=$mcu -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 	$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
 
