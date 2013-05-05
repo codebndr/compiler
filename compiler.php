@@ -538,7 +538,10 @@ function main($request)
 	$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
 
 	if ($format == "syntax")
+	{
+		$CFLAGS .= " -fsyntax-only";
 		$CPPFLAGS .= " -fsyntax-only";
+	}
 
 	// Step 3, 4: Syntax-check and compile source files.
 	$libraries = array();
