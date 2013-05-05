@@ -543,25 +543,32 @@ function main($request)
 		$CPPFLAGS .= " -fsyntax-only";
 	}
 
+	// Scan files for headers and locate the corresponding include paths.
+	$headers = array();
+	foreach(array("c", "cpp", "h") as $ext)
+	{
+		foreach($files[$ext] as $file)
+		{
+			$code = file_get_contents("$file.$ext");
+			$headers = array_merge($headers, read_headers($code));
+		}
+	}
+	$headers = array_unique($headers);
+	$new_directories = add_directories($headers, array("$ROOT/libraries", "$ROOT/external-libraries"));
+	$files["dir"] = array_merge($files["dir"], $new_directories);
+	$include_directories = "";
+	foreach ($files["dir"] as $directory)
+		$include_directories .= " -I$directory";
+
 	// Step 3, 4: Syntax-check and compile source files.
 	$libraries = array();
 	foreach(array("c", "cpp") as $ext)
 	{
 		foreach($files[$ext] as $file)
 		{
-			$code = file_get_contents("$file.$ext");
-			$headers = read_headers($code);
-			$file_directories = add_directories($headers, array("$ROOT/libraries", "$ROOT/external-libraries"));
-
 			// From hereon, $file is shell escaped and thus should only be used in calls
 			// to exec().
 			$file = escapeshellarg($file);
-
-			$include_directories = "";
-			foreach ($files["dir"] as $directory)
-				$include_directories .= " -I$directory";
-			foreach ($file_directories as $directory)
-				$include_directories .= " -I$directory";
 
 			if ($ext == "c")
 				exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
@@ -581,10 +588,8 @@ function main($request)
 			unset($output);
 
 			$files["o"][] = array_shift($files[$ext]);
-			$libraries = array_merge($libraries, $file_directories);
 		}
 	}
-	$files["dir"] = array_merge($files["dir"], array_unique($libraries));
 
 	if ($format == "syntax")
 		return array(
