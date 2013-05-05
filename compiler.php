@@ -39,7 +39,11 @@ function add_directories($headers, $search_paths, $searched_paths = array())
 			{
 				$directories[] = "$path/$header";
 
-				$new_headers = read_headers(file_get_contents("$path/$header/$header.h"));
+				$new_headers = array();
+				foreach(get_files_by_extension("$path/$header", array("c", "cpp", "h")) as $file)
+					$new_headers = array_merge($new_headers, read_headers(file_get_contents("$path/$header/$file")));
+				$new_headers = array_unique($new_headers);
+
 				$directories = array_merge($directories, add_directories($new_headers, $search_paths, $directories));
 			}
 		}
