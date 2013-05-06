@@ -35,8 +35,12 @@ function add_directories($headers, $search_paths, $searched_paths = array())
 	{
 		foreach ($search_paths as $path)
 		{
-			if (file_exists("$path/$header") && array_search("$path/$header", $directories) === FALSE)
+			if (file_exists("$path/$header"))
 			{
+				// Skip library if it's already scanned.
+				if (in_array("$path/$header", $directories))
+					break;
+
 				$directories[] = "$path/$header";
 
 				$new_headers = array();
