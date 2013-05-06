@@ -372,8 +372,8 @@ these "simplifications" include:
 A skeleton file is provided in the Arduino core files that contains a
 <b>main()</b> function. Its contents have to be at the top of the output file.
 The prototypes of the functions defined in the input file should be added
-beneath that. This is to avoid compiler complaints regarding references to
-undefined functions.
+beneath that. This is required to avoid compiler errors regarding undefined
+functions.
 
 The programmer is not aware of this modifications to his code. In case of a
 compiler error, the line numbering would be wrong. To avoid this issue, a
