@@ -24,8 +24,24 @@ require_once "mcu.php";
 
 \param array $headers A list of headers, without the <b>.h</b> extension.
 \param array $search_paths A list of paths to search for the headers.
-\param array $searched_paths A list of paths not to be recursed over.
+\param array $searched_paths A list of paths searched during previous calls.
 \return A list of directories to be included in the compilation process.
+
+In Arduino projects, developers do not provide paths for header files. The
+function read_headers() is used to scan files for include directives, then
+add_directories() is called to locate the appropriate paths. These paths should
+be used when calling avr-gcc for compilation and linking. This is a recursive
+function; only the first two parameters should be used.
+
+The order of $search_paths is important. If a library can be found in multiple
+paths, the first on will be used. This allows to set priorities and override
+libraries.
+
+The structure of search paths is as follows: each path contains directories,
+one for each library. The name of the directory should match the name of the
+corresponding library. Each directory must contain at least a header file with
+the same name (plus the extension .h), which is the header used by other
+projects.
 */
 function add_directories($headers, $search_paths, $searched_paths = array())
 {
@@ -53,6 +69,8 @@ function add_directories($headers, $search_paths, $searched_paths = array())
 		}
 	}
 
+	// Remove already searched paths to avoid looking for duplicate
+	// entries. This improves recursion.
 	return array_diff($directories, $searched_paths);
 }
 
