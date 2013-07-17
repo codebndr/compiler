@@ -191,28 +191,6 @@ function current_page_url()
 }
 
 /**
-\brief Executes a command and displays the command itself and its output.
-
-\param string $command The command to be executed.
-
-Simplifies the creation and debugging of pages that rely on multiple external
-programs by "emulating" the execution of the requested command in a terminal
-emulator. Can be useful during early stages of development. Replace with
-<b>exec()</b> afterwards.
-
-To perform the command execution, <b>passthru()</b> is used. The string
-<b>2\>&1</b> is appended to the command to ensure messages sent to standard
-error are not lost.
-
-\warning It is not possible to redirect the standard error output to a file.
-*/
-function do_this($command)
-{
-	echo "$ $command\n";
-	passthru("$command 2>&1");
-}
-
-/**
 \brief Extracts the files included in a compile request.
 
 \param string $directory The directory to extract the files to.
@@ -505,6 +483,7 @@ function main($request)
 			// to exec().
 			$file = escapeshellarg($file);
 
+			//replace exec() calls with debug_exec() for debugging
 			if ($ext == "c")
 				exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 			elseif ($ext == "cpp")
@@ -608,35 +587,6 @@ function main($request)
 			"time" => microtime(TRUE) - $start_time,
 			"size" => $size[0],
 			"output" => $content);
-}
-
-/**
-\brief Extracts included headers from source code.
-
-\param string $code The program's source code.
-\return An array of headers.
-
-Takes a string containing the source code of a C/C++ program, parses the
-preprocessor directives and makes a list of header files to include. The
-postfix <b>.h</b> is removed from the header names.
-*/
-function read_headers($code)
-{
-	// Matches preprocessor include directives, has high tolerance to
-	// spaces. The actual header (without the postfix .h) is stored in
-	// register 1.
-	//
-	// Examples:
-	// #include<stdio.h>
-	// # include "proto.h"
-	$REGEX = "/^\s*#\s*include\s*[<\"]\s*(\w*)\.h\s*[>\"]/";
-
-	$headers = array();
-	foreach (explode("\n", $code) as $line)
-		if(preg_match($REGEX, $line, $matches))
-			$headers[] = $matches[1];
-
-	return $headers;
 }
 
 /**
