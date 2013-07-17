@@ -517,6 +517,7 @@ function main($request)
 			"success" => true,
 			"time" => microtime(true) - $start_time);
 
+	//TODO: return objects if more than one file??
 	if ($format == "object")
 	{
 		$content = base64_encode(file_get_contents($files["o"][0] . ".o"));
