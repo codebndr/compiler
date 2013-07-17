@@ -158,13 +158,13 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			$ch = curl_init();
 			curl_setopt($ch, CURLOPT_URL, current_page_url());
 			curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request));
-			curl_setopt($ch, CURLOPT_POST, TRUE);
-			curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+			curl_setopt($ch, CURLOPT_POST, true);
+			curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 			$reply = json_decode(curl_exec($ch));
 
-			if ($reply->success == FALSE)
+			if ($reply->success == false)
 				return array(
-					"success" => FALSE,
+					"success" => false,
 					"step" => 5,
 					"message" => $reply->message);
 
@@ -233,9 +233,9 @@ function extract_files($directory, $request_files)
 		$filename = $file->filename;
 		$content = $file->content;
 
-		if (file_put_contents("$directory/$filename", $content) === FALSE)
+		if (file_put_contents("$directory/$filename", $content) === false)
 			return array(
-				"success" => FALSE,
+				"success" => false,
 				"step" => 1,
 				"message" => "Failed to extract file '$filename'.");
 
@@ -392,13 +392,13 @@ function main($request)
 	// The version of the Arduino files.
 	$ARDUINO_VERSION = $compiler_config["arduino_version"];
 
-	$start_time = microtime(TRUE);
+	$start_time = microtime(true);
 
 	// Step 0: Reject the request if the input data is not valid.
 	$request = validate_input($request);
 	if (!$request)
 		return array(
-			"success" => FALSE,
+			"success" => false,
 			"step" => 0,
 			"message" => "Invalid input.");
 
@@ -419,7 +419,7 @@ function main($request)
 	$dir = System::mktemp("-d compiler.");
 	if (!$dir)
 		return array(
-			"success" => FALSE,
+			"success" => false,
 			"step" => 1,
 			"message" => "Failed to create temporary directory.");
 
@@ -433,9 +433,9 @@ function main($request)
 	// Step 2: Preprocess Arduino source files.
 	foreach ($files["ino"] as $file)
 	{
-		if (!isset($skel) && ($skel = file_get_contents("$ROOT/$core/core/$ARDUINO_SKEL")) === FALSE)
+		if (!isset($skel) && ($skel = file_get_contents("$ROOT/$core/core/$ARDUINO_SKEL")) === false)
 			return array(
-				"success" => FALSE,
+				"success" => false,
 				"step" => 2,
 				"message" => "Failed to open Arduino skeleton file.");
 
@@ -443,9 +443,9 @@ function main($request)
 		$new_code = ino_to_cpp($skel, $code, "$file.ino");
 		$ret = file_put_contents("$file.cpp", $new_code);
 
-		if ($code === FALSE || !$new_code || !$ret)
+		if ($code === false || !$new_code || !$ret)
 			return array(
-				"success" => FALSE,
+				"success" => false,
 				"step" => 2,
 				"message" => "Failed to preprocess file '$file.ino'.");
 
@@ -500,7 +500,7 @@ function main($request)
 				$output = str_replace("$dir/", "", $output); // XXX
 				$output = ansi_to_html(implode("\n", $output));
 				return array(
-					"success" => FALSE,
+					"success" => false,
 					"step" => 4,
 					"message" => $output);
 			}
@@ -512,26 +512,26 @@ function main($request)
 
 	if ($format == "syntax")
 		return array(
-			"success" => TRUE,
-			"time" => microtime(TRUE) - $start_time);
+			"success" => true,
+			"time" => microtime(true) - $start_time);
 
 	if ($format == "object")
 	{
 		$content = base64_encode(file_get_contents($files["o"][0] . ".o"));
 		if (count($files["o"]) != 1 || !$content)
 			return array(
-				"success" => FALSE,
+				"success" => false,
 				"step" => -1,
 				"message" => "");
 		else
 			return array(
-				"success" => TRUE,
-				"time" => microtime(TRUE) - $start_time,
+				"success" => true,
+				"time" => microtime(true) - $start_time,
 				"output" => $content);
 	}
 
 	// Step 5: Create objects for core files.
-	$core_objects = create_objects("$ROOT/$core/core", $ARDUINO_SKEL, FALSE, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+	$core_objects = create_objects("$ROOT/$core/core", $ARDUINO_SKEL, false, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 	if (array_key_exists("success", $core_objects))
 		return $core_objects;
 	$files["o"] = array_merge($files["o"], $core_objects);
@@ -542,7 +542,7 @@ function main($request)
 	// Step 6: Create objects for libraries.
 	foreach ($files["dir"] as $directory)
 	{
-		$library_objects = create_objects($directory, NULL, TRUE, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$library_objects = create_objects($directory, NULL, true, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		if (array_key_exists("success", $library_objects))
 			return $library_objects;
 		$files["o"] = array_merge($files["o"], $library_objects);
@@ -555,7 +555,7 @@ function main($request)
 	exec("$LD $LDFLAGS $target_arch $object_files -o $dir/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
 	if ($ret_link)
 		return array(
-			"success" => FALSE,
+			"success" => false,
 			"step" => 7,
 			"message" => implode("\n", $output));
 
@@ -563,7 +563,7 @@ function main($request)
 	// size.
 	if ($format == "elf")
 	{
-		$ret_objcopy = FALSE;
+		$ret_objcopy = false;
 		exec("$SIZE $SIZE_FLAGS --target=elf32-avr $dir/$OUTPUT.elf | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
 		$content = base64_encode(file_get_contents("$dir/$OUTPUT.elf"));
 	}
@@ -581,15 +581,15 @@ function main($request)
 	}
 
 	// If everything went well, return the reply to the caller.
-	if ($ret_objcopy || $ret_size || $content === FALSE)
+	if ($ret_objcopy || $ret_size || $content === false)
 		return array(
-			"success" => FALSE,
+			"success" => false,
 			"step" => 8,
 			"message" => "");
 	else
 		return array(
-			"success" => TRUE,
-			"time" => microtime(TRUE) - $start_time,
+			"success" => true,
+			"time" => microtime(true) - $start_time,
 			"size" => $size[0],
 			"output" => $content);
 }
