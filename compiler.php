@@ -428,12 +428,14 @@ function main($request)
 	if (array_key_exists("success", $files))
 		return $files;
 
-	$files["dir"] = array("$ROOT/$core/core", "$ROOT/$core/variants/$variant");
+	//TODO: make it compatible with non-default hardware (variants & cores)
+	$files["dir"] = array("$ROOT/hardware/arduino/cores/$core", "$ROOT/hardware/arduino//variants/$variant");
 
 	// Step 2: Preprocess Arduino source files.
 	foreach ($files["ino"] as $file)
 	{
-		if (!isset($skel) && ($skel = file_get_contents("$ROOT/$core/core/$ARDUINO_SKEL")) === false)
+		//TODO: make it compatible with non-default hardware (variants & cores)
+		if (!isset($skel) && ($skel = file_get_contents("$ROOT/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
 			return array(
 				"success" => false,
 				"step" => 2,
@@ -531,7 +533,8 @@ function main($request)
 	}
 
 	// Step 5: Create objects for core files.
-	$core_objects = create_objects("$ROOT/$core/core", $ARDUINO_SKEL, false, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+	//TODO: make it compatible with non-default hardware (variants & cores)
+	$core_objects = $this->create_objects("$ROOT/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 	if (array_key_exists("success", $core_objects))
 		return $core_objects;
 	$files["o"] = array_merge($files["o"], $core_objects);
