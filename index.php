@@ -13,6 +13,7 @@ Passes the POST request body to the main() function and outputs its reply.
 \copyright Licensed under the Simplified BSD License
 */
 
+//TODO: We might wanna change that with the rearchitecture
 header("Access-Control-Allow-Origin: *");
 
 require_once "compiler.php";
