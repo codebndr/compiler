@@ -16,7 +16,12 @@
 require_once "System.php";
 
 // Local files, part of the Codebender compiler backend.
-require_once "config.php";
+include_once "config-dist.php";
+include_once "config.php";
+
+if(!file_exists("config.php") && (!file_exists("config-dist.php")))
+	die("No config found.");
+
 require_once "mcu.php";
 
 // This file holds utility functions used by the core compiler
