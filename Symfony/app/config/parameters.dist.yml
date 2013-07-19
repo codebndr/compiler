@@ -1,0 +1,53 @@
+parameters:
+#    database_driver:   pdo_mysql
+#    database_host:     127.0.0.1
+#    database_port:     ~
+#    database_name:     symfony
+#    database_user:     root
+#    database_password: ~
+
+    mailer_transport:  smtp
+    mailer_host:       127.0.0.1
+    mailer_user:       ~
+    mailer_password:   ~
+
+    locale:            en
+    secret:            ThisTokenIsNotSoSecretChangeIt
+
+    # Path to cores and libraries.
+    #root: ""
+
+    # The version of the Arduino files.
+    #arduino_version: "105"
+
+    # Paths to various executables used by the compiler. These depend on the
+    # distribution used and the method of installation. Linking is performed by
+    # avr-gcc (same as cc).
+    cc: "/usr/bin/avr-gcc"
+    cpp: "/usr/bin/avr-g++"
+    ld: "/usr/bin/avr-gcc"
+    clang: "/usr/bin/clang"
+    objcopy: "/usr/bin/avr-objcopy"
+    size: "/usr/bin/avr-size"
+
+    # -------- You shouldn't need to edit anything beyond this point. -------- \\
+
+    # Command-line arguments used when calling the external executables. More
+    # arguments are used in compiler.php. During linking, the actual order of
+    # flags is important. Thus, two variables have to be used: "ldflags" and
+    # "ldflags_tail".
+    cflags: "-Os -ffunction-sections -fdata-sections"
+    cppflags: "-Os -ffunction-sections -fdata-sections -fno-exceptions"
+    ldflags: "-Os -Wl,--gc-sections"
+    ldflags_tail: "-lm -lc"
+    #TODO: Fix this. It's probably already included by the Arduino avr-gcc, and it needs to be configurable
+    clang_flags: "-w -fsyntax-only -fcolor-diagnostics -I/usr/lib/avr/include"
+    objcopy_flags: "-R .eeprom"
+    size_flags: ""
+
+    # The name of the Arduino skeleton file, which is prepended to *.ino files.
+    arduino_skel: "main.cpp"
+
+    # The default name of the output file, which is created in /tmp/compiler.xxxx
+    # by default.
+    output: "output"

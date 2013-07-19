@@ -1,0 +1,3 @@
+codebender_compiler_homepage:
+    pattern:  /{type}
+    defaults: { _controller: CodebenderCompilerBundle:Default:index }
