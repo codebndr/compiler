@@ -51,3 +51,5 @@ parameters:
     # The default name of the output file, which is created in /tmp/compiler.xxxx
     # by default.
     output: "output"
+
+    auth_key: "youMustChangeThis"

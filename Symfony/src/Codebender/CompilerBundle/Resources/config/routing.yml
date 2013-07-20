@@ -1,3 +1,7 @@
+codebender_compiler_status_check:
+    pattern:  /status
+    defaults: { _controller: CodebenderCompilerBundle:Default:status }
+
 codebender_compiler_homepage:
-    pattern:  /{type}
+    pattern:  /{auth_key}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:index }

@@ -18,28 +18,36 @@ use Codebender\CompilerBundle\Handler\CompilerHandler;
 
 class DefaultController extends Controller
 {
-    public function indexAction($type)
+	public function statusAction()
+	{
+			return new Response('{""success":true,status":"OK"}');
+	}
+
+	public function indexAction($auth_key, $version)
     {
-	    if($type == "status")
+	    $params = $this->generateParameters();
+
+	    if($auth_key !== $params["auth_key"])
 	    {
-		    return new Response('{"status":"OK"}');
+		    return new Response('{"success":false,"step":0,"message":"Invalid authorization key."}');
 	    }
-	    else if($type == "v1")
+
+	    if($version == "v1")
 	    {
 		    $request = $this->getRequest()->getContent();
 		    $compiler = new CompilerHandler();
-		    $reply = $compiler->main($request, $this->generateParameters());
+		    $reply = $compiler->main($request, $params);
 		    return new Response(json_encode($reply));
 	    }
 	    else
 	    {
-		    return new Response("Unknown Type");
+		    return new Response('{"success":false,"step":0,"message":"Invalid API version."}');
 	    }
     }
 
 	private function generateParameters()
 	{
-		$parameters = array("cc", "cpp", "ld", "clang", "objcopy", "size", "cflags", "cppflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "root", "arduino_skel", "arduino_version");
+		$parameters = array("cc", "cpp", "ld", "clang", "objcopy", "size", "cflags", "cppflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "root", "arduino_skel", "arduino_version", "auth_key");
 
 		$compiler_config = array();
 
