@@ -22,7 +22,7 @@ class DefaultController extends Controller
     {
 	    if($type == "status")
 	    {
-		    return new Response("OK");
+		    return new Response('{"status":"OK"}');
 	    }
 	    else if($type == "v1")
 	    {
