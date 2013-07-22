@@ -17,9 +17,6 @@ parameters:
     # Path to cores and libraries.
     #root: ""
 
-    # The version of the Arduino files.
-    #arduino_version: "105"
-
     # Paths to various executables used by the compiler. These depend on the
     # distribution used and the method of installation. Linking is performed by
     # avr-gcc (same as cc).

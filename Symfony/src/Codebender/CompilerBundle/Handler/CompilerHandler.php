@@ -91,7 +91,7 @@ class CompilerHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 	{
 		if ($exclude_files)
 		{
@@ -103,6 +103,7 @@ class CompilerHandler
 
 		$request_template = array(
 			"format" => "object",
+			"version" => $version,
 			"build" => array(
 				"mcu" => $mcu,
 				"f_cpu" => $f_cpu,
@@ -382,8 +383,6 @@ class CompilerHandler
 		$ROOT = $compiler_config["root"];
 		// The name of the Arduino skeleton file.
 		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
-		// The version of the Arduino files.
-		$ARDUINO_VERSION = $compiler_config["arduino_version"];
 
 		$start_time = microtime(true);
 
@@ -397,6 +396,7 @@ class CompilerHandler
 
 		// Extract the request options for easier access.
 		$format = $request->format;
+		$version = $request->version;
 		$mcu = $request->build->mcu;
 		$f_cpu = $request->build->f_cpu;
 		$core = $request->build->core;
@@ -425,14 +425,16 @@ class CompilerHandler
 		if (array_key_exists("success", $files))
 			return $files;
 
+		//TODO: remove the compiler-stuff dir when you remove the lib handling
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ROOT/hardware/arduino/cores/$core", "$ROOT/hardware/arduino//variants/$variant");
+		$files["dir"] = array("$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core", "$ROOT/compiler-stuff/v$version/hardware/arduino/variants/$variant");
 
 		// Step 2: Preprocess Arduino source files.
 		foreach ($files["ino"] as $file)
 		{
+			//TODO: remove the compiler-stuff dir when you remove the lib handling
 			//TODO: make it compatible with non-default hardware (variants & cores)
-			if (!isset($skel) && ($skel = file_get_contents("$ROOT/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
+			if (!isset($skel) && ($skel = file_get_contents("$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
 				return array(
 					"success" => false,
 					"step" => 2,
@@ -451,8 +453,8 @@ class CompilerHandler
 			$files["cpp"][] = array_shift($files["ino"]);
 		}
 
-		$target_arch = "-mmcu=$mcu -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
-		$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$ARDUINO_VERSION -DF_CPU=$f_cpu";
+		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
+		$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$version -DF_CPU=$f_cpu";
 
 		if ($format == "syntax")
 		{
@@ -531,8 +533,9 @@ class CompilerHandler
 		}
 
 		// Step 5: Create objects for core files.
+		//TODO: remove the compiler-stuff dir when you remove the lib handling
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->create_objects($compiler_config, "$ROOT/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->create_objects($compiler_config, "$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
 		$files["o"] = array_merge($files["o"], $core_objects);
@@ -543,7 +546,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->create_objects($compiler_config, $directory, NULL, true, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->create_objects($compiler_config, $directory, NULL, true, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
 			$files["o"] = array_merge($files["o"], $library_objects);
@@ -610,6 +613,7 @@ class CompilerHandler
 			return NULL;
 		// Request must contain certain entities.
 		if (!(array_key_exists("format", $request)
+			&& array_key_exists("version", $request)
 			&& array_key_exists("build", $request)
 			&& array_key_exists("files", $request)
 			&& is_object($request->build)
