@@ -488,7 +488,7 @@ class CompilerHandler
 				// to exec().
 				$file = escapeshellarg($file);
 
-				//replace exec() calls with debug_exec() for debugging
+				//replace exec() calls with $this->debug_exec() for debugging
 				if ($ext == "c")
 					exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				elseif ($ext == "cpp")
@@ -796,7 +796,7 @@ class CompilerHandler
 
 	\warning It is not possible to redirect the standard error output to a file.
 	 */
-	function debug_exec($command)
+	function debug_exec($command, &$output, &$retval)
 	{
 		echo "$ $command\n";
 		passthru("$command 2>&1");
