@@ -37,7 +37,7 @@ After installing ubuntu 12.04, first of all you should update your package defin
 
 After that, you should install all the necessary software
 
-> sudo apt-get install apache2 libapache2-mod-php5 clang gcc-avr binutils-avr git
+> sudo apt-get install apache2 libapache2-mod-php5 php-pear clang gcc-avr binutils-avr git
 
 Then clone the GitHub project on the machine
 
@@ -76,8 +76,6 @@ Set the correct permissions
 
 > sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
 
-> sudo chmod -R 775 ~/compiler/Symfony/web
-
 Create and edit a config file in ~/compiler/Symfony/config/parameters.yml
 
 > parameters:
@@ -98,3 +96,26 @@ Install composer and perform Symfony's installation requirements
 > curl -s http://getcomposer.org/installer | php
 
 > php composer.phar install
+
+> sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
+
+
+Try out the compiler. Go to
+
+> http://your_servers_ip_address/compiler/yourAuthKey/v1
+
+You should get the following error message. Don't worry, that's perfectly normal
+
+> {"success":false,"step":0,"message":"Invalid input."}
+
+### Enable development mode (Optional)
+If you want to be able to use the development mode and access debug info from Symfony, then open
+
+> ~/compiler/Symfony/web/app_dev.php
+
+and comment out these two lines at the beginning of the file
+
+> header('HTTP/1.0 403 Forbidden');
+
+> exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
+
