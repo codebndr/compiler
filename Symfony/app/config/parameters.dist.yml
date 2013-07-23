@@ -37,8 +37,9 @@ parameters:
     cppflags: "-Os -ffunction-sections -fdata-sections -fno-exceptions"
     ldflags: "-Os -Wl,--gc-sections"
     ldflags_tail: "-lm -lc"
+    clang_flags: "-w -fsyntax-only -fcolor-diagnostics"
     #TODO: Fix this. It's probably already included by the Arduino avr-gcc, and it needs to be configurable
-    clang_flags: "-w -fsyntax-only -fcolor-diagnostics -I/usr/lib/avr/include"
+    include_flags: " -I/usr/lib/gcc/avr/4.5.3/include -I/usr/lib/gcc/avr/4.5.3/include-fixed -I/usr/lib/gcc/avr/4.5.3/include -I/usr/lib/avr/include/ "
     objcopy_flags: "-R .eeprom"
     size_flags: ""
 

@@ -374,6 +374,7 @@ class CompilerHandler
 		$LDFLAGS = $compiler_config["ldflags"];
 		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
 		$CLANG_FLAGS = $compiler_config["clang_flags"];
+		$INCLUDE_FLAGS = $compiler_config["include_flags"];
 		$OBJCOPY_FLAGS = $compiler_config["objcopy_flags"];
 		$SIZE_FLAGS = $compiler_config["size_flags"];
 		// The default name of the output file.
@@ -490,13 +491,13 @@ class CompilerHandler
 
 				//replace exec() calls with $this->debug_exec() for debugging
 				if ($ext == "c")
-					exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CC $CFLAGS $INCLUDE_FLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				elseif ($ext == "cpp")
-					exec("$CPP $CPPFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CPP $CPPFLAGS $INCLUDE_FLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				if ($ret_compile)
 				{
 					unset($output);
-					exec("$CLANG $CLANG_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CLANG $CLANG_FLAGS $INCLUDE_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 					$output = str_replace("$dir/", "", $output); // XXX
 					$output = $this->ansi_to_html(implode("\n", $output));
 					return array(
