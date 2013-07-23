@@ -15,7 +15,9 @@ parameters:
     secret:            ThisTokenIsNotSoSecretChangeIt
 
     # Path to cores and libraries.
-    #root: ""
+    root: ""
+
+    auth_key: "youMustChangeThis"
 
     # Paths to various executables used by the compiler. These depend on the
     # distribution used and the method of installation. Linking is performed by
@@ -48,4 +50,3 @@ parameters:
     # by default.
     output: "output"
 
-    auth_key: "youMustChangeThis"

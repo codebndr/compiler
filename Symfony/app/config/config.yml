@@ -1,5 +1,4 @@
 imports:
-    - { resource: parameters.dist.yml }
     - { resource: parameters.yml }
     - { resource: security.yml }
 
