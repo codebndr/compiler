@@ -23,6 +23,78 @@ If you want to host your own version of the compiler, first of all, you will nee
 * clang
 * avr-gcc
 * a webserver with php support (like apache)
-* avr binutils.
+* avr binutils
+* git (optional, otherwize you can download the zip file from GitHub)
 
 We are using Ubuntu Server 12.04, and we know it works perfectly with that, so we suggest using it.
+
+## Ubuntu 12.04 Installation Instructions
+After installing ubuntu 12.04, first of all you should update your package definitions and upgrade your software.
+
+> sudo apt-get update 
+
+> sudo apt-get upgrade
+
+After that, you should install all the necessary software
+
+> sudo apt-get install apache2 libapache2-mod-php5 clang gcc-avr binutils-avr git
+
+Then clone the GitHub project on the machine
+
+> git clone https://github.com/codebendercc/compiler.git
+
+Link myhost_ip/compiler to the compiler
+
+> sudo ln -s ~/compiler/Symfony/web /var/wwww/compiler
+
+Enable Apache's rewrite module and restart apache
+
+> sudo a2enmod rewrite
+
+Edit apache's configuration:
+
+> sudo vim /etc/apache2/sites-available/default
+
+Add this somewhere in the middle:
+
+>       <Directory /var/www/compiler>
+              Options -Indexes FollowSymLinks MultiViews
+              AllowOverride All
+              Order allow,deny
+              Allow from all
+      </Directory>
+
+And restart apache
+
+> sudo service apache2 restart
+
+Set the correct permissions
+
+> sudo chown -R ubuntu:www-data ~/compiler
+
+> mkdir ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
+
+> sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
+
+> sudo chmod -R 775 ~/compiler/Symfony/web
+
+Create and edit a config file in ~/compiler/Symfony/config/parameters.yml
+
+> parameters:
+
+>    # Path to cores and libraries.
+
+>    #root: "/the/root/of/my/arduino/files"
+
+> auth_key: "myNewSecretPassword"
+
+Edit your ~/compiler/Symfony/composer file cause Symfony is a pain in the ass and remove this line
+
+> "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
+
+Install composer and perform Symfony's installation requirements
+> cd ~/compiler/Symfony
+
+> curl -s http://getcomposer.org/installer | php
+
+> php composer.phar install
