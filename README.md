@@ -76,6 +76,10 @@ Set the correct permissions
 
 > sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
 
+### Setting up ACL
+
+Coming Soon™
+
 Create and edit a config file in ~/compiler/Symfony/config/parameters.yml
 
 ```
