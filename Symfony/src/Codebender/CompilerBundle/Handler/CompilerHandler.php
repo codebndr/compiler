@@ -16,6 +16,7 @@ namespace Codebender\CompilerBundle\Handler;
 // needed to process the compile request are stored.
 require_once "System.php";
 use System;
+use Codebender\CompilerBundle\Handler\MCUHandler;
 
 class CompilerHandler
 {
@@ -359,8 +360,6 @@ class CompilerHandler
 	 */
 	function main($request, $compiler_config)
 	{
-		// Structures defined in config.php and mcu.php.
-		global $MCU;
 
 		// External binaries.
 		$CC = $compiler_config["cc"];
@@ -454,7 +453,7 @@ class CompilerHandler
 		}
 
 		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
-		$clang_target_arch = "-D$MCU[$mcu] -DARDUINO=$version -DF_CPU=$f_cpu";
+		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
 
 		if ($format == "syntax")
 		{
