@@ -78,13 +78,14 @@ Set the correct permissions
 
 Create and edit a config file in ~/compiler/Symfony/config/parameters.yml
 
-> parameters:
+```
+parameters:
+  # Path to cores and libraries.
+  root: "/the/root/of/my/arduino/files"
+  auth_key: "myNewSecretPassword"
+```
 
->    # Path to cores and libraries.
-
->    #root: "/the/root/of/my/arduino/files"
-
-> auth_key: "myNewSecretPassword"
+Download the arduino-files sketch from GitHub and put them on that path (Guide on that coming soon™)
 
 Edit your ~/compiler/Symfony/composer file cause Symfony is a pain in the ass and remove this line
 
