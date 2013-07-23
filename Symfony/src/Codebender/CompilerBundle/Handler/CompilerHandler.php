@@ -374,7 +374,6 @@ class CompilerHandler
 		$LDFLAGS = $compiler_config["ldflags"];
 		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
 		$CLANG_FLAGS = $compiler_config["clang_flags"];
-		$INCLUDE_FLAGS = $compiler_config["include_flags"];
 		$OBJCOPY_FLAGS = $compiler_config["objcopy_flags"];
 		$SIZE_FLAGS = $compiler_config["size_flags"];
 		// The default name of the output file.
@@ -405,6 +404,9 @@ class CompilerHandler
 		// Set the appropriate variables for vid and pid (Leonardo).
 		$vid = ($variant == "leonardo") ? $request->build->vid : "";
 		$pid = ($variant == "leonardo") ? $request->build->pid : "";
+
+		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
+		$core_includes = " -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
 
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
@@ -491,13 +493,13 @@ class CompilerHandler
 
 				//replace exec() calls with $this->debug_exec() for debugging
 				if ($ext == "c")
-					exec("$CC $CFLAGS $INCLUDE_FLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				elseif ($ext == "cpp")
-					exec("$CPP $CPPFLAGS $INCLUDE_FLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				if ($ret_compile)
 				{
 					unset($output);
-					exec("$CLANG $CLANG_FLAGS $INCLUDE_FLAGS $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 					$output = str_replace("$dir/", "", $output); // XXX
 					$output = $this->ansi_to_html(implode("\n", $output));
 					return array(
