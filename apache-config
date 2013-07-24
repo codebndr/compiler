@@ -1,0 +1,9 @@
+<VirtualHost *:80>
+	Alias /compiler/ "/opt/codebender/codebender-arduino-compiler/Symfony/web/"
+	<Directory /opt/codebender/codebender-arduino-compiler/Symfony/web/>
+		Options -Indexes FollowSymLinks MultiViews
+		AllowOverride All
+		Order allow,deny
+		Allow from all
+	</Directory>
+</VirtualHost>
