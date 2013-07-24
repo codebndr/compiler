@@ -17,106 +17,47 @@ Here's a list of open source projects we use
 * gcc-avr
 * avr binutils (avrsize)
 
-## Getting Started
-
-If you want to host your own version of the compiler, first of all, you will need to install:
-* clang
-* avr-gcc
-* a webserver with php support (like apache)
-* avr binutils
-* git (optional, otherwize you can download the zip file from GitHub)
-
-We are using Ubuntu Server 12.04, and we know it works perfectly with that, so we suggest using it.
+We are using Ubuntu Server 12.04, and we know it works perfectly with that, so we suggest using that as well.
 
 ## Ubuntu 12.04 Installation Instructions
+
+### Pre-installation
+
 After installing ubuntu 12.04, first of all you should update your package definitions and upgrade your software.
 
 > sudo apt-get update 
 
 > sudo apt-get upgrade
 
-After that, you should install all the necessary software
+### Installation
 
-> sudo apt-get install apache2 libapache2-mod-php5 php-pear clang gcc-avr binutils-avr git
+Download the debian package we have prepared for you
 
-Then clone the GitHub project on the machine
+> https://www.dropbox.com/s/iozqyk6w3net0ao/codebender-arduino-compiler_1.0_all.deb
 
-> git clone https://github.com/codebendercc/compiler.git
+Install the package:
 
-Link myhost_ip/compiler to the compiler
+> sudo dpkg -i codebender-arduino-compiler_1.0_all.deb
 
-> sudo ln -s ~/compiler/Symfony/web /var/wwww/compiler
+The system will complain about missing dependencies. That is completely normal. To take care of dependencies, and start the installation procedure, execute:
 
-Enable Apache's rewrite module and restart apache
+> sudo apt-get install -f
 
-> sudo a2enmod rewrite
-
-Edit apache's configuration:
-
-> sudo vim /etc/apache2/sites-available/default
-
-Add this somewhere in the middle:
-
->       <Directory /var/www/compiler>
-              Options -Indexes FollowSymLinks MultiViews
-              AllowOverride All
-              Order allow,deny
-              Allow from all
-      </Directory>
-
-And restart apache
-
-> sudo service apache2 restart
-
-Set the correct permissions
-
-> sudo chown -R ubuntu:www-data ~/compiler
-
-> mkdir ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
-
-> sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
-
-### Setting up ACL
-
-Coming Soon™
-
-Create and edit a config file in ~/compiler/Symfony/config/parameters.yml
-
-```
-parameters:
-  # Path to cores and libraries.
-  root: "/the/root/of/my/arduino/files"
-  auth_key: "myNewSecretPassword"
-```
-
-Download the arduino-files sketch from GitHub and put them on that path (Guide on that coming soon™)
-
-Edit your ~/compiler/Symfony/composer file cause Symfony is a pain in the ass and remove this line
-
-> "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
-
-Install composer and perform Symfony's installation requirements
-> cd ~/compiler/Symfony
-
-> curl -s http://getcomposer.org/installer | php
-
-> php composer.phar install
-
-> sudo chmod -R 777 ~/compiler/Symfony/app/cache ~/compiler/Symfony/app/logs
+During the installation, you will be asked to edit some configs. The only ones that you should need to change are the arduino_core_dir and auth_key. In the first one, enter the folder where you will save your Arduino core files (see Downloading Arduino Cores). In the second one, write a unique string that you will use for authorization.
 
 
-Try out the compiler. Go to
+That's it! Try out the compiler. Go to
 
-> http://your_servers_ip_address/compiler/yourAuthKey/v1
+> http://your_servers_ip_address/compiler/status
 
-You should get the following error message. Don't worry, that's perfectly normal
+You should get the following:
 
-> {"success":false,"step":0,"message":"Invalid input."}
+> {""success":true,status":"OK"}
 
 ### Enable development mode (Optional)
 If you want to be able to use the development mode and access debug info from Symfony, then open
 
-> ~/compiler/Symfony/web/app_dev.php
+> /opt/codebender/codebender-arduino-compiler/Symfony/web/app_dev.php
 
 and comment out these two lines at the beginning of the file
 
@@ -124,3 +65,12 @@ and comment out these two lines at the beginning of the file
 
 > exit('You are not allowed to access this file. Check '.basename(__FILE__).' for more information.');
 
+### Downloading Arduino Cores
+
+Download the arduino-files sketch from GitHub and put them on the path you provided above (Guide on that coming soon™)
+
+## Mac OS X Installation Instructions
+
+## Compiler API documentation
+
+Coming Soon™
