@@ -12,3 +12,5 @@ sudo rm /opt/codebender/@PACKAGENAME@/logs-fs
 
 sudo rm -rf /opt/codebender/@PACKAGENAME@
 sudo rmdir /opt/codebender
+
+sed '/\/opt\/codebender\/codebender-arduino-compiler\/Symfony\/app\//d' /etc/fstab | sudo tee /etc/fstab
