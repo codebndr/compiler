@@ -34,9 +34,6 @@ class DefaultController extends Controller
 
 		if ($version == "v1")
 		{
-			//TODO: We might wanna change that with the rearchitecture
-			header("Access-Control-Allow-Origin: *");
-
 			$request = $this->getRequest()->getContent();
 			$compiler = new CompilerHandler();
 			$reply = $compiler->main($request, $params);
