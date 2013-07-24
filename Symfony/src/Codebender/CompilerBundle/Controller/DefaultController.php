@@ -20,30 +20,30 @@ class DefaultController extends Controller
 {
 	public function statusAction()
 	{
-			return new Response('{""success":true,status":"OK"}');
+		return new Response('{""success":true,status":"OK"}');
 	}
 
 	public function indexAction($auth_key, $version)
-    {
-	    $params = $this->generateParameters();
+	{
+		$params = $this->generateParameters();
 
-	    if($auth_key !== $params["auth_key"])
-	    {
-		    return new Response('{"success":false,"step":0,"message":"Invalid authorization key."}');
-	    }
+		if ($auth_key !== $params["auth_key"])
+		{
+			return new Response('{"success":false,"step":0,"message":"Invalid authorization key."}');
+		}
 
-	    if($version == "v1")
-	    {
-		    $request = $this->getRequest()->getContent();
-		    $compiler = new CompilerHandler();
-		    $reply = $compiler->main($request, $params);
-		    return new Response(json_encode($reply));
-	    }
-	    else
-	    {
-		    return new Response('{"success":false,"step":0,"message":"Invalid API version."}');
-	    }
-    }
+		if ($version == "v1")
+		{
+			$request = $this->getRequest()->getContent();
+			$compiler = new CompilerHandler();
+			$reply = $compiler->main($request, $params);
+			return new Response(json_encode($reply));
+		}
+		else
+		{
+			return new Response('{"success":false,"step":0,"message":"Invalid API version."}');
+		}
+	}
 
 	private function generateParameters()
 	{
@@ -51,7 +51,7 @@ class DefaultController extends Controller
 
 		$compiler_config = array();
 
-		foreach($parameters as $parameter)
+		foreach ($parameters as $parameter)
 		{
 			$compiler_config[$parameter] = $this->container->getParameter($parameter);
 		}
