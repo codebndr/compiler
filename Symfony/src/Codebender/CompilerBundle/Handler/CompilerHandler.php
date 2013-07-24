@@ -379,7 +379,7 @@ class CompilerHandler
 		// The default name of the output file.
 		$OUTPUT = $compiler_config["output"];
 		// Path to arduino-files repository.
-		$ROOT = $compiler_config["root"];
+		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
 		// The name of the Arduino skeleton file.
 		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
 
@@ -406,7 +406,7 @@ class CompilerHandler
 		$pid = ($variant == "leonardo") ? $request->build->pid : "";
 
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
-		$core_includes = " -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ROOT/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
+		$core_includes = " -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
 
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
@@ -429,14 +429,14 @@ class CompilerHandler
 
 		//TODO: remove the compiler-stuff dir when you remove the lib handling
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core", "$ROOT/compiler-stuff/v$version/hardware/arduino/variants/$variant");
+		$files["dir"] = array("$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/arduino/variants/$variant");
 
 		// Step 2: Preprocess Arduino source files.
 		foreach ($files["ino"] as $file)
 		{
 			//TODO: remove the compiler-stuff dir when you remove the lib handling
 			//TODO: make it compatible with non-default hardware (variants & cores)
-			if (!isset($skel) && ($skel = file_get_contents("$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
+			if (!isset($skel) && ($skel = file_get_contents("$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
 				return array(
 					"success" => false,
 					"step" => 2,
@@ -475,7 +475,7 @@ class CompilerHandler
 			}
 		}
 		$headers = array_unique($headers);
-		$new_directories = $this->add_directories($headers, array("$ROOT/libraries", "$ROOT/external-libraries"));
+		$new_directories = $this->add_directories($headers, array("$ARDUINO_CORES_DIR/libraries", "$ARDUINO_CORES_DIR/external-libraries"));
 		$files["dir"] = array_merge($files["dir"], $new_directories);
 		$include_directories = "";
 		foreach ($files["dir"] as $directory)
@@ -537,7 +537,7 @@ class CompilerHandler
 		// Step 5: Create objects for core files.
 		//TODO: remove the compiler-stuff dir when you remove the lib handling
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->create_objects($compiler_config, "$ROOT/compiler-stuff/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->create_objects($compiler_config, "$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
 		$files["o"] = array_merge($files["o"], $core_objects);
