@@ -17,6 +17,6 @@ Here's a list of open source projects we use
 * gcc-avr
 * avr binutils (avrsize)
 
-For development, we've used it on a variaty of Linux and Mac OS X machines.
+For development, we've used it on a variety of Linux and Mac OS X machines.
 
 For production, we are using Ubuntu Server 12.04, and we know it works perfectly with that, so we suggest using that as well.
