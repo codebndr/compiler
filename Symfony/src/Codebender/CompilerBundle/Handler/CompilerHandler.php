@@ -525,7 +525,7 @@ class CompilerHandler
 			if (count($files["o"]) != 1 || !$content)
 				return array(
 					"success" => false,
-					"step" => -1,
+					"step" => -1, //TODO: Fix this step?
 					"message" => "");
 			else
 				return array(
