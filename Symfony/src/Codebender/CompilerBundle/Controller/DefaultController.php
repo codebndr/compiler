@@ -20,7 +20,7 @@ class DefaultController extends Controller
 {
 	public function statusAction()
 	{
-		return new Response('{""success":true,status":"OK"}');
+		return new Response('{"success":true,"status":"OK"}');
 	}
 
 	public function indexAction($auth_key, $version)
