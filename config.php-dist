@@ -25,6 +25,7 @@ $compiler_config["arduino_version"] = "104";
 // avr-gcc (same as compiler_config["cc"]).
 $compiler_config["cc"] = "/usr/bin/avr-gcc";
 $compiler_config["cpp"] = "/usr/bin/avr-g++";
+$compiler_config["as"] = "/usr/bin/avr-gcc";
 $compiler_config["ld"] = "/usr/bin/avr-gcc";
 $compiler_config["clang"] = "/usr/bin/clang";
 $compiler_config["objcopy"] = "/usr/bin/avr-objcopy";
@@ -38,6 +39,7 @@ $compiler_config["size"] = "/usr/bin/avr-size";
 // "ldflags_tail".
 $compiler_config["cflags"] = "-Os -ffunction-sections -fdata-sections";
 $compiler_config["cppflags"] = "-Os -ffunction-sections -fdata-sections -fno-exceptions";
+$compiler_config["asflags"] = "-assembler-with-cpp";
 $compiler_config["ldflags"] = "-Os -Wl,--gc-sections";
 $compiler_config["ldflags_tail"] = "-lm -lc";
 $compiler_config["clang_flags"] = "-w -fsyntax-only -fcolor-diagnostics -I/usr/lib/avr/include";

@@ -206,7 +206,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			"pid" => $pid));
 
 	$object_files = array();
-	$sources = get_files_by_extension($directory, array("c", "cpp"));
+	$sources = get_files_by_extension($directory, array("c", "cpp", "S"));
 
 	foreach ($sources as $filename)
 	{
@@ -224,7 +224,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			if ($send_headers && !array_key_exists("files", $request_template))
 			{
 				$request_template["files"] = array();
-				$header_files = get_files_by_extension($directory, "h");
+				$header_files = get_files_by_extension($directory, array("h", "inc"));
 
 				foreach($header_files as $header_filename)
 				{
@@ -324,7 +324,7 @@ function extract_files($directory, $request_files)
 	// separated by "|" to be used in regular expressions. They are also
 	// used as keys in an array that will contain the paths of all the
 	// extracted files.
-	$EXTENSIONS = array("c", "cpp", "h", "ino", "o");
+	$EXTENSIONS = array("c", "cpp", "h", "inc", "ino", "o", "S");
 	$files = array();
 	foreach ($EXTENSIONS as $ext)
 		$files[$ext] = array();
@@ -479,6 +479,7 @@ function main($request)
 	// External binaries.
 	$CC = $compiler_config["cc"];
 	$CPP = $compiler_config["cpp"];
+	$AS = $compiler_config["as"];
 	$LD = $compiler_config["ld"];
 	$CLANG = $compiler_config["clang"];
 	$OBJCOPY = $compiler_config["objcopy"];
@@ -486,6 +487,7 @@ function main($request)
 	// Standard command-line arguments used by the binaries.
 	$CFLAGS = $compiler_config["cflags"];
 	$CPPFLAGS = $compiler_config["cppflags"];
+	$ASFLAGS = $compiler_config["asflags"];
 	$LDFLAGS = $compiler_config["ldflags"];
 	$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
 	$CLANG_FLAGS = $compiler_config["clang_flags"];
@@ -588,7 +590,7 @@ function main($request)
 
 	// Step 3, 4: Syntax-check and compile source files.
 	$libraries = array();
-	foreach(array("c", "cpp") as $ext)
+	foreach(array("c", "cpp", "S") as $ext)
 	{
 		foreach($files[$ext] as $file)
 		{
@@ -600,6 +602,8 @@ function main($request)
 				exec("$CC $CFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 			elseif ($ext == "cpp")
 				exec("$CPP $CPPFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+			elseif ($ext == "S")
+				exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 			if ($ret_compile)
 			{
 				unset($output);
