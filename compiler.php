@@ -34,7 +34,7 @@ be used when calling avr-gcc for compilation and linking. This is a recursive
 function; only the first two parameters should be used.
 
 The order of $search_paths is important. If a library can be found in multiple
-paths, the first on will be used. This allows to set priorities and override
+paths, the first one will be used. This allows to set priorities and override
 libraries.
 
 The structure of search paths is as follows: each path contains directories,
