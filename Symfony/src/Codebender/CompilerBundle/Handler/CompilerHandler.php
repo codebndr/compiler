@@ -410,12 +410,11 @@ class CompilerHandler
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
 
+		error_reporting(E_ALL & ~E_STRICT);
+
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
 		// default and is automatically removed upon execution completion.
-
-		error_reporting(E_ALL & ~E_STRICT);
-
 		$dir = System::mktemp("-t /tmp/ -d compiler.");
 
 		if (!$dir)
@@ -640,7 +639,7 @@ class CompilerHandler
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
-		foreach (array("mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
+		foreach (array("version", "mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
 			if (isset($request->build->$i) && escapeshellcmd($request->build->$i) != $request->build->$i)
 				return NULL;
 
