@@ -640,7 +640,7 @@ class CompilerHandler
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
-		foreach (array("mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
+		foreach (array("version", "mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
 			if (isset($request->build->$i) && escapeshellcmd($request->build->$i) != $request->build->$i)
 				return NULL;
 
