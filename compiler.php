@@ -311,9 +311,12 @@ function do_this($command)
 \return A list of files or a reply message in case of error.
 
 Takes the files structure from a compile request and creates each file in a
-specified directory. Also creates a new structure where each key is the file
-extension and the associated value an array containing the absolute paths of
-the file, minus the extension.
+specified directory. If requested, it may create additional directories and
+have the files placed inside them accordingly.
+
+Also creates a new structure where each key is the file extension and the
+associated value is an array containing the absolute paths of the file, minus
+the extension.
 
 In case of error, the return value is an array that has a key <b>success</b>
 and contains the response to be sent back to the user.
@@ -351,6 +354,17 @@ function extract_files($directory, $request_files)
 		$directories = explode("/", "$directory/$filename");
 		if (in_array("..", $directories))
 			return $failure_response;
+
+		if (strpos($filename, DIRECTORY_SEPARATOR))
+		{
+			$new_directory = pathinfo($filename, PATHINFO_DIRNAME);
+			if (!file_exists("$directory/$new_directory"))
+				mkdir("$directory/$new_directory", 0777, true);
+				// There is no reason to check whether mkdir()
+				// succeeded, given that the call to
+				// file_put_contents() that follows would fail
+				// as well.
+		}
 
 		if (file_put_contents("$directory/$filename", $content) === FALSE)
 			return $failure_response;
