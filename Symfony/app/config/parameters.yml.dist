@@ -24,6 +24,7 @@ parameters:
     # avr-gcc (same as cc).
     cc: "/usr/bin/avr-gcc"
     cpp: "/usr/bin/avr-g++"
+    as: "/usr/bin/avr-gcc";
     ld: "/usr/bin/avr-gcc"
     clang: "/usr/bin/clang"
     objcopy: "/usr/bin/avr-objcopy"
@@ -37,6 +38,7 @@ parameters:
     # "ldflags_tail".
     cflags: "-Os -ffunction-sections -fdata-sections"
     cppflags: "-Os -ffunction-sections -fdata-sections -fno-exceptions"
+    asflags: "-assembler-with-cpp";
     ldflags: "-Os -Wl,--gc-sections"
     ldflags_tail: "-lm -lc"
     clang_flags: "-w -fsyntax-only -fcolor-diagnostics"

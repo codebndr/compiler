@@ -35,7 +35,7 @@ class CompilerHandler
 	function; only the first two parameters should be used.
 
 	The order of $search_paths is important. If a library can be found in multiple
-	paths, the first on will be used. This allows to set priorities and override
+	paths, the first one will be used. This allows to set priorities and override
 	libraries.
 
 	The structure of search paths is as follows: each path contains directories,
@@ -114,7 +114,7 @@ class CompilerHandler
 				"pid" => $pid));
 
 		$object_files = array();
-		$sources = $this->get_files_by_extension($directory, array("c", "cpp"));
+		$sources = $this->get_files_by_extension($directory, array("c", "cpp", "S"));
 
 		foreach ($sources as $filename)
 		{
@@ -132,7 +132,7 @@ class CompilerHandler
 				if ($send_headers && !array_key_exists("files", $request_template))
 				{
 					$request_template["files"] = array();
-					$header_files = $this->get_files_by_extension($directory, "h");
+					$header_files = $this->get_files_by_extension($directory, array("h", "inc"));
 
 					foreach ($header_files as $header_filename)
 					{
@@ -211,7 +211,7 @@ class CompilerHandler
 		// separated by "|" to be used in regular expressions. They are also
 		// used as keys in an array that will contain the paths of all the
 		// extracted files.
-		$EXTENSIONS = array("c", "cpp", "h", "ino", "o");
+		$EXTENSIONS = array("c", "cpp", "h", "inc", "ino", "o", "S");
 		$files = array();
 		foreach ($EXTENSIONS as $ext)
 			$files[$ext] = array();
@@ -364,6 +364,7 @@ class CompilerHandler
 		// External binaries.
 		$CC = $compiler_config["cc"];
 		$CPP = $compiler_config["cpp"];
+		$AS = $compiler_config["as"];
 		$LD = $compiler_config["ld"];
 		$CLANG = $compiler_config["clang"];
 		$OBJCOPY = $compiler_config["objcopy"];
@@ -371,6 +372,7 @@ class CompilerHandler
 		// Standard command-line arguments used by the binaries.
 		$CFLAGS = $compiler_config["cflags"];
 		$CPPFLAGS = $compiler_config["cppflags"];
+		$ASFLAGS = $compiler_config["asflags"];
 		$LDFLAGS = $compiler_config["ldflags"];
 		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
 		$CLANG_FLAGS = $compiler_config["clang_flags"];
@@ -483,7 +485,7 @@ class CompilerHandler
 
 		// Step 3, 4: Syntax-check and compile source files.
 		$libraries = array();
-		foreach (array("c", "cpp") as $ext)
+		foreach (array("c", "cpp", "S") as $ext)
 		{
 			foreach ($files[$ext] as $file)
 			{
@@ -496,6 +498,8 @@ class CompilerHandler
 					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				elseif ($ext == "cpp")
 					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+				elseif ($ext == "S")
+					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				if ($ret_compile)
 				{
 					unset($output);
