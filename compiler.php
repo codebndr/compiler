@@ -341,11 +341,19 @@ function extract_files($directory, $request_files)
 		$filename = $file->filename;
 		$content = $file->content;
 
+		$failure_response = array(
+			"success" => false,
+			"step" => 1,
+			"message" => "Failed to extract file '$filename'.");
+
+		// Filenames may not use the special directory "..". This is a
+		// serious security risk.
+		$directories = explode("/", "$directory/$filename");
+		if (in_array("..", $directories))
+			return $failure_response;
+
 		if (file_put_contents("$directory/$filename", $content) === FALSE)
-			return array(
-				"success" => FALSE,
-				"step" => 1,
-				"message" => "Failed to extract file '$filename'.");
+			return $failure_response;
 
 		if (preg_match($REGEX, $filename, $matches))
 			$files[$matches[2]][] = "$directory/$matches[1]";
