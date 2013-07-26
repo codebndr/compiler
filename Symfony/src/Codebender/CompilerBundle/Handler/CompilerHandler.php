@@ -410,12 +410,12 @@ class CompilerHandler
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
 
-		// Create a temporary directory to place all the files needed to process
-		// the compile request. This directory is created in $TMPDIR or /tmp by
-		// default and is automatically removed upon execution completion.
 
 		error_reporting(E_ALL & ~E_STRICT);
 
+		// Create a temporary directory to place all the files needed to process
+		// the compile request. This directory is created in $TMPDIR or /tmp by
+		// default and is automatically removed upon execution completion.
 		$dir = System::mktemp("-t /tmp/ -d compiler.");
 
 		if (!$dir)
