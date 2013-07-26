@@ -606,7 +606,13 @@ function main($request)
 	$headers = array_unique($headers);
 	$new_directories = add_directories($headers, array("$ROOT/libraries", "$ROOT/external-libraries"));
 	$files["dir"] = array_merge($files["dir"], $new_directories);
-	$include_directories = "";
+
+	// Create command-line arguments for header search paths. Note that the
+	// current directory is added to eliminate the difference between <>
+	// and "" in include preprocessor directives.
+	$include_directories = "-I$dir";
+	if (file_exists("$dir/utility"))
+		$include_directories .= " -I$dir/utility";
 	foreach ($files["dir"] as $directory)
 		$include_directories .= " -I$directory";
 
