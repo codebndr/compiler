@@ -410,7 +410,6 @@ class CompilerHandler
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/compiler-stuff/v$version/hardware/tools/avr/avr/include ";
 
-
 		error_reporting(E_ALL & ~E_STRICT);
 
 		// Create a temporary directory to place all the files needed to process
