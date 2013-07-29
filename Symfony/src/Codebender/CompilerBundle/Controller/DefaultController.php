@@ -20,7 +20,7 @@ class DefaultController extends Controller
 {
 	public function statusAction()
 	{
-		return new Response('{"success":true,"status":"OK"}');
+		return new Response(json_encode(array("success" => true, "status" => "OK")));
 	}
 
 	public function indexAction($auth_key, $version)
@@ -29,7 +29,7 @@ class DefaultController extends Controller
 
 		if ($auth_key !== $params["auth_key"])
 		{
-			return new Response('{"success":false,"step":0,"message":"Invalid authorization key."}');
+			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
 		}
 
 		if ($version == "v1")
@@ -41,7 +41,7 @@ class DefaultController extends Controller
 		}
 		else
 		{
-			return new Response('{"success":false,"step":0,"message":"Invalid API version."}');
+			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
 		}
 	}
 
