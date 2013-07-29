@@ -37,6 +37,7 @@ class DefaultController extends Controller
 		// change the current Symfony root dir
 		chdir($this->get('kernel')->getRootDir()."/../");
 
+		//TODO: replace this with a less horrible way to handle phpunit
 		exec("phpunit -c app --stderr 2>&1", $output, $return_val);
 
 		return new Response(json_encode(array("success" => (bool) !$return_val, "message" => implode("\n", $output))));
