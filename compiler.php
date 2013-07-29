@@ -208,6 +208,15 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 	$object_files = array();
 	$sources = get_files_by_extension($directory, array("c", "cpp", "S"));
 
+	if (file_exists("$directory/utility"))
+	{
+		$utility_sources = get_files_by_extension("$directory/utility", array("c", "cpp", "S"));
+		foreach ($utility_sources as &$i)
+			$i = "utility/$i";
+		unset($i);
+		$sources = array_merge($sources, $utility_sources);
+	}
+
 	foreach ($sources as $filename)
 	{
 		// Do not proceed if this file should not be compiled.
@@ -217,7 +226,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 		// For every source file and set of build options there is a
 		// corresponding object file. If that object is missing, a new
 		// compile request is sent to the service.
-		$object_file = "$directory/${mcu}_${f_cpu}_${core}_${variant}" . (($variant == "leonardo") ? "_${vid}_${pid}" : "") . "__" . pathinfo($filename, PATHINFO_FILENAME);
+		$object_file = pathinfo("$directory/$filename", PATHINFO_DIRNAME) . "/${mcu}_${f_cpu}_${core}_${variant}" . (($variant == "leonardo") ? "_${vid}_${pid}" : "") . "__" . pathinfo($filename, PATHINFO_FILENAME);
 		if (!file_exists("$object_file.o"))
 		{
 			// Include any header files in the request.
@@ -226,10 +235,19 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 				$request_template["files"] = array();
 				$header_files = get_files_by_extension($directory, array("h", "inc"));
 
+				if (file_exists("$directory/utility"))
+				{
+					$utility_headers = get_files_by_extension("$directory/utility", array("h", "inc"));
+					foreach ($utility_headers as &$i)
+						$i = "utility/$i";
+					unset($i);
+					$header_files = array_merge($header_files, $utility_headers);
+				}
+
 				foreach($header_files as $header_filename)
 				{
 					$request_template["files"][] = array(
-						"filename" => pathinfo($header_filename, PATHINFO_BASENAME),
+						"filename" => $header_filename,
 						"content" => file_get_contents("$directory/$header_filename"));
 				}
 			}
@@ -237,7 +255,7 @@ function create_objects($directory, $exclude_files, $send_headers, $mcu, $f_cpu,
 			// Include the source file.
 			$request = $request_template;
 			$request["files"][] = array(
-				"filename" => pathinfo($filename, PATHINFO_BASENAME),
+				"filename" => $filename,
 				"content" => file_get_contents("$directory/$filename"));
 
 			// Perform a new compile request.
