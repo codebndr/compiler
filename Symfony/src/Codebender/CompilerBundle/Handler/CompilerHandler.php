@@ -517,7 +517,7 @@ class CompilerHandler
 			}
 		}
 		$headers = array_unique($headers);
-		$new_directories = $this->add_directories($headers, array("$ARDUINO_CORES_DIR/libraries", "$ARDUINO_CORES_DIR/external-libraries"));
+		$new_directories = $this->add_directories($headers, array("$ARDUINO_CORES_DIR/library-stuff/libraries", "$ARDUINO_CORES_DIR/library-stuff/external-libraries"));
 		$files["dir"] = array_merge($files["dir"], $new_directories);
 
 		// Create command-line arguments for header search paths. Note that the
