@@ -116,6 +116,15 @@ class CompilerHandler
 		$object_files = array();
 		$sources = $this->get_files_by_extension($directory, array("c", "cpp", "S"));
 
+		if (file_exists("$directory/utility"))
+		{
+			$utility_sources = $this->get_files_by_extension("$directory/utility", array("c", "cpp", "S"));
+			foreach ($utility_sources as &$i)
+				$i = "utility/$i";
+			unset($i);
+			$sources = array_merge($sources, $utility_sources);
+		}
+
 		foreach ($sources as $filename)
 		{
 			// Do not proceed if this file should not be compiled.
@@ -125,7 +134,7 @@ class CompilerHandler
 			// For every source file and set of build options there is a
 			// corresponding object file. If that object is missing, a new
 			// compile request is sent to the service.
-			$object_file = "$directory/${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."__".pathinfo($filename, PATHINFO_FILENAME);
+			$object_file = pathinfo("$directory/$filename", PATHINFO_DIRNAME)."/${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."__".pathinfo($filename, PATHINFO_FILENAME);
 			if (!file_exists("$object_file.o"))
 			{
 				// Include any header files in the request.
@@ -134,10 +143,19 @@ class CompilerHandler
 					$request_template["files"] = array();
 					$header_files = $this->get_files_by_extension($directory, array("h", "inc"));
 
+					if (file_exists("$directory/utility"))
+					{
+						$utility_headers = $this->get_files_by_extension("$directory/utility", array("h", "inc"));
+						foreach ($utility_headers as &$i)
+							$i = "utility/$i";
+						unset($i);
+						$header_files = array_merge($header_files, $utility_headers);
+					}
+
 					foreach ($header_files as $header_filename)
 					{
 						$request_template["files"][] = array(
-							"filename" => pathinfo($header_filename, PATHINFO_BASENAME),
+							"filename" => $header_filename,
 							"content" => file_get_contents("$directory/$header_filename"));
 					}
 				}
@@ -145,7 +163,7 @@ class CompilerHandler
 				// Include the source file.
 				$request = $request_template;
 				$request["files"][] = array(
-					"filename" => pathinfo($filename, PATHINFO_BASENAME),
+					"filename" => $filename,
 					"content" => file_get_contents("$directory/$filename"));
 
 				// Perform a new compile request.
@@ -163,6 +181,7 @@ class CompilerHandler
 						"step" => 5,
 						"message" => $reply["message"]);
 
+				//TODO: Make a check here and fail gracefully
 				file_put_contents("$object_file.o", base64_decode($reply["output"]));
 //				curl_close($ch);
 			}
@@ -198,9 +217,12 @@ class CompilerHandler
 	\return A list of files or a reply message in case of error.
 
 	Takes the files structure from a compile request and creates each file in a
-	specified directory. Also creates a new structure where each key is the file
-	extension and the associated value an array containing the absolute paths of
-	the file, minus the extension.
+	specified directory. If requested, it may create additional directories and
+	have the files placed inside them accordingly.
+
+	Also creates a new structure where each key is the file extension and the
+	associated value is an array containing the absolute paths of the file, minus
+	the extension.
 
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
@@ -228,11 +250,30 @@ class CompilerHandler
 			$filename = $file->filename;
 			$content = $file->content;
 
+			$failure_response = array(
+				"success" => false,
+				"step" => 1,
+				"message" => "Failed to extract file '$filename'.");
+
+			// Filenames may not use the special directory "..". This is a
+			// serious security risk.
+			$directories = explode("/", "$directory/$filename");
+			if (in_array("..", $directories))
+				return $failure_response;
+
+			if (strpos($filename, DIRECTORY_SEPARATOR))
+			{
+				$new_directory = pathinfo($filename, PATHINFO_DIRNAME);
+				if (!file_exists("$directory/$new_directory"))
+					mkdir("$directory/$new_directory", 0777, true);
+				// There is no reason to check whether mkdir()
+				// succeeded, given that the call to
+				// file_put_contents() that follows would fail
+				// as well.
+			}
+
 			if (file_put_contents("$directory/$filename", $content) === false)
-				return array(
-					"success" => false,
-					"step" => 1,
-					"message" => "Failed to extract file '$filename'.");
+				return $failure_response;
 
 			if (preg_match($REGEX, $filename, $matches))
 				$files[$matches[2]][] = "$directory/$matches[1]";
@@ -478,7 +519,13 @@ class CompilerHandler
 		$headers = array_unique($headers);
 		$new_directories = $this->add_directories($headers, array("$ARDUINO_CORES_DIR/libraries", "$ARDUINO_CORES_DIR/external-libraries"));
 		$files["dir"] = array_merge($files["dir"], $new_directories);
-		$include_directories = "";
+
+		// Create command-line arguments for header search paths. Note that the
+		// current directory is added to eliminate the difference between <>
+		// and "" in include preprocessor directives.
+		$include_directories = "-I$dir";
+		if (file_exists("$dir/utility"))
+			$include_directories .= " -I$dir/utility";
 		foreach ($files["dir"] as $directory)
 			$include_directories .= " -I$directory";
 
