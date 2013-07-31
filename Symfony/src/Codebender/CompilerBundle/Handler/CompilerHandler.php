@@ -81,37 +81,9 @@ class CompilerHandler
 			$CPPFLAGS .= " -fsyntax-only";
 		}
 
-		foreach (array("c", "cpp", "S") as $ext)
-		{
-			foreach ($files[$ext] as $file)
-			{
-				// From hereon, $file is shell escaped and thus should only be used in calls
-				// to exec().
-				$file = escapeshellarg($file);
-
-				//replace exec() calls with $this->utility->debug_exec() for debugging
-				if ($ext == "c")
-					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-				elseif ($ext == "cpp")
-					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-				elseif ($ext == "S")
-					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-				if ($ret_compile)
-				{
-					unset($output);
-					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-					$output = str_replace("$dir/", "", $output); // XXX
-					$output = $this->postproc->ansi_to_html(implode("\n", $output));
-					return array(
-						"success" => false,
-						"step" => 4,
-						"message" => $output);
-				}
-				unset($output);
-
-				$files["o"][] = array_shift($files[$ext]);
-			}
-		}
+		$tmp = $this->doCompile($files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories);
+		if ($tmp["success"] == false)
+			return $tmp;
 
 		if ($format == "syntax")
 			return array(
@@ -289,6 +261,43 @@ class CompilerHandler
 			$include_directories .= " -I$dir/utility";
 		foreach ($files["dir"] as $directory)
 			$include_directories .= " -I$directory";
+	}
+
+	private function doCompile(&$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories)
+	{
+		foreach (array("c", "cpp", "S") as $ext)
+		{
+			foreach ($files[$ext] as $file)
+			{
+				// From hereon, $file is shell escaped and thus should only be used in calls
+				// to exec().
+				$file = escapeshellarg($file);
+
+				//replace exec() calls with $this->utility->debug_exec() for debugging
+				if ($ext == "c")
+					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+				elseif ($ext == "cpp")
+					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+				elseif ($ext == "S")
+					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+				if (isset($ret_compile) && $ret_compile)
+				{
+					unset($output);
+					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					$output = str_replace("$dir/", "", $output); // XXX
+					$output = $this->postproc->ansi_to_html(implode("\n", $output));
+					return array(
+						"success" => false,
+						"step" => 4,
+						"message" => $output);
+				}
+				unset($output);
+
+				$files["o"][] = array_shift($files[$ext]);
+			}
+		}
+
+		return array("success" => true);
 	}
 
 	private function set_values($compiler_config,
