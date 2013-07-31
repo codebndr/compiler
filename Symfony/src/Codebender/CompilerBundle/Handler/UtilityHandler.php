@@ -170,7 +170,6 @@ class UtilityHandler
 
 				//TODO: Make a check here and fail gracefully
 				file_put_contents("$object_file.o", base64_decode($reply["output"]));
-//				curl_close($ch);
 			}
 
 			$object_files[] = $object_file;
