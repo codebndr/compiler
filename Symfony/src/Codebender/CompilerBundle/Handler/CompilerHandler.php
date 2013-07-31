@@ -64,8 +64,11 @@ class CompilerHandler
 			return $tmp;
 
 		// Step 2: Preprocess Arduino source files.
-		$this->preprocessIno($files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core);
+		$tmp = $this->preprocessIno($files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core);
+		if ($tmp["success"] == false)
+			return $tmp;
 
+		//TODO: Add check for results
 		$this->preprocessHeaders($files, $include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant);
 
 		// Step 3, 4: Syntax-check and compile source files.
@@ -253,6 +256,8 @@ class CompilerHandler
 
 			$files["cpp"][] = array_shift($files["ino"]);
 		}
+
+		return array("success" => true);
 	}
 
 	//TODO: Tackle errors and fail gracefully. Might need a new "step" number
