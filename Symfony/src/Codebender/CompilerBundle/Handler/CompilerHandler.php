@@ -29,31 +29,9 @@ class CompilerHandler
 	function main($request, $compiler_config)
 	{
 
-		// External binaries.
-		$CC = $compiler_config["cc"];
-		$CPP = $compiler_config["cpp"];
-		$AS = $compiler_config["as"];
-		$LD = $compiler_config["ld"];
-		$CLANG = $compiler_config["clang"];
-		$OBJCOPY = $compiler_config["objcopy"];
-		$SIZE = $compiler_config["size"];
-		// Standard command-line arguments used by the binaries.
-		$CFLAGS = $compiler_config["cflags"];
-		$CPPFLAGS = $compiler_config["cppflags"];
-		$ASFLAGS = $compiler_config["asflags"];
-		$LDFLAGS = $compiler_config["ldflags"];
-		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
-		$CLANG_FLAGS = $compiler_config["clang_flags"];
-		$OBJCOPY_FLAGS = $compiler_config["objcopy_flags"];
-		$SIZE_FLAGS = $compiler_config["size_flags"];
-		// The default name of the output file.
-		$OUTPUT = $compiler_config["output"];
-		// Path to arduino-core-files repository.
-		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
-		// The name of the Arduino skeleton file.
-		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
-		// Path to arduino-library-files repository.
-		$ARDUINO_LIBS_DIR = $compiler_config["arduino_libs_dir"];
+		$this->set_values($compiler_config,
+			$CC, $CPP, $AS, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
+			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $ARDUINO_LIBS_DIR);
 
 		$preproc = new PreprocessingHandler();
 		$postproc = new PostprocessingHandler();
@@ -278,5 +256,37 @@ class CompilerHandler
 				"time" => microtime(true) - $start_time,
 				"size" => $size[0],
 				"output" => $content);
+	}
+
+	private function set_values($compiler_config,
+	                            &$CC, &$CPP, &$AS, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
+	                            &$ASFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
+	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL, &$ARDUINO_LIBS_DIR)
+	{
+		// External binaries.
+		$CC = $compiler_config["cc"];
+		$CPP = $compiler_config["cpp"];
+		$AS = $compiler_config["as"];
+		$LD = $compiler_config["ld"];
+		$CLANG = $compiler_config["clang"];
+		$OBJCOPY = $compiler_config["objcopy"];
+		$SIZE = $compiler_config["size"];
+		// Standard command-line arguments used by the binaries.
+		$CFLAGS = $compiler_config["cflags"];
+		$CPPFLAGS = $compiler_config["cppflags"];
+		$ASFLAGS = $compiler_config["asflags"];
+		$LDFLAGS = $compiler_config["ldflags"];
+		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
+		$CLANG_FLAGS = $compiler_config["clang_flags"];
+		$OBJCOPY_FLAGS = $compiler_config["objcopy_flags"];
+		$SIZE_FLAGS = $compiler_config["size_flags"];
+		// The default name of the output file.
+		$OUTPUT = $compiler_config["output"];
+		// Path to arduino-core-files repository.
+		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
+		// The name of the Arduino skeleton file.
+		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
+		// Path to arduino-library-files repository.
+		$ARDUINO_LIBS_DIR = $compiler_config["arduino_libs_dir"];
 	}
 }
