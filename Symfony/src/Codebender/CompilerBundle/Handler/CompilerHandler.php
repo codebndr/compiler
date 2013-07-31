@@ -201,7 +201,7 @@ class CompilerHandler
 				"output" => $content);
 	}
 
-	public function requestValid(&$request)
+	private function requestValid(&$request)
 	{
 		$request = $this->preproc->validate_input($request);
 		if (!$request)
@@ -212,7 +212,7 @@ class CompilerHandler
 		else return array("success" => true);
 	}
 
-	public function extractFiles($request, &$dir, &$files)
+	private function extractFiles($request, &$dir, &$files)
 	{
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
@@ -233,7 +233,7 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	public function preprocessIno(&$files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core)
+	private function preprocessIno(&$files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core)
 	{
 		foreach ($files["ino"] as $file)
 		{
