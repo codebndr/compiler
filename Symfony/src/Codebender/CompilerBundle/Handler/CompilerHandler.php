@@ -68,10 +68,12 @@ class CompilerHandler
 		if ($tmp["success"] == false)
 			return $tmp;
 
-		//TODO: Add check for results
-		$this->preprocessHeaders($files, $include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant);
+		// Step 3: Preprocess Header includes.
+		$tmp = $this->preprocessHeaders($files, $include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant);
+		if ($tmp["success"] == false)
+			return $tmp;
 
-		// Step 3, 4: Syntax-check and compile source files.
+		// Step 4: Syntax-check and compile source files.
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
 
@@ -232,35 +234,43 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	//TODO: Tackle errors and fail gracefully. Might need a new "step" number
 	public function preprocessHeaders(&$files, &$include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant)
 	{
-		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
-
-		// Scan files for headers and locate the corresponding include paths.
-		$headers = array();
-		foreach (array("c", "cpp", "h") as $ext)
+		try
 		{
-			foreach ($files[$ext] as $file)
+			//TODO: make it compatible with non-default hardware (variants & cores)
+			$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
+
+			// Scan files for headers and locate the corresponding include paths.
+			$headers = array();
+			foreach (array("c", "cpp", "h") as $ext)
 			{
-				$code = file_get_contents("$file.$ext");
-				$headers = array_merge($headers, $this->utility->read_headers($code));
+				foreach ($files[$ext] as $file)
+				{
+					$code = file_get_contents("$file.$ext");
+					$headers = array_merge($headers, $this->utility->read_headers($code));
+				}
 			}
+
+			$headers = array_unique($headers);
+			$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
+			$files["dir"] = array_merge($files["dir"], $new_directories);
+
+			// Create command-line arguments for header search paths. Note that the
+			// current directory is added to eliminate the difference between <>
+			// and "" in include preprocessor directives.
+			$include_directories = "-I$dir";
+			if (file_exists("$dir/utility"))
+				$include_directories .= " -I$dir/utility";
+			foreach ($files["dir"] as $directory)
+				$include_directories .= " -I$directory";
+		}
+		catch(\Exception $e)
+		{
+			return array("success" => false, "step" => 3, "message" => "Unknown Error:\n".$e->getMessage());
 		}
 
-		$headers = array_unique($headers);
-		$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
-		$files["dir"] = array_merge($files["dir"], $new_directories);
-
-		// Create command-line arguments for header search paths. Note that the
-		// current directory is added to eliminate the difference between <>
-		// and "" in include preprocessor directives.
-		$include_directories = "-I$dir";
-		if (file_exists("$dir/utility"))
-			$include_directories .= " -I$dir/utility";
-		foreach ($files["dir"] as $directory)
-			$include_directories .= " -I$directory";
+		return array("success" => true);
 	}
 
 	private function doCompile(&$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories)
