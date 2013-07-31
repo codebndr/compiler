@@ -48,31 +48,24 @@ class CompilerHandler
 		$start_time = microtime(true);
 
 		// Step 0: Reject the request if the input data is not valid.
+		//TODO: Replace $tmp variable name
 		$tmp = $this->requestValid($request);
 		if($tmp["success"] == false)
 			return $tmp;
 
 		$this->set_variables($request, $format, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
-		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
+		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
+		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
 
 		// Step 1: Extract the files included in the request.
+		$tmp = $this->extractFiles($request, $dir, $files);
+		if ($tmp["success"] == false)
+			return $tmp;
 
-		// Create a temporary directory to place all the files needed to process
-		// the compile request. This directory is created in $TMPDIR or /tmp by
-		// default and is automatically removed upon execution completion.
-		$dir = System::mktemp("-t /tmp/ -d compiler.");
 
-		if (!$dir)
-			return array(
-				"success" => false,
-				"step" => 1,
-				"message" => "Failed to create temporary directory.");
-
-		$files = $this->utility->extract_files($dir, $request->files);
-		if (array_key_exists("success", $files))
-			return $files;
+		//TODO: make it compatible with non-default hardware (variants & cores)
+		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
 
 		// Step 2: Preprocess Arduino source files.
 		foreach ($files["ino"] as $file)
@@ -96,9 +89,6 @@ class CompilerHandler
 
 			$files["cpp"][] = array_shift($files["ino"]);
 		}
-
-		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
-		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
 
 		if ($format == "syntax")
 		{
@@ -188,6 +178,7 @@ class CompilerHandler
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
 		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
 		$files["o"] = array_merge($files["o"], $core_objects);
@@ -199,6 +190,7 @@ class CompilerHandler
 		foreach ($files["dir"] as $directory)
 		{
 			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
 			$files["o"] = array_merge($files["o"], $library_objects);
@@ -259,6 +251,27 @@ class CompilerHandler
 				"step" => 0,
 				"message" => "Invalid input.");
 		else return array("success" => true);
+	}
+
+	public function extractFiles($request, &$dir, &$files)
+	{
+		// Create a temporary directory to place all the files needed to process
+		// the compile request. This directory is created in $TMPDIR or /tmp by
+		// default and is automatically removed upon execution completion.
+		$dir = System::mktemp("-t /tmp/ -d compiler.");
+
+		if (!$dir)
+			return array(
+				"success" => false,
+				"step" => 1,
+				"message" => "Failed to create temporary directory.");
+
+		$files = $this->utility->extract_files($dir, $request->files);
+		//TODO: Upgrade this
+		if (array_key_exists("success", $files))
+			return $files;
+
+		return array("success" => true);
 	}
 
 	private function set_values($compiler_config,
