@@ -65,6 +65,15 @@ class DefaultController extends Controller
 		}
 	}
 
+	/**
+	\brief Creates a list of the configuration parameters to be used in the compilation process.
+
+	\return An array of the parameters.
+
+	This function accesses the Symfony global configuration parameters, and creates an array that our handlers (which
+	don't have access to them) can use them.
+
+	 */
 	private function generateParameters()
 	{
 		$parameters = array("cc", "cpp", "as", "ld", "clang", "objcopy", "size", "cflags", "cppflags", "asflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "arduino_cores_dir", "arduino_skel", "arduino_libs_dir", "auth_key");
