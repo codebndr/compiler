@@ -63,10 +63,6 @@ class CompilerHandler
 		if ($tmp["success"] == false)
 			return $tmp;
 
-
-		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
-
 		// Step 2: Preprocess Arduino source files.
 		foreach ($files["ino"] as $file)
 		{
@@ -90,6 +86,9 @@ class CompilerHandler
 			$files["cpp"][] = array_shift($files["ino"]);
 		}
 
+		//TODO: make it compatible with non-default hardware (variants & cores)
+		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
+
 		if ($format == "syntax")
 		{
 			$CFLAGS .= " -fsyntax-only";
@@ -106,6 +105,7 @@ class CompilerHandler
 				$headers = array_merge($headers, $this->utility->read_headers($code));
 			}
 		}
+
 		$headers = array_unique($headers);
 		$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
 		$files["dir"] = array_merge($files["dir"], $new_directories);
