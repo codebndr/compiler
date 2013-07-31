@@ -168,12 +168,6 @@ class CompilerHandler
 
 				// Perform a new compile request.
 				$reply = $this->main(json_encode($request), $compiler_config);
-//				$ch = curl_init();
-//				curl_setopt($ch, CURLOPT_URL, $this->current_page_url());
-//				curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($request));
-//				curl_setopt($ch, CURLOPT_POST, true);
-//				curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-//				$reply = json_decode(curl_exec($ch));
 
 				if ($reply["success"] == false)
 					return array(
@@ -191,22 +185,6 @@ class CompilerHandler
 
 		// All object files created successfully.
 		return $object_files;
-	}
-
-	/**
-	\brief Returns the current page's URL, as requested by the client.
-
-	\return The current page's URL.
-
-	The compiler backend makes a request to itself to create the core and library
-	object files. This creates some overhead, but simplifies the flow of execution.
-
-	This function returns the URL of the current page. This way it is more robust
-	and independent of the server the compiler is used on.
-	 */
-	function current_page_url()
-	{
-		return "http".(array_key_exists("HTTPS", $_SERVER) ? "s" : "")."://".$_SERVER["SERVER_NAME"].":".$_SERVER["SERVER_PORT"].$_SERVER["REQUEST_URI"];
 	}
 
 	/**
@@ -692,7 +670,6 @@ class CompilerHandler
 		// Request is valid.
 		return $request;
 	}
-
 
 	/**
 	\brief Converts text with ANSI color codes to HTML.
