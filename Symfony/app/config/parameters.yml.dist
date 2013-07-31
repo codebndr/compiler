@@ -5,14 +5,14 @@ parameters:
 #    database_name:     symfony
 #    database_user:     root
 #    database_password: ~
-
-    mailer_transport:  smtp
-    mailer_host:       127.0.0.1
-    mailer_user:       ~
-    mailer_password:   ~
+#
+#    mailer_transport:  smtp
+#    mailer_host:       127.0.0.1
+#    mailer_user:       ~
+#    mailer_password:   ~
 
     locale:            en
-    secret:            ThisTokenIsNotSoSecretChangeIt
+    secret:            CSRF-Token-Not-Really-Used
 
     # Path to cores.
     arduino_cores_dir: "/opt/codebender/codebender-arduino-core-files"
