@@ -77,13 +77,7 @@ class CompilerHandler
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
 
-		if ($format == "syntax")
-		{
-			$CFLAGS .= " -fsyntax-only";
-			$CPPFLAGS .= " -fsyntax-only";
-		}
-
-		$tmp = $this->doCompile($files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories);
+		$tmp = $this->doCompile($files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format);
 		if ($tmp["success"] == false)
 			return $tmp;
 
@@ -245,8 +239,14 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	private function doCompile(&$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories)
+	private function doCompile(&$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format)
 	{
+		if ($format == "syntax")
+		{
+			$CFLAGS .= " -fsyntax-only";
+			$CPPFLAGS .= " -fsyntax-only";
+		}
+
 		foreach (array("c", "cpp", "S") as $ext)
 		{
 			foreach ($files[$ext] as $file)
