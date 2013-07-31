@@ -284,94 +284,6 @@ class CompilerHandler
 	}
 
 	/**
-	\brief Generates valid C++ code from Arduino source code.
-
-	\param string $skel The contents of the Arduino skeleton file.
-	\param string $code The input source code.
-	\param string $filename (optional) The name of the input file.
-	\return Valid C++ code, the result of processing the input.
-
-	Arduino source code files are simplified C++ files. Thus, some preprocessing has
-	to be done to convert them to valid C++ code for the compiler to read. Some of
-	these "simplifications" include:
-	- lack of a <b>main()</b> function
-	- lack of function prototypes
-
-	A skeleton file is provided in the Arduino core files that contains a
-	<b>main()</b> function. Its contents have to be at the top of the output file.
-	The prototypes of the functions defined in the input file should be added
-	beneath that. This is required to avoid compiler errors regarding undefined
-	functions.
-
-	The programmer is not aware of this modifications to his code. In case of a
-	compiler error, the line numbering would be wrong. To avoid this issue, a
-	<b>\#line</b> preprocessor directive is used. Thus it is ensured that the line
-	numbering in the output file will be the same as the input file.
-
-	A regular expression is used to match function definitions in the input file.
-	Consequently this process will never be as sophisticated as a lexical analyzer.
-	Thus, some valid constructs cannot be matched. These include:
-	- definitions that are split across multiple lines
-	- definitions for variadic functions
-	- typedefs for the return value or the parameters
-	- pointers to functions
-	- arrays, structs, and unions
-	 */
-	function ino_to_cpp($skel, $code, $filename = NULL)
-	{
-		// Supported primitives for parameters and return values. They are put
-		// in a string, separated by "|" to be used in regular expressions.
-		// Type "void" is put in its own variable to be more readable later on
-		// in $REGEX.
-		$VOID = "void";
-		$TYPES = array($VOID, "int", "char", "word", "short", "long", "float",
-			"byte", "boolean", "uint8_t", "uint16_t", "uint32_t", "int8_t",
-			"int16_t", "int32_t");
-		$TYPES = implode("|", $TYPES);
-		// Type qualifiers for declarators.
-		$QUALS = array("const", "volatile");
-		$QUALS = implode("|", $QUALS);
-		// Type specifiers for declarators.
-		$SPECS = array("signed", "unsigned");
-		$SPECS = implode("|", $SPECS);
-		// Matches C/C++ function definitions, has high tolerance to whitespace
-		// characters. Grouping constructs are used but no value is stored in
-		// the registers.
-		//
-		// The limitations of this regular expression are described in the
-		// comments above the function definition.
-		//
-		// Examples:
-		// int foo()
-		// int foo(void)
-		// int foo(int bar)
-		// int *foo(const int bar)
-		// int *foo(volatile int *bar, int baz)
-		$REGEX = "/^\s*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*\((?:\s*(?:$VOID|((?:$QUALS)\s*)*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*,?)\s*)*\)/";
-
-		$new_code = "";
-
-		// Firstly, include the contents of the skeleton file.
-		$new_code .= $skel;
-
-		// Secondly, generate and add the function prototypes.
-		foreach (explode("\n", $code) as $line)
-			if (preg_match($REGEX, $line, $matches))
-				$new_code .= $matches[0].";\n";
-
-		// Thirdly, add a preprocessor directive for line numbering.
-		if ($filename)
-			$new_code .= "#line 1 \"$filename\"\n";
-		else
-			$new_code .= "#line 1\n";
-
-		// Lastly, include the input source code.
-		$new_code .= $code;
-
-		return $new_code;
-	}
-
-	/**
 	\brief Processes a compile request.
 
 	\param string $request The body of the POST request.
@@ -406,10 +318,13 @@ class CompilerHandler
 		// Path to arduino-library-files repository.
 		$ARDUINO_LIBS_DIR = $compiler_config["arduino_libs_dir"];
 
+		$preproc = new PreprocessingHandler();
+		$postproc = new PostprocessingHandler();
+
 		$start_time = microtime(true);
 
 		// Step 0: Reject the request if the input data is not valid.
-		$request = $this->validate_input($request);
+		$request = $preproc->validate_input($request);
 		if (!$request)
 			return array(
 				"success" => false,
@@ -463,7 +378,7 @@ class CompilerHandler
 					"message" => "Failed to open Arduino skeleton file.");
 
 			$code = file_get_contents("$file.ino");
-			$new_code = $this->ino_to_cpp($skel, $code, "$file.ino");
+			$new_code = $preproc->ino_to_cpp($skel, $code, "$file.ino");
 			$ret = file_put_contents("$file.cpp", $new_code);
 
 			if ($code === false || !$new_code || !$ret)
@@ -529,7 +444,7 @@ class CompilerHandler
 					unset($output);
 					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 					$output = str_replace("$dir/", "", $output); // XXX
-					$output = $this->ansi_to_html(implode("\n", $output));
+					$output = $postproc->ansi_to_html(implode("\n", $output));
 					return array(
 						"success" => false,
 						"step" => 4,
@@ -625,159 +540,6 @@ class CompilerHandler
 				"time" => microtime(true) - $start_time,
 				"size" => $size[0],
 				"output" => $content);
-	}
-
-	/**
-	\brief Decodes and performs validation checks on input data.
-
-	\param string $request The JSON-encoded compile request.
-	\return The value encoded in JSON in appropriate PHP type or <b>NULL</b>.
-	 */
-	function validate_input($request)
-	{
-		$request = json_decode($request);
-
-		// Request must be successfully decoded.
-		if ($request === NULL)
-			return NULL;
-		// Request must contain certain entities.
-		if (!(array_key_exists("format", $request)
-			&& array_key_exists("version", $request)
-			&& array_key_exists("build", $request)
-			&& array_key_exists("files", $request)
-			&& is_object($request->build)
-			&& array_key_exists("mcu", $request->build)
-			&& array_key_exists("f_cpu", $request->build)
-			&& array_key_exists("core", $request->build)
-			&& array_key_exists("variant", $request->build)
-			&& is_array($request->files))
-		)
-			return NULL;
-
-		// Leonardo-specific flags.
-		if ($request->build->variant == "leonardo")
-			if (!(array_key_exists("vid", $request->build)
-				&& array_key_exists("pid", $request->build))
-			)
-				return NULL;
-
-		// Values used as command-line arguments may not contain any special
-		// characters. This is a serious security risk.
-		foreach (array("version", "mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
-			if (isset($request->build->$i) && escapeshellcmd($request->build->$i) != $request->build->$i)
-				return NULL;
-
-		// Request is valid.
-		return $request;
-	}
-
-	/**
-	\brief Converts text with ANSI color codes to HTML.
-
-	\param string $text The string to convert.
-	\return A string with HTML tags.
-
-	Takes a string with ANSI color codes and converts them to HTML tags. Can be
-	useful for displaying the output of terminal commands on a web page. Handles
-	codes that modify the color (foreground and background) as well as the format
-	(bold, italics, underline and strikethrough). Other codes are ignored.
-
-	An ANSI escape sequence begins with the characters <b>^[</b> (hex 0x1B) and
-	<b>[</b>, and ends with <b>m</b>. The color code is placed in between. Multiple
-	color codes can be included, separated by semicolon.
-	 */
-	function ansi_to_html($text)
-	{
-		$FORMAT = array(
-			0 => NULL, // reset modes to default
-			1 => "b", // bold
-			3 => "i", // italics
-			4 => "u", // underline
-			9 => "del", // strikethrough
-			30 => "black", // foreground colors
-			31 => "red",
-			32 => "green",
-			33 => "yellow",
-			34 => "blue",
-			35 => "purple",
-			36 => "cyan",
-			37 => "white",
-			40 => "black", // background colors
-			41 => "red",
-			42 => "green",
-			43 => "yellow",
-			44 => "blue",
-			45 => "purple",
-			46 => "cyan",
-			47 => "white");
-		// Matches ANSI escape sequences, starting with ^[[ and ending with m.
-		// Valid characters inbetween are numbers and single semicolons. These
-		// characters are stored in register 1.
-		//
-		// Examples: ^[[1;31m ^[[0m
-		$REGEX = "/\x1B\[((?:\d+;?)*)m/";
-
-		$text = htmlspecialchars($text);
-		$stack = array();
-
-		// ANSI escape sequences are located in the input text. Each color code
-		// is replaced with the appropriate HTML tag. At the same time, the
-		// corresponding closing tag is pushed on to the stack. When the reset
-		// code '0' is found, it is replaced with all the closing tags in the
-		// stack (LIFO order).
-		while (preg_match($REGEX, $text, $matches))
-		{
-			$replacement = "";
-			foreach (explode(";", $matches[1]) as $mode)
-			{
-				switch ($mode)
-				{
-					case 0:
-						while ($stack)
-							$replacement .= array_pop($stack);
-						break;
-					case 1:
-					case 3:
-					case 4:
-					case 9:
-						$replacement .= "<$FORMAT[$mode]>";
-						array_push($stack, "</$FORMAT[$mode]>");
-						break;
-					case 30:
-					case 31:
-					case 32:
-					case 33:
-					case 34:
-					case 35:
-					case 36:
-					case 37:
-						$replacement .= "<font style=\"color: $FORMAT[$mode]\">";
-						array_push($stack, "</font>");
-						break;
-					case 40:
-					case 41:
-					case 42:
-					case 43:
-					case 44:
-					case 45:
-					case 46:
-					case 47:
-						$replacement .= "<font style=\"background-color: $FORMAT[$mode]\">";
-						array_push($stack, "</font>");
-						break;
-					default:
-						error_log(__FUNCTION__."(): Unhandled ANSI code '$mode' in ".__FILE__);
-						break;
-				}
-			}
-			$text = preg_replace($REGEX, $replacement, $text, 1);
-		}
-
-		// Close any tags left in the stack, in case the input text didn't.
-		while ($stack)
-			$text .= array_pop($stack);
-
-		return $text;
 	}
 
 	/**
