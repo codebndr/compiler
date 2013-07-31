@@ -64,30 +64,13 @@ class CompilerHandler
 			return $tmp;
 
 		// Step 2: Preprocess Arduino source files.
-		foreach ($files["ino"] as $file)
-		{
-			//TODO: make it compatible with non-default hardware (variants & cores)
-			if (!isset($skel) && ($skel = file_get_contents("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
-				return array(
-					"success" => false,
-					"step" => 2,
-					"message" => "Failed to open Arduino skeleton file.");
+		$this->preprocessIno($files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core);
 
-			$code = file_get_contents("$file.ino");
-			$new_code = $this->preproc->ino_to_cpp($skel, $code, "$file.ino");
-			$ret = file_put_contents("$file.cpp", $new_code);
+		$this->preprocessHeaders($files, $include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant);
 
-			if ($code === false || !$new_code || !$ret)
-				return array(
-					"success" => false,
-					"step" => 2,
-					"message" => "Failed to preprocess file '$file.ino'.");
-
-			$files["cpp"][] = array_shift($files["ino"]);
-		}
-
-		//TODO: make it compatible with non-default hardware (variants & cores)
-		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
+		// Step 3, 4: Syntax-check and compile source files.
+		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
+		$core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
 
 		if ($format == "syntax")
 		{
@@ -95,33 +78,6 @@ class CompilerHandler
 			$CPPFLAGS .= " -fsyntax-only";
 		}
 
-		// Scan files for headers and locate the corresponding include paths.
-		$headers = array();
-		foreach (array("c", "cpp", "h") as $ext)
-		{
-			foreach ($files[$ext] as $file)
-			{
-				$code = file_get_contents("$file.$ext");
-				$headers = array_merge($headers, $this->utility->read_headers($code));
-			}
-		}
-
-		$headers = array_unique($headers);
-		$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
-		$files["dir"] = array_merge($files["dir"], $new_directories);
-
-		// Create command-line arguments for header search paths. Note that the
-		// current directory is added to eliminate the difference between <>
-		// and "" in include preprocessor directives.
-		$include_directories = "-I$dir";
-		if (file_exists("$dir/utility"))
-			$include_directories .= " -I$dir/utility";
-		foreach ($files["dir"] as $directory)
-			$include_directories .= " -I$directory";
-
-		// Step 3, 4: Syntax-check and compile source files.
-		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
-		$core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
 		foreach (array("c", "cpp", "S") as $ext)
 		{
 			foreach ($files[$ext] as $file)
@@ -272,6 +228,62 @@ class CompilerHandler
 			return $files;
 
 		return array("success" => true);
+	}
+
+	public function preprocessIno(&$files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core)
+	{
+		foreach ($files["ino"] as $file)
+		{
+			//TODO: make it compatible with non-default hardware (variants & cores)
+			if (!isset($skel) && ($skel = file_get_contents("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
+				return array(
+					"success" => false,
+					"step" => 2,
+					"message" => "Failed to open Arduino skeleton file.");
+
+			$code = file_get_contents("$file.ino");
+			$new_code = $this->preproc->ino_to_cpp($skel, $code, "$file.ino");
+			$ret = file_put_contents("$file.cpp", $new_code);
+
+			if ($code === false || !$new_code || !$ret)
+				return array(
+					"success" => false,
+					"step" => 2,
+					"message" => "Failed to preprocess file '$file.ino'.");
+
+			$files["cpp"][] = array_shift($files["ino"]);
+		}
+	}
+
+	//TODO: Tackle errors and fail gracefully. Might need a new "step" number
+	public function preprocessHeaders(&$files, &$include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant)
+	{
+		//TODO: make it compatible with non-default hardware (variants & cores)
+		$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
+
+		// Scan files for headers and locate the corresponding include paths.
+		$headers = array();
+		foreach (array("c", "cpp", "h") as $ext)
+		{
+			foreach ($files[$ext] as $file)
+			{
+				$code = file_get_contents("$file.$ext");
+				$headers = array_merge($headers, $this->utility->read_headers($code));
+			}
+		}
+
+		$headers = array_unique($headers);
+		$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
+		$files["dir"] = array_merge($files["dir"], $new_directories);
+
+		// Create command-line arguments for header search paths. Note that the
+		// current directory is added to eliminate the difference between <>
+		// and "" in include preprocessor directives.
+		$include_directories = "-I$dir";
+		if (file_exists("$dir/utility"))
+			$include_directories .= " -I$dir/utility";
+		foreach ($files["dir"] as $directory)
+			$include_directories .= " -I$directory";
 	}
 
 	private function set_values($compiler_config,
