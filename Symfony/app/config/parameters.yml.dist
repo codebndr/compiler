@@ -14,8 +14,11 @@ parameters:
     locale:            en
     secret:            ThisTokenIsNotSoSecretChangeIt
 
-    # Path to cores and libraries.
-    arduino_cores_dir: "/opt/codebender/codebender-arduino-files"
+    # Path to cores.
+    arduino_cores_dir: "/opt/codebender/codebender-arduino-core-files"
+
+    # Path to libraries.
+    arduino_libs_dir: "/opt/codebender/codebender-arduino-library-files"
 
     auth_key: "youMustChangeThis"
 
