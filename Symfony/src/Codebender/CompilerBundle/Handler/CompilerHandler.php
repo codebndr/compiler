@@ -142,37 +142,9 @@ class CompilerHandler
 
 		// Step 8: Convert the output to the requested format and measure its
 		// size.
-		if ($format == "elf")
-		{
-			$ret_objcopy = false;
-			exec("$SIZE $SIZE_FLAGS --target=elf32-avr $dir/$OUTPUT.elf | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
-			$content = base64_encode(file_get_contents("$dir/$OUTPUT.elf"));
-		}
-		elseif ($format == "binary")
-		{
-			exec("$OBJCOPY $OBJCOPY_FLAGS -O binary $dir/$OUTPUT.elf $dir/$OUTPUT.bin", $dummy, $ret_objcopy);
-			exec("$SIZE $SIZE_FLAGS --target=binary $dir/$OUTPUT.bin | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
-			$content = base64_encode(file_get_contents("$dir/$OUTPUT.bin"));
-		}
-		elseif ($format == "hex")
-		{
-			exec("$OBJCOPY $OBJCOPY_FLAGS -O ihex $dir/$OUTPUT.elf $dir/$OUTPUT.hex", $dummy, $ret_objcopy);
-			exec("$SIZE $SIZE_FLAGS --target=ihex $dir/$OUTPUT.hex | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
-			$content = file_get_contents("$dir/$OUTPUT.hex");
-		}
+		$tmp = $this->convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time);
+		return $tmp;
 
-		// If everything went well, return the reply to the caller.
-		if ($ret_objcopy || $ret_size || $content === false)
-			return array(
-				"success" => false,
-				"step" => 8,
-				"message" => "");
-		else
-			return array(
-				"success" => true,
-				"time" => microtime(true) - $start_time,
-				"size" => $size[0],
-				"output" => $content);
 	}
 
 	private function requestValid(&$request)
@@ -308,6 +280,42 @@ class CompilerHandler
 		}
 
 		return array("success" => true);
+	}
+
+	private function convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time)
+	{
+		if ($format == "elf")
+		{
+			$ret_objcopy = false;
+			exec("$SIZE $SIZE_FLAGS --target=elf32-avr $dir/$OUTPUT.elf | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			$content = base64_encode(file_get_contents("$dir/$OUTPUT.elf"));
+		}
+		elseif ($format == "binary")
+		{
+			exec("$OBJCOPY $OBJCOPY_FLAGS -O binary $dir/$OUTPUT.elf $dir/$OUTPUT.bin", $dummy, $ret_objcopy);
+			exec("$SIZE $SIZE_FLAGS --target=binary $dir/$OUTPUT.bin | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			$content = base64_encode(file_get_contents("$dir/$OUTPUT.bin"));
+		}
+		elseif ($format == "hex")
+		{
+			exec("$OBJCOPY $OBJCOPY_FLAGS -O ihex $dir/$OUTPUT.elf $dir/$OUTPUT.hex", $dummy, $ret_objcopy);
+			exec("$SIZE $SIZE_FLAGS --target=ihex $dir/$OUTPUT.hex | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			$content = file_get_contents("$dir/$OUTPUT.hex");
+		}
+
+		// If everything went well, return the reply to the caller.
+		if ($ret_objcopy || $ret_size || $content === false)
+			return array(
+				"success" => false,
+				"step" => 8,
+				"message" => "");
+		else
+			return array(
+				"success" => true,
+				"time" => microtime(true) - $start_time,
+				"size" => $size[0],
+				"output" => $content);
+
 	}
 
 	private function set_values($compiler_config,
