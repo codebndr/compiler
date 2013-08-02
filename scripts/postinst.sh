@@ -1,8 +1,8 @@
 #!/bin/bash
 
-sudo cp /opt/codebender/@PACKAGENAME@/apache-config /etc/apache2/sites-available/@PACKAGENAME@
+sudo cp /opt/codebender/@PACKAGENAME@/apache-config /etc/apache2/sites-available/codebender
 cd /etc/apache2/sites-enabled
-sudo ln -s ../sites-available/@PACKAGENAME@ 00-@PACKAGENAME@
+sudo ln -s ../sites-available/codebender 00-codebender
 
 sudo a2enmod rewrite
 sudo a2enmod alias
@@ -33,8 +33,8 @@ sudo dd if=/dev/zero of=/opt/codebender/@PACKAGENAME@/logs-fs bs=1024 count=0 se
 yes | sudo mkfs.ext4 /opt/codebender/@PACKAGENAME@/cache-fs
 yes | sudo mkfs.ext4 /opt/codebender/@PACKAGENAME@/logs-fs
 
-echo "/opt/codebender/@PACKAGENAME@/cache-fs /opt/codebender/@PACKAGENAME@/Symfony/app/cache ext4 loop,acl 0 0" | sudo tee -a /etc/fstab
-echo "/opt/codebender/@PACKAGENAME@/logs-fs /opt/codebender/@PACKAGENAME@/Symfony/app/logs ext4 loop,acl 0 0" | sudo tee -a /etc/fstab
+echo "/opt/codebender/@PACKAGENAME@/cache-fs /opt/codebender/@PACKAGENAME@/Symfony/app/cache ext4 loop,acl 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
+echo "/opt/codebender/@PACKAGENAME@/logs-fs /opt/codebender/@PACKAGENAME@/Symfony/app/logs ext4 loop,acl 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
 
 sudo mount /opt/codebender/@PACKAGENAME@/Symfony/app/cache/
 sudo mount /opt/codebender/@PACKAGENAME@/Symfony/app/logs/
