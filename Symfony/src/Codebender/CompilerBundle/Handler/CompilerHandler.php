@@ -310,7 +310,7 @@ class CompilerHandler
 			return array(
 				"success" => false,
 				"step" => 8,
-				"message" => "");
+				"message" => "There was a problem while generating the your binary file");
 		else
 			return array(
 				"success" => true,
