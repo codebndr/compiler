@@ -264,6 +264,7 @@ class CompilerHandler
 					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 				if (isset($ret_compile) && $ret_compile)
 				{
+					$avr_output = implode("\n", $output);
 					unset($output);
 					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
 					$output = str_replace("$dir/", "", $output); // XXX
@@ -271,7 +272,8 @@ class CompilerHandler
 					return array(
 						"success" => false,
 						"step" => 4,
-						"message" => $output);
+						"message" => $output,
+						"debug" => $avr_output);
 				}
 				unset($output);
 
