@@ -12,6 +12,15 @@ namespace Codebender\CompilerBundle\Handler;
 
 class UtilityHandler
 {
+	private $directory;
+
+	function __construct()
+	{
+		$this->directory = "/tmp/codebender_object_files";
+		if(!file_exists($this->directory))
+			mkdir($this->directory);
+	}
+
 	/**
 	\brief Searches for header files in a list of directories.
 
@@ -120,13 +129,15 @@ class UtilityHandler
 		foreach ($sources as $filename)
 		{
 			// Do not proceed if this file should not be compiled.
+			//TODO: Check if /tmp/codebender/ fix fucks this up
 			if (isset($exclude) && preg_match("/(?:$exclude)/", pathinfo($filename, PATHINFO_BASENAME)))
 				continue;
 
 			// For every source file and set of build options there is a
 			// corresponding object file. If that object is missing, a new
 			// compile request is sent to the service.
-			$object_file = pathinfo("$directory/$filename", PATHINFO_DIRNAME)."/${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."__".pathinfo($filename, PATHINFO_FILENAME);
+			//TODO: Investigate security issue
+			$object_file = $this->directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
 			if (!file_exists("$object_file.o"))
 			{
 				// Include any header files in the request.
