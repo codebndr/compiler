@@ -12,6 +12,7 @@ $configure = array(
 	'php-pear',
 	'clang',
 	'gcc-avr',
+	'avr-libc',
 	'binutils-avr',
 	'acl'
     ),
