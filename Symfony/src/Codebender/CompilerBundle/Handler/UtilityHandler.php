@@ -177,7 +177,8 @@ class UtilityHandler
 					return array(
 						"success" => false,
 						"step" => 5,
-						"message" => $reply["message"]);
+						"message" => $reply["message"],
+						"debug" => var_dump($request));
 
 				//TODO: Make a check here and fail gracefully
 				file_put_contents("$object_file.o", base64_decode($reply["output"]));
