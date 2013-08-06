@@ -61,12 +61,13 @@ class UtilityHandler
 
 					$directories[] = "$path/$header";
 
-					$new_headers = array();
-					foreach ($this->get_files_by_extension("$path/$header", array("c", "cpp", "h")) as $file)
-						$new_headers = array_merge($new_headers, $this->read_headers(file_get_contents("$path/$header/$file")));
-					$new_headers = array_unique($new_headers);
-
-					$directories = array_merge($directories, $this->add_directories($new_headers, $search_paths, $directories));
+//					$new_headers = array();
+//					//TODO: Check out what this does so that we can remove the read_headers
+//					foreach ($this->get_files_by_extension("$path/$header", array("c", "cpp", "h")) as $file)
+//						$new_headers = array_merge($new_headers, $this->read_headers(file_get_contents("$path/$header/$file")));
+//					$new_headers = array_unique($new_headers);
+//
+//					$directories = array_merge($directories, $this->add_directories($new_headers, $search_paths, $directories));
 				}
 			}
 		}
