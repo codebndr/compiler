@@ -94,7 +94,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 	{
 		if ($exclude_files)
 		{
@@ -107,6 +107,7 @@ class UtilityHandler
 		$request_template = array(
 			"format" => "object",
 			"version" => $version,
+			"headers" => $headers,
 			"build" => array(
 				"mcu" => $mcu,
 				"f_cpu" => $f_cpu,
@@ -286,35 +287,6 @@ class UtilityHandler
 				$files[] = $entry;
 
 		return $files;
-	}
-
-	/**
-	\brief Extracts included headers from source code.
-
-	\param string $code The program's source code.
-	\return An array of headers.
-
-	Takes a string containing the source code of a C/C++ program, parses the
-	preprocessor directives and makes a list of header files to include. The
-	postfix <b>.h</b> is removed from the header names.
-	 */
-	function read_headers($code)
-	{
-		// Matches preprocessor include directives, has high tolerance to
-		// spaces. The actual header (without the postfix .h) is stored in
-		// register 1.
-		//
-		// Examples:
-		// #include<stdio.h>
-		// # include "proto.h"
-		$REGEX = "/^\s*#\s*include\s*[<\"]\s*(\w*)\.h\s*[>\"]/";
-
-		$headers = array();
-		foreach (explode("\n", $code) as $line)
-			if (preg_match($REGEX, $line, $matches))
-				$headers[] = $matches[1];
-
-		return $headers;
 	}
 
 	/**
