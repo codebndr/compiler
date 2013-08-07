@@ -110,9 +110,6 @@ class CompilerHandler
 			return $core_objects;
 		$files["o"] = array_merge($files["o"], $core_objects);
 
-		array_shift($files["dir"]);
-		array_shift($files["dir"]);
-
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
@@ -204,17 +201,17 @@ class CompilerHandler
 	{
 		try
 		{
-			//TODO: make it compatible with non-default hardware (variants & cores)
-			$files["dir"] = array("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant");
-
-			//TODO: The code that rests on the main website looks in all files, not just c, cpp and h. Might raise a security issue
-			$new_directories = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
-			$files["dir"] = array_merge($files["dir"], $new_directories);
-
 			// Create command-line arguments for header search paths. Note that the
 			// current directory is added to eliminate the difference between <>
 			// and "" in include preprocessor directives.
-			$include_directories = "-I$dir";
+			//TODO: make it compatible with non-default hardware (variants & cores)
+			$include_directories = "-I$dir -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant";
+
+			//TODO: The code that rests on the main website looks in all files, not just c, cpp and h. Might raise a security issue
+			$files["dir"] = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
+
+
+			// Add the libraries' paths in the include paths in the command-line arguments
 			if (file_exists("$dir/utility"))
 				$include_directories .= " -I$dir/utility";
 			foreach ($files["dir"] as $directory)
