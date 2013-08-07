@@ -94,7 +94,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 	{
 		if ($exclude_files)
 		{
@@ -108,6 +108,7 @@ class UtilityHandler
 			"format" => "object",
 			"version" => $version,
 			"headers" => $headers,
+			"libraries" => $libraries,
 			"build" => array(
 				"mcu" => $mcu,
 				"f_cpu" => $f_cpu,

@@ -53,7 +53,7 @@ class CompilerHandler
 		if($tmp["success"] == false)
 			return $tmp;
 
-		$this->set_variables($request, $format, $headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$this->set_variables($request, $format, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
 		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
@@ -104,7 +104,7 @@ class CompilerHandler
 
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, array(), array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
@@ -116,7 +116,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $headers, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
@@ -341,11 +341,12 @@ class CompilerHandler
 		$ARDUINO_LIBS_DIR = $compiler_config["arduino_libs_dir"];
 	}
 
-	private function set_variables($request, &$format, &$headers, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
+	private function set_variables($request, &$format, &$headers, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
 	{
 		// Extract the request options for easier access.
 		$format = $request->format;
 		$headers = $request->headers;
+		$libraries = $request->libraries;
 		$version = $request->version;
 		$mcu = $request->build->mcu;
 		$f_cpu = $request->build->f_cpu;
