@@ -267,7 +267,7 @@ class UtilityHandler
 		}
 
 		// All files were extracted successfully.
-		return $files;
+		return array("success" => true, "files" => $files);
 	}
 
 	/**

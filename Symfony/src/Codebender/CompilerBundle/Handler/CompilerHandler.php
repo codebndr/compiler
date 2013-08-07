@@ -165,10 +165,10 @@ class CompilerHandler
 				"step" => 1,
 				"message" => "Failed to create temporary directory.");
 
-		$files = $this->utility->extract_files($dir, $request->files);
-		//TODO: Upgrade this
-		if (array_key_exists("success", $files))
-			return $files;
+		$response = $this->utility->extract_files($dir, $request->files);
+		if ($response["success"] === false)
+			return $response;
+		$files = $response["files"];
 
 		return array("success" => true);
 	}
