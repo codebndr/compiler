@@ -176,7 +176,8 @@ class CompilerHandler
 			//TODO: check if it succeeded
 			if (!file_exists($dir."/libraries".$library_name))
 				mkdir($dir."/libraries/".$library_name, 0777, true);
-			$files["libs"][] = $this->utility->extract_files($dir."/libraries/".$library_name, $library_files)["files"];
+			$tmp = $this->utility->extract_files($dir."/libraries/".$library_name, $library_files);
+			$files["libs"][] = $tmp["files"];
 		}
 
 		return array("success" => true);
