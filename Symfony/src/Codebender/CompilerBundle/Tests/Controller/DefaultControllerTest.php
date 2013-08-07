@@ -55,11 +55,10 @@ class DefaultControllerTest extends WebTestCase
 		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13;\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
 		$format = "syntax";
 		$version = "105";
-		$headers = array();
 		$libraries = array();
 		$build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
-		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "headers" => $headers, "libraries" => $libraries, "build" => $build));
+		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
 
 		$client = static::createClient();
 
@@ -79,11 +78,10 @@ class DefaultControllerTest extends WebTestCase
 		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13;\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
 		$format = "binary";
 		$version = "105";
-		$headers = array();
 		$libraries = array();
 		$build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
-		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "headers" => $headers, "libraries" => $libraries, "build" => $build));
+		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
 
 		$client = static::createClient();
 
@@ -105,11 +103,10 @@ class DefaultControllerTest extends WebTestCase
 		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);\n  pinMode(led);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
 		$format = "syntax";
 		$version = "105";
-		$headers = array();
 		$libraries = array();
 		$build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
-		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "headers" => $headers, "libraries" => $libraries, "build" => $build));
+		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
 
 		$client = static::createClient();
 
@@ -134,11 +131,10 @@ class DefaultControllerTest extends WebTestCase
 		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);\n  pinMode(led);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
 		$format = "binary";
 		$version = "105";
-		$headers = array();
 		$libraries = array();
 		$build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
-		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "headers" => $headers, "libraries" => $libraries, "build" => $build));
+		$data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
 
 		$client = static::createClient();
 

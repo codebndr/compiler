@@ -119,7 +119,6 @@ class PreprocessingHandler
 			&& array_key_exists("build", $request)
 			&& array_key_exists("files", $request)
 			&& is_object($request->build)
-			&& array_key_exists("headers", $request)
 			&& array_key_exists("libraries", $request)
 			&& array_key_exists("mcu", $request->build)
 			&& array_key_exists("f_cpu", $request->build)

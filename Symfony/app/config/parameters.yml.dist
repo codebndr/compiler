@@ -17,9 +17,6 @@ parameters:
     # Path to cores.
     arduino_cores_dir: "/opt/codebender/codebender-arduino-core-files"
 
-    # Path to libraries.
-    arduino_libs_dir: "/opt/codebender/codebender-arduino-library-files"
-
     auth_key: "youMustChangeThis"
 
     # Paths to various executables used by the compiler. These depend on the

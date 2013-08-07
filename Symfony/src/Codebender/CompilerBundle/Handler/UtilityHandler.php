@@ -22,62 +22,6 @@ class UtilityHandler
 	}
 
 	/**
-	\brief Searches for header files in a list of directories.
-
-	\param array $headers A list of headers, without the <b>.h</b> extension.
-	\param array $search_paths A list of paths to search for the headers.
-	\param array $searched_paths A list of paths searched during previous calls.
-	\return A list of directories to be included in the compilation process.
-
-	In Arduino projects, developers do not provide paths for header files. The
-	function read_headers() is used to scan files for include directives, then
-	add_directories() is called to locate the appropriate paths. These paths should
-	be used when calling avr-gcc for compilation and linking. This is a recursive
-	function; only the first two parameters should be used.
-
-	The order of $search_paths is important. If a library can be found in multiple
-	paths, the first one will be used. This allows to set priorities and override
-	libraries.
-
-	The structure of search paths is as follows: each path contains directories,
-	one for each library. The name of the directory should match the name of the
-	corresponding library. Each directory must contain at least a header file with
-	the same name (plus the extension .h), which is the header used by other
-	projects.
-	 */
-	function add_directories($headers, $search_paths, $searched_paths = array())
-	{
-		$directories = $searched_paths;
-
-		foreach ($headers as $header)
-		{
-			foreach ($search_paths as $path)
-			{
-				if (file_exists("$path/$header"))
-				{
-					// Skip library if it's already scanned.
-					if (in_array("$path/$header", $directories))
-						break;
-
-					$directories[] = "$path/$header";
-
-//					$new_headers = array();
-//					//TODO: Check out what this does so that we can remove the read_headers
-//					foreach ($this->get_files_by_extension("$path/$header", array("c", "cpp", "h")) as $file)
-//						$new_headers = array_merge($new_headers, $this->read_headers(file_get_contents("$path/$header/$file")));
-//					$new_headers = array_unique($new_headers);
-//
-//					$directories = array_merge($directories, $this->add_directories($new_headers, $search_paths, $directories));
-				}
-			}
-		}
-
-		// Remove already searched paths to avoid looking for duplicate
-		// entries. This improves recursion.
-		return array_diff($directories, $searched_paths);
-	}
-
-	/**
 	\brief Creates objects for every source file in a directory.
 
 	\param string $directory The directory where the sources are located.
@@ -94,7 +38,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 	{
 		if ($exclude_files)
 		{
@@ -107,7 +51,6 @@ class UtilityHandler
 		$request_template = array(
 			"format" => "object",
 			"version" => $version,
-			"headers" => $headers,
 			"libraries" => $libraries,
 			"build" => array(
 				"mcu" => $mcu,
@@ -139,6 +82,7 @@ class UtilityHandler
 			// For every source file and set of build options there is a
 			// corresponding object file. If that object is missing, a new
 			// compile request is sent to the service.
+			//TODO: Existing Library .o files will probably not be used right now (due to /tmp/compiler.random/ dir)
 			//TODO: Investigate security issue
 			$object_file = $this->directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
 			if (!file_exists("$object_file.o"))

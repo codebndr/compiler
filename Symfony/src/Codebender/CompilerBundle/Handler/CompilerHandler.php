@@ -43,7 +43,7 @@ class CompilerHandler
 
 		$this->set_values($compiler_config,
 			$CC, $CPP, $AS, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $ARDUINO_LIBS_DIR);
+			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL);
 
 		$start_time = microtime(true);
 
@@ -53,7 +53,7 @@ class CompilerHandler
 		if($tmp["success"] == false)
 			return $tmp;
 
-		$this->set_variables($request, $format, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
 		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
@@ -69,7 +69,7 @@ class CompilerHandler
 			return $tmp;
 
 		// Step 3: Preprocess Header includes.
-		$tmp = $this->preprocessHeaders($files, $headers, $include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant);
+		$tmp = $this->preprocessHeaders($files, $libraries, $include_directories, $dir, $ARDUINO_CORES_DIR, $version, $core, $variant);
 		if ($tmp["success"] == false)
 			return $tmp;
 
@@ -104,7 +104,7 @@ class CompilerHandler
 
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, array(), array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
@@ -113,7 +113,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
@@ -167,6 +167,18 @@ class CompilerHandler
 			return $response;
 		$files = $response["files"];
 
+		if (!file_exists($dir."/libraries"))
+			mkdir($dir."/libraries/", 0777, true);
+		//TODO: check if it succeeded
+		$files["libs"] = array();
+		foreach($request->libraries as $library_name => $library_files)
+		{
+			//TODO: check if it succeeded
+			if (!file_exists($dir."/libraries".$library_name))
+				mkdir($dir."/libraries/".$library_name, 0777, true);
+			$files["libs"][] = $this->utility->extract_files($dir."/libraries/".$library_name, $library_files)["files"];
+		}
+
 		return array("success" => true);
 	}
 
@@ -197,7 +209,7 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	public function preprocessHeaders(&$files, &$headers,  &$include_directories, $dir, $ARDUINO_CORES_DIR, $ARDUINO_LIBS_DIR, $version, $core, $variant)
+	public function preprocessHeaders(&$files, &$libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $version, $core, $variant)
 	{
 		try
 		{
@@ -207,9 +219,12 @@ class CompilerHandler
 			//TODO: make it compatible with non-default hardware (variants & cores)
 			$include_directories = "-I$dir -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant";
 
-			//TODO: The code that rests on the main website looks in all files, not just c, cpp and h. Might raise a security issue
-			$files["dir"] = $this->utility->add_directories($headers, array("$ARDUINO_LIBS_DIR/libraries", "$ARDUINO_LIBS_DIR/external-libraries"));
-
+			//TODO: The code that rests on the main website looks for headers in all files, not just c, cpp and h. Might raise a security issue
+			$files["dir"] = array();
+			foreach($libraries as $library_name => $library_files)
+			{
+				$files["dir"][] = $dir."/libraries/".$library_name;
+			}
 
 			// Add the libraries' paths in the include paths in the command-line arguments
 			if (file_exists("$dir/utility"))
@@ -309,7 +324,7 @@ class CompilerHandler
 	private function set_values($compiler_config,
 	                            &$CC, &$CPP, &$AS, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
 	                            &$ASFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL, &$ARDUINO_LIBS_DIR)
+	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL)
 	{
 		// External binaries.
 		$CC = $compiler_config["cc"];
@@ -334,15 +349,12 @@ class CompilerHandler
 		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
 		// The name of the Arduino skeleton file.
 		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
-		// Path to arduino-library-files repository.
-		$ARDUINO_LIBS_DIR = $compiler_config["arduino_libs_dir"];
 	}
 
-	private function set_variables($request, &$format, &$headers, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
+	private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
 	{
 		// Extract the request options for easier access.
 		$format = $request->format;
-		$headers = $request->headers;
 		$libraries = $request->libraries;
 		$version = $request->version;
 		$mcu = $request->build->mcu;
