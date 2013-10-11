@@ -42,6 +42,6 @@ sudo mount /opt/codebender/@PACKAGENAME@/Symfony/app/logs/
 sudo rm -rf /opt/codebender/@PACKAGENAME@/Symfony/app/cache/*
 sudo rm -rf /opt/codebender/@PACKAGENAME@/Symfony/app/logs/*
 
-sudo setfacl -R -m u:www-data:rwX -m u:ubuntu:rwX /opt/codebender/@PACKAGENAME@/Symfony/app/cache /opt/codebender/@PACKAGENAME@/Symfony/app/logs
-sudo setfacl -dR -m u:www-data:rwx -m u:ubuntu:rwx /opt/codebender/@PACKAGENAME@/Symfony/app/cache /opt/codebender/@PACKAGENAME@/Symfony/app/logs
+sudo setfacl -R -m u:www-data:rwX -m u:`whoami`:rwX /opt/codebender/@PACKAGENAME@/Symfony/app/cache /opt/codebender/@PACKAGENAME@/Symfony/app/logs
+sudo setfacl -dR -m u:www-data:rwx -m u:`whoami`:rwx /opt/codebender/@PACKAGENAME@/Symfony/app/cache /opt/codebender/@PACKAGENAME@/Symfony/app/logs
 
