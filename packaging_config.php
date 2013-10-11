@@ -7,14 +7,15 @@ $configure = array(
     'url' => 'htpp://github.com/codebendercc/compiler',
     'packagetype' => 'deb',
     'depends' => array(
-        'apache2',
-        'libapache2-mod-php5',
-	'php-pear',
-	'clang',
-	'gcc-avr',
-	'avr-libc',
-	'binutils-avr',
-	'acl'
+		'apache2',
+		'libapache2-mod-php5',
+		'php-pear',
+		'clang',
+		'gcc-avr',
+		'avr-libc',
+		'binutils-avr',
+		'acl',
+		'curl'
     ),
 
     'tmpdir' => '/tmp',
