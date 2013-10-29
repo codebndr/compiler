@@ -364,7 +364,7 @@ class CompilerHandler
 		$variant = $request->build->variant;
 
 		// Set the appropriate variables for vid and pid (Leonardo).
-		$vid = ($variant == "leonardo") ? $request->build->vid : "";
-		$pid = ($variant == "leonardo") ? $request->build->pid : "";
+		$vid = ($variant == "leonardo") ? $request->build->vid : "null";
+		$pid = ($variant == "leonardo") ? $request->build->pid : "null";
 	}
 }
