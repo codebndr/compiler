@@ -72,6 +72,15 @@ class UtilityHandler
 			$sources = array_merge($sources, $utility_sources);
 		}
 
+		if (file_exists("$directory/avr-libc") && $libc_headers)
+		{
+			$avr_libc_sources = $this->get_files_by_extension("$directory/avr-libc", array("c", "cpp", "S"));
+			foreach ($avr_libc_sources as &$i)
+				$i = "avr-libc/$i";
+			unset($i);
+			$sources = array_merge($sources, $avr_libc_sources);
+		}
+
 		foreach ($sources as $filename)
 		{
 			// Do not proceed if this file should not be compiled.
@@ -109,6 +118,30 @@ class UtilityHandler
 							"content" => file_get_contents("$directory/$header_filename"));
 					}
 				}
+
+				//Include header files from c library ( needed for malloc and realloc )
+				if($libc_headers && !array_key_exists("files", $request_template))
+
+					if (file_exists("$directory/avr-libc"))
+					{
+						$request_template["files"] = array();
+						$header_files = array();
+
+						$avr_libc_headers = $this->get_files_by_extension("$directory/avr-libc", array("h", "inc"));
+						foreach ($avr_libc_headers as &$i)
+							$i = "avr-libc/$i";
+						unset($i);
+						$header_files = array_merge($header_files, $avr_libc_headers);
+
+						foreach ($header_files as $header_filename)
+						{
+						$request_template["files"][] = array(
+							"filename" => $header_filename,
+							"content" => file_get_contents("$directory/$header_filename"));
+						}
+
+					}
+
 
 				// Include the source file.
 				$request = $request_template;
