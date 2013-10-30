@@ -105,7 +105,7 @@ class CompilerHandler
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
 		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
-		$core_objects = $this->utility->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->utility->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
@@ -131,7 +131,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, false, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
