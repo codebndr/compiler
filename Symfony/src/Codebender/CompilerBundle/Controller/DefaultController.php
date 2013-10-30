@@ -80,7 +80,7 @@ class DefaultController extends Controller
 	 */
 	private function generateParameters()
 	{
-		$parameters = array("cc", "cpp", "as", "ar", "ld", "clang", "objcopy", "size", "cflags", "cppflags", "asflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "arduino_cores_dir", "arduino_skel", "auth_key");
+		$parameters = array("cc", "cpp", "as", "ar", "ld", "clang", "objcopy", "size", "cflags", "cppflags", "asflags", "arflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "arduino_cores_dir", "arduino_skel", "auth_key");
 
 		$compiler_config = array();
 

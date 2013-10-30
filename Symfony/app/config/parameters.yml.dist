@@ -40,6 +40,7 @@ parameters:
     cflags: "-Os -ffunction-sections -fdata-sections"
     cppflags: "-Os -ffunction-sections -fdata-sections -fno-exceptions"
     asflags: "-assembler-with-cpp"
+    arflags: "rcs"
     ldflags: "-Os -Wl,--gc-sections"
     ldflags_tail: "-lm -lc"
     clang_flags: "-w -fsyntax-only -fcolor-diagnostics"

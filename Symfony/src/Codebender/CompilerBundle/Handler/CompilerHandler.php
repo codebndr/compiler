@@ -42,7 +42,7 @@ class CompilerHandler
 		error_reporting(E_ALL & ~E_STRICT);
 
 		$this->set_values($compiler_config,
-			$CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
+			$CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
 			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL);
 
 		$start_time = microtime(true);
@@ -120,9 +120,9 @@ class CompilerHandler
 		
 		if(!file_exists($core_name)){
 			foreach($core_objects as $core_obj){
-					exec("$AR rcs $core_name $core_obj.o", $output);
+					exec("$AR $ARFLAGS $core_name $core_obj.o", $output);
 					if($compiler_config['logging']){
-						file_put_contents($compiler_config['logFileName'], "$AR rcs $core_name $core_obj.o"."\n", FILE_APPEND);
+						file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_name $core_obj.o"."\n", FILE_APPEND);
 					}
 			}
 		}
@@ -384,7 +384,7 @@ class CompilerHandler
 
 	private function set_values($compiler_config,
 	                            &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
-	                            &$ASFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
+	                            &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
 	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL)
 	{
 		// External binaries.
@@ -400,6 +400,7 @@ class CompilerHandler
 		$CFLAGS = $compiler_config["cflags"];
 		$CPPFLAGS = $compiler_config["cppflags"];
 		$ASFLAGS = $compiler_config["asflags"];
+		$ARFLAGS = $compiler_config["arflags"];
 		$LDFLAGS = $compiler_config["ldflags"];
 		$LDFLAGS_TAIL = $compiler_config["ldflags_tail"];
 		$CLANG_FLAGS = $compiler_config["clang_flags"];
