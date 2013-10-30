@@ -56,7 +56,11 @@ class DefaultController extends Controller
 		{
 			$request = $this->getRequest()->getContent();
 			$compiler = new CompilerHandler();
+				
+			$this->setLoggingParams($request, $params);
+				
 			$reply = $compiler->main($request, $params);
+			
 			return new Response(json_encode($reply));
 		}
 		else
@@ -86,5 +90,40 @@ class DefaultController extends Controller
 		}
 
 		return $compiler_config;
+	}
+	
+	private function setLoggingParams($request, &$compiler_config)
+	{
+		$temp = json_decode($request,true);
+		if(array_key_exists('logging', $temp) and $temp['logging'] == true)
+		{
+			/*
+			Generate a random part for the log name based on current date and time,
+			in order to avoid naming different Blink projects for which we need logfiles
+			*/
+			//$randpart = date('YmdHis');
+			$randPart = date('YzHis');
+			/*
+			Then find the name of the arduino file which usually is the project name itself 
+			and mix them all together
+			*/
+			
+			foreach($temp['files'] as $file){
+				if(pathinfo($file['filename'], PATHINFO_EXTENSION) == "ino"){$basename = pathinfo($file['filename'], PATHINFO_FILENAME);}
+			}
+			if(!isset($basename)){$basename="logfile";}
+			
+			$compiler_config['logging'] = true;
+			$directory = "/tmp/codebender_log";
+			if(!file_exists($directory)){mkdir($directory);}
+			
+			$compiler_config['logFileName'] = $directory ."/". $basename ."_". $randPart .".txt";
+			
+			file_put_contents($compiler_config['logFileName'], '');
+		}
+		elseif(!array_key_exists('logging', $temp) or $temp['logging'] == false)
+		{
+			$compiler_config['logging'] = false;
+		}
 	}
 }

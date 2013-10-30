@@ -121,6 +121,9 @@ class CompilerHandler
 		if(!file_exists($core_name)){
 			foreach($core_objects as $core_obj){
 					exec("$AR rcs $core_name $core_obj.o", $output);
+					if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'], "$AR rcs $core_name $core_obj.o"."\n", FILE_APPEND);
+					}
 			}
 		}
 		
@@ -142,7 +145,9 @@ class CompilerHandler
 
 		//Link core.a and every other object file to a .elf binary file
 		exec("$LD $LDFLAGS $target_arch $object_files $core_name -o $dir/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
-		
+		if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'], "$LD $LDFLAGS $target_arch $object_files $core_name -o $dir/$OUTPUT.elf $LDFLAGS_TAIL\n", FILE_APPEND);
+					}
 		if ($ret_link)
 			return array(
 				"success" => false,
@@ -279,21 +284,32 @@ class CompilerHandler
 				if ($ext == "c")
 					{
 					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext\n", FILE_APPEND);
+						}
 					}
 				elseif ($ext == "cpp")
 					{
 					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext\n", FILE_APPEND);
+						}
 					}
 				elseif ($ext == "S")
 					{
 					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext\n", FILE_APPEND);
+						}
 					}
 				if (isset($ret_compile) && $ret_compile)
 				{
 					$avr_output = implode("\n", $output);
 					unset($output);
 					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
-
+					if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext\n", FILE_APPEND);
+						}
 					$output = str_replace("$dir/", "", $output); // XXX
 					$output = $this->postproc->ansi_to_html(implode("\n", $output));
 					return array(
@@ -311,24 +327,43 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	private function convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time)
+	private function convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config)
 	{
 		if ($format == "elf")
 		{
 			$ret_objcopy = false;
 			exec("$SIZE $SIZE_FLAGS --target=elf32-avr $dir/$OUTPUT.elf | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			
+			if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$SIZE $SIZE_FLAGS --target=elf32-avr $dir/$OUTPUT.elf | awk 'FNR == 2 {print $1+$2}'\n", FILE_APPEND);
+						}
 			$content = base64_encode(file_get_contents("$dir/$OUTPUT.elf"));
 		}
 		elseif ($format == "binary")
 		{
 			exec("$OBJCOPY $OBJCOPY_FLAGS -O binary $dir/$OUTPUT.elf $dir/$OUTPUT.bin", $dummy, $ret_objcopy);
+			if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$OBJCOPY $OBJCOPY_FLAGS -O binary $dir/$OUTPUT.elf $dir/$OUTPUT.bin\n", FILE_APPEND);
+						}
+						
 			exec("$SIZE $SIZE_FLAGS --target=binary $dir/$OUTPUT.bin | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$SIZE $SIZE_FLAGS --target=binary $dir/$OUTPUT.bin | awk 'FNR == 2 {print $1+$2}'\n", FILE_APPEND);
+						}
 			$content = base64_encode(file_get_contents("$dir/$OUTPUT.bin"));
 		}
 		elseif ($format == "hex")
 		{
 			exec("$OBJCOPY $OBJCOPY_FLAGS -O ihex $dir/$OUTPUT.elf $dir/$OUTPUT.hex", $dummy, $ret_objcopy);
+			if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$OBJCOPY $OBJCOPY_FLAGS -O ihex $dir/$OUTPUT.elf $dir/$OUTPUT.hex\n", FILE_APPEND);
+						}
+			
 			exec("$SIZE $SIZE_FLAGS --target=ihex $dir/$OUTPUT.hex | awk 'FNR == 2 {print $1+$2}'", $size, $ret_size); // FIXME
+			if($compiler_config['logging']){
+						file_put_contents($compiler_config['logFileName'],"$SIZE $SIZE_FLAGS --target=ihex $dir/$OUTPUT.hex | awk 'FNR == 2 {print $1+$2}'\n", FILE_APPEND);
+						}
+			
 			$content = file_get_contents("$dir/$OUTPUT.hex");
 		}
 
