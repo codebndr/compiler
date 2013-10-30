@@ -42,7 +42,7 @@ class CompilerHandler
 		error_reporting(E_ALL & ~E_STRICT);
 
 		$this->set_values($compiler_config,
-			$CC, $CPP, $AS, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
+			$CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
 			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL);
 
 		$start_time = microtime(true);
@@ -77,7 +77,7 @@ class CompilerHandler
 		//Use the include paths for the AVR headers that are bundled with each Arduino SDK version
 		$core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
 
-		$tmp = $this->doCompile($files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format);
+		$tmp = $this->doCompile($compiler_config, $files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format);
 		if ($tmp["success"] == false)
 			return $tmp;
 
@@ -104,12 +104,27 @@ class CompilerHandler
 
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->utility->create_objects($compiler_config, "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core", $ARDUINO_SKEL, false, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
+		$core_objects = $this->utility->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
-		$files["o"] = array_merge($files["o"], $core_objects);
-
+		/*
+		the line bellow had to be commented so that the core object files will not be linked again to the 
+		output file in step 7
+		*/
+		//$files["o"] = array_merge($files["o"], $core_objects);
+		
+		//Link all core object files to a core.a library
+		$core_name = $this->utility->directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
+		
+		if(!file_exists($core_name)){
+			foreach($core_objects as $core_obj){
+					exec("$AR rcs $core_name $core_obj.o", $output);
+			}
+		}
+		
+		
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
@@ -124,7 +139,10 @@ class CompilerHandler
 		$object_files = "";
 		foreach ($files["o"] as $object)
 			$object_files .= " ".escapeshellarg("$object.o");
-		exec("$LD $LDFLAGS $target_arch $object_files -o $dir/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
+
+		//Link core.a and every other object file to a .elf binary file
+		exec("$LD $LDFLAGS $target_arch $object_files $core_name -o $dir/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
+		
 		if ($ret_link)
 			return array(
 				"success" => false,
@@ -133,7 +151,7 @@ class CompilerHandler
 
 		// Step 8: Convert the output to the requested format and measure its
 		// size.
-		$tmp = $this->convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time);
+		$tmp = $this->convertOutput($dir, $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
 		return $tmp;
 
 	}
@@ -241,7 +259,7 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	private function doCompile(&$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format)
+	private function doCompile($compiler_config, &$files, $dir, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format)
 	{
 		if ($format == "syntax")
 		{
@@ -259,16 +277,23 @@ class CompilerHandler
 
 				//replace exec() calls with $this->utility->debug_exec() for debugging
 				if ($ext == "c")
+					{
 					exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					}
 				elseif ($ext == "cpp")
+					{
 					exec("$CPP $CPPFLAGS $core_includes $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					}
 				elseif ($ext == "S")
+					{
 					exec("$AS $ASFLAGS $target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+					}
 				if (isset($ret_compile) && $ret_compile)
 				{
 					$avr_output = implode("\n", $output);
 					unset($output);
 					exec("$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $file.o $file.$ext 2>&1", $output, $ret_compile);
+
 					$output = str_replace("$dir/", "", $output); // XXX
 					$output = $this->postproc->ansi_to_html(implode("\n", $output));
 					return array(
@@ -323,7 +348,7 @@ class CompilerHandler
 	}
 
 	private function set_values($compiler_config,
-	                            &$CC, &$CPP, &$AS, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
+	                            &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
 	                            &$ASFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
 	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL)
 	{
@@ -331,6 +356,7 @@ class CompilerHandler
 		$CC = $compiler_config["cc"];
 		$CPP = $compiler_config["cpp"];
 		$AS = $compiler_config["as"];
+		$AR = $compiler_config["ar"];
 		$LD = $compiler_config["ld"];
 		$CLANG = $compiler_config["clang"];
 		$OBJCOPY = $compiler_config["objcopy"];

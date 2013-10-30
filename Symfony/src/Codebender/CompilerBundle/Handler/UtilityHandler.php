@@ -12,7 +12,7 @@ namespace Codebender\CompilerBundle\Handler;
 
 class UtilityHandler
 {
-	private $directory;
+	public $directory;
 
 	function __construct()
 	{
@@ -38,7 +38,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+	function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $libc_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
 	{
 		if ($exclude_files)
 		{

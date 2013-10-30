@@ -25,6 +25,7 @@ parameters:
     cc: "/usr/bin/avr-gcc"
     cpp: "/usr/bin/avr-g++"
     as: "/usr/bin/avr-gcc"
+    ar: "/usr/bin/avr-ar"
     ld: "/usr/bin/avr-gcc"
     clang: "/usr/bin/clang"
     objcopy: "/usr/bin/avr-objcopy"
