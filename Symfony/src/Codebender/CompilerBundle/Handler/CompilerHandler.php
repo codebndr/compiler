@@ -37,7 +37,7 @@ class CompilerHandler
 	\param string $request The body of the POST request.
 	\return A message to be JSON-encoded and sent back to the requestor.
 	 */
-	function main($request, $compiler_config)
+	function main($request, $compiler_config, $initCall)
 	{
 		error_reporting(E_ALL & ~E_STRICT);
 
@@ -52,7 +52,16 @@ class CompilerHandler
 		$tmp = $this->requestValid($request);
 		if($tmp["success"] == false)
 			return $tmp;
-
+		
+		/*
+			$initCall variable is a flag which is set to true if this instance of the compiler is called
+			by the DefaultController. Then the logging parameters need to be set properly if the $request 
+			demands so. When the compiler is called by the UtilityHandler to compile core or library files,
+			$initCall is set to false
+		*/
+		if($initCall)	
+			$this->setLoggingParams(json_encode($request), $compiler_config);
+		
 		$this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
 		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
@@ -428,5 +437,41 @@ class CompilerHandler
 		// Set the appropriate variables for vid and pid (Leonardo).
 		$vid = ($variant == "leonardo") ? $request->build->vid : "null";
 		$pid = ($variant == "leonardo") ? $request->build->pid : "null";
+	}
+	
+	private function setLoggingParams($request, &$compiler_config)
+	{
+		$temp = json_decode($request,true);
+		//Check if $request['logging'] exists and is true, then make the logfile, otherwise set
+		//$compiler_config['logdir'] to false and return to caller
+		if(array_key_exists('logging', $temp) && $temp['logging'])
+		{
+			/*
+			Generate a random part for the log name based on current date and time,
+			in order to avoid naming different Blink projects for which we need logfiles
+			*/
+			$randPart = date('YmdHis');
+			/*
+			Then find the name of the arduino file which usually is the project name itself 
+			and mix them all together
+			*/
+			
+			foreach($temp['files'] as $file){
+				if(strcmp(pathinfo($file['filename'], PATHINFO_EXTENSION), "ino") == 0){$basename = pathinfo($file['filename'], PATHINFO_FILENAME);}
+			}
+			if(!isset($basename)){$basename="logfile";}
+			
+			$compiler_config['logging'] = true;
+			$directory = $compiler_config['logdir'];
+			if(!file_exists($directory)){mkdir($directory);}
+			
+			$compiler_config['logFileName'] = $directory ."/". $basename ."_". $randPart .".txt";
+			
+			file_put_contents($compiler_config['logFileName'], '');
+		}
+		elseif(!array_key_exists('logging', $temp) or !$temp['logging'])
+		{
+			$compiler_config['logging'] = false;
+		}
 	}
 }

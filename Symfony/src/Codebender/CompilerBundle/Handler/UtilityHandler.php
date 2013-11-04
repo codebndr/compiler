@@ -151,7 +151,7 @@ class UtilityHandler
 
 				// Perform a new compile request.
 				$compiler = new CompilerHandler();
-				$reply = $compiler->main(json_encode($request), $compiler_config);
+				$reply = $compiler->main(json_encode($request), $compiler_config, false);
 
 				if ($reply["success"] == false)
 					return array(
