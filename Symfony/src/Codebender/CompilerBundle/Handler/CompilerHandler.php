@@ -111,9 +111,15 @@ class CompilerHandler
 					"output" => $content);
 		}
 
+		
+		//Link all core object files to a core.a library
+		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
+		$core_name = $this->utility->directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
+		
+		if(!file_exists($core_name)){
+		
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
 		$core_objects = $this->utility->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
@@ -124,12 +130,11 @@ class CompilerHandler
 		*/
 		//$files["o"] = array_merge($files["o"], $core_objects);
 		
-		//Link all core object files to a core.a library
-		$core_name = $this->utility->directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
 		
-		if(!file_exists($core_name)){
 			foreach($core_objects as $core_obj){
 					exec("$AR $ARFLAGS $core_name $core_obj.o", $output);
+					//Remove object file, since its contents are now linked to the core.a file
+					unlink("$core_obj.o");
 					if($compiler_config['logging']){
 						file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_name $core_obj.o"."\n", FILE_APPEND);
 					}
