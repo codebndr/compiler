@@ -24,11 +24,11 @@ class CompilerHandler
 	private $postproc;
 	private $utility;
 
-	function __construct()
+	function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl)
 	{
-		$this->preproc = new PreprocessingHandler();
-		$this->postproc = new PostprocessingHandler();
-		$this->utility = new UtilityHandler();
+		$this->preproc = $preprocHandl;
+		$this->postproc = $postprocHandl;
+		$this->utility = $utilHandl;
 	}
 
 	/**

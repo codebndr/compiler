@@ -55,8 +55,17 @@ class DefaultController extends Controller
 		if ($version == "v1")
 		{
 			$request = $this->getRequest()->getContent();
-			$compiler = new CompilerHandler();
+			//$compiler = new CompilerHandler();
+			$preproc = $this->get('preprocessing_handler');
+			$postproc = $this->get('postprocessing_handler');
+			$util = $this->get('utility_handler');
+			$compiler = $this->get('compiler_handler');
 			
+			$compilerSet = json_decode($util->setCompiler($compiler), true);
+			if(!$compilerSet['success']){
+				return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Cannot initialize compiler.")));
+			}
+	
 			$reply = $compiler->main($request, $params, true);
 			
 			return new Response(json_encode($reply));

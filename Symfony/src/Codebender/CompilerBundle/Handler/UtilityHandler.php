@@ -13,6 +13,7 @@ namespace Codebender\CompilerBundle\Handler;
 class UtilityHandler
 {
 	public $directory;
+	protected $compiler;
 
 	function __construct()
 	{
@@ -20,6 +21,17 @@ class UtilityHandler
 		if(!file_exists($this->directory))
 			mkdir($this->directory);
 	}
+	
+    public function setCompiler(CompilerHandler $compiler)
+    {
+        $this->compiler = $compiler;
+		if(!isset($this->compiler)){
+			return json_encode(array("success"=>false));
+		}
+		else{
+			return json_encode(array("success"=>true));
+		}
+    }
 
 	/**
 	\brief Creates objects for every source file in a directory.
@@ -150,8 +162,8 @@ class UtilityHandler
 					"content" => file_get_contents("$directory/$filename"));
 
 				// Perform a new compile request.
-				$compiler = new CompilerHandler();
-				$reply = $compiler->main(json_encode($request), $compiler_config, false);
+				//$compiler = new CompilerHandler();
+				$reply = $this->compiler->main(json_encode($request), $compiler_config, false);
 
 				if ($reply["success"] == false)
 					return array(
