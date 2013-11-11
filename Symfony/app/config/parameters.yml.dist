@@ -30,6 +30,7 @@ parameters:
     clang: "/usr/bin/clang"
     objcopy: "/usr/bin/avr-objcopy"
     size: "/usr/bin/avr-size"
+    objdir: "/tmp/codebender_object_files"
     logdir: "/tmp/codebender_log"
 
     # -------- You shouldn't need to edit anything beyond this point. -------- \\

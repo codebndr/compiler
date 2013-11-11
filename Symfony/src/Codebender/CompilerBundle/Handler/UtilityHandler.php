@@ -13,11 +13,12 @@ namespace Codebender\CompilerBundle\Handler;
 class UtilityHandler
 {
 	public $directory;
-	protected $compiler;
+	private $compiler;
 
-	function __construct()
+	function __construct($object_files_directory)
 	{
-		$this->directory = "/tmp/codebender_object_files";
+		//$this->directory = "/tmp/codebender_object_files";
+		$this->directory = $object_files_directory;
 		if(!file_exists($this->directory))
 			mkdir($this->directory);
 	}
