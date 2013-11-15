@@ -33,7 +33,10 @@ class CompilerHandler
         $this->object_directory = $objdir;
 
         if(!file_exists($this->object_directory))
-            mkdir($this->object_directory);
+            if(!mkdir($this->object_directory)){
+                //TODO: Handle the exception returning a json response to the CompilerHandler
+                throw new Exception('Could not create object files directory.');
+            }
 	}
 
 	/**
