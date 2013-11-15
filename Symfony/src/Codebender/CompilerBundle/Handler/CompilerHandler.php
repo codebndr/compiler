@@ -23,12 +23,17 @@ class CompilerHandler
 	private $preproc;
 	private $postproc;
 	private $utility;
+    private $object_directory;
 
-	function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl)
+	function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, $objdir)
 	{
 		$this->preproc = $preprocHandl;
 		$this->postproc = $postprocHandl;
 		$this->utility = $utilHandl;
+        $this->object_directory = $objdir;
+
+        if(!file_exists($this->object_directory))
+            mkdir($this->object_directory);
 	}
 
 	/**
@@ -114,13 +119,13 @@ class CompilerHandler
 		
 		//Link all core object files to a core.a library
 		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
-		$core_name = $this->utility->directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
+		$core_name = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
 		
 		if(!file_exists($core_name)){
 		
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->utility->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
@@ -145,7 +150,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->utility->create_objects($compiler_config, $directory, NULL, true, false, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->create_objects($compiler_config, $directory, NULL, true, false, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
@@ -479,4 +484,156 @@ class CompilerHandler
 			$compiler_config['logging'] = false;
 		}
 	}
+
+    /**
+    \brief Creates objects for every source file in a directory.
+
+    \param string $directory The directory where the sources are located.
+    \param mixed $exclude_files An array of files to exclude from the compilation.
+    \param bool $send_headers <b>TRUE</b> if this directory contains a library.
+    \param string $mcu <b>mcu</b> build flag.
+    \param string $f_cpu <b>f_cpu</b> build flag.
+    \param string $core <b>core</b> build flag.
+    \param string $variant <b>variant</b> build flag.
+    \param string $vid <b>vid</b> build flag (Leonardo).
+    \param string $pid <b>pid</b> build flag (Leonardo).
+    \return An array of object files or a reply message in case of error.
+
+    In case of error, the return value is an array that has a key <b>success</b>
+    and contains the response to be sent back to the user.
+     */
+
+    function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $libc_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+    {
+        if ($exclude_files)
+        {
+            if (is_string($exclude_files))
+                $exclude = $exclude_files;
+            elseif (is_array($exclude_files))
+                $exclude = implode("|", $exclude_files);
+        }
+
+        $request_template = array(
+            "format" => "object",
+            "version" => $version,
+            "libraries" => $libraries,
+            "build" => array(
+                "mcu" => $mcu,
+                "f_cpu" => $f_cpu,
+                "core" => $core,
+                "variant" => $variant,
+                "vid" => $vid,
+                "pid" => $pid));
+
+        $object_files = array();
+        $sources = $this->utility->get_files_by_extension($directory, array("c", "cpp", "S"));
+
+        if (file_exists("$directory/utility"))
+        {
+            $utility_sources = $this->utility->get_files_by_extension("$directory/utility", array("c", "cpp", "S"));
+            foreach ($utility_sources as &$i)
+                $i = "utility/$i";
+            unset($i);
+            $sources = array_merge($sources, $utility_sources);
+        }
+
+        if (file_exists("$directory/avr-libc") && $libc_headers)
+        {
+            $avr_libc_sources = $this->utility->get_files_by_extension("$directory/avr-libc", array("c", "cpp", "S"));
+            foreach ($avr_libc_sources as &$i)
+                $i = "avr-libc/$i";
+            unset($i);
+            $sources = array_merge($sources, $avr_libc_sources);
+        }
+
+        foreach ($sources as $filename)
+        {
+            // Do not proceed if this file should not be compiled.
+            //TODO: Check if /tmp/codebender/ fix fucks this up
+            if (isset($exclude) && preg_match("/(?:$exclude)/", pathinfo($filename, PATHINFO_BASENAME)))
+                continue;
+
+            // For every source file and set of build options there is a
+            // corresponding object file. If that object is missing, a new
+            // compile request is sent to the service.
+            //TODO: Existing Library .o files will probably not be used right now (due to /tmp/compiler.random/ dir)
+            //TODO: Investigate security issue
+            $object_file = $this->object_directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
+            if (!file_exists("$object_file.o"))
+            {
+                // Include any header files in the request.
+                if ($send_headers && !array_key_exists("files", $request_template))
+                {
+                    $request_template["files"] = array();
+                    $header_files = $this->utility->get_files_by_extension($directory, array("h", "inc"));
+
+                    if (file_exists("$directory/utility"))
+                    {
+                        $utility_headers = $this->utility->get_files_by_extension("$directory/utility", array("h", "inc"));
+                        foreach ($utility_headers as &$i)
+                            $i = "utility/$i";
+                        unset($i);
+                        $header_files = array_merge($header_files, $utility_headers);
+                    }
+
+                    foreach ($header_files as $header_filename)
+                    {
+                        $request_template["files"][] = array(
+                            "filename" => $header_filename,
+                            "content" => file_get_contents("$directory/$header_filename"));
+                    }
+                }
+
+                //Include header files from c library ( needed for malloc and realloc )
+                if($libc_headers && !array_key_exists("files", $request_template))
+
+                    if (file_exists("$directory/avr-libc"))
+                    {
+                        $request_template["files"] = array();
+                        $header_files = array();
+
+                        $avr_libc_headers = $this->utility->get_files_by_extension("$directory/avr-libc", array("h", "inc"));
+                        foreach ($avr_libc_headers as &$i)
+                            $i = "avr-libc/$i";
+                        unset($i);
+                        $header_files = array_merge($header_files, $avr_libc_headers);
+
+                        foreach ($header_files as $header_filename)
+                        {
+                            $request_template["files"][] = array(
+                                "filename" => $header_filename,
+                                "content" => file_get_contents("$directory/$header_filename"));
+                        }
+
+                    }
+
+
+                // Include the source file.
+                $request = $request_template;
+                $request["files"][] = array(
+                    "filename" => $filename,
+                    "content" => file_get_contents("$directory/$filename"));
+
+                // Perform a new compile request.
+                //$compiler = new CompilerHandler();
+                $reply = $this->main(json_encode($request), $compiler_config, false);
+
+                if ($reply["success"] == false)
+                    return array(
+                        "success" => false,
+                        "step" => 5,
+                        "message" => $reply["message"],
+                        "debug" => $request);
+
+                //TODO: Make a check here and fail gracefully
+                file_put_contents("$object_file.o", base64_decode($reply["output"]));
+            }
+
+            $object_files[] = $object_file;
+        }
+
+        // All object files created successfully.
+        return $object_files;
+    }
+
 }
