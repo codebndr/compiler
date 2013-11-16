@@ -142,7 +142,8 @@ class CompilerHandler
 			foreach($core_objects as $core_obj){
 					exec("$AR $ARFLAGS $core_name $core_obj.o", $output);
 					//Remove object file, since its contents are now linked to the core.a file
-					unlink("$core_obj.o");
+					if(file_exists("$core_obj.o"))
+                        unlink("$core_obj.o");
 					if($compiler_config['logging']){
 						file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_name $core_obj.o"."\n", FILE_APPEND);
 					}
