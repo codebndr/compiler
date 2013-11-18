@@ -49,9 +49,6 @@ parameters:
     objcopy_flags: "-R .eeprom"
     size_flags: ""
 
-    # The name of the Arduino skeleton file, which is prepended to *.ino files.
-    arduino_skel: "main.cpp"
-
     # The default name of the output file, which is created in /tmp/compiler.xxxx
     # by default.
     output: "output"

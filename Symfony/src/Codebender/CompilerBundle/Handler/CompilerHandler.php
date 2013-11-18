@@ -45,7 +45,7 @@ class CompilerHandler
 
 		$this->set_values($compiler_config,
 			$CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $ARDUINO_SKEL);
+			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR);
 
 		$start_time = microtime(true);
 
@@ -75,7 +75,7 @@ class CompilerHandler
 			return $tmp;
 
 		// Step 2: Preprocess Arduino source files.
-		$tmp = $this->preprocessIno($files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core);
+		$tmp = $this->preprocessIno($files, $ARDUINO_CORES_DIR, $version, $core);
 		if ($tmp["success"] == false)
 			return $tmp;
 
@@ -130,7 +130,7 @@ class CompilerHandler
 		
 		// Step 5: Create objects for core files.
 		//TODO: make it compatible with non-default hardware (variants & cores)
-		$core_objects = $this->create_objects($compiler_config, $core_dir, $ARDUINO_SKEL, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+		$core_objects = $this->create_objects($compiler_config, $core_dir, false, true, array(), $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 		//TODO: Upgrade this
 		if (array_key_exists("success", $core_objects))
 			return $core_objects;
@@ -156,7 +156,7 @@ class CompilerHandler
 		// Step 6: Create objects for libraries.
 		foreach ($files["dir"] as $directory)
 		{
-			$library_objects = $this->create_objects($compiler_config, $directory, NULL, true, false, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+			$library_objects = $this->create_objects($compiler_config, $directory, true, false, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 			//TODO: Upgrade this
 			if (array_key_exists("success", $library_objects))
 				return $library_objects;
@@ -231,19 +231,12 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	private function preprocessIno(&$files, $ARDUINO_CORES_DIR, $ARDUINO_SKEL, $version, $core)
+	private function preprocessIno(&$files, $ARDUINO_CORES_DIR, $version, $core)
 	{
 		foreach ($files["ino"] as $file)
 		{
-			//TODO: make it compatible with non-default hardware (variants & cores)
-			if (!isset($skel) && ($skel = file_get_contents("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core/$ARDUINO_SKEL")) === false)
-				return array(
-					"success" => false,
-					"step" => 2,
-					"message" => "Failed to open Arduino skeleton file.");
-
 			$code = file_get_contents("$file.ino");
-			$new_code = $this->preproc->ino_to_cpp($skel, $code, "$file.ino");
+			$new_code = $this->preproc->ino_to_cpp($code, "$file.ino");
 			$ret = file_put_contents("$file.cpp", $new_code);
 
 			if ($code === false || !$new_code || !$ret)
@@ -410,7 +403,7 @@ class CompilerHandler
 	private function set_values($compiler_config,
 	                            &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
 	                            &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$ARDUINO_SKEL)
+	                            &$OUTPUT, &$ARDUINO_CORES_DIR)
 	{
 		// External binaries.
 		$CC = $compiler_config["cc"];
@@ -435,8 +428,6 @@ class CompilerHandler
 		$OUTPUT = $compiler_config["output"];
 		// Path to arduino-core-files repository.
 		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
-		// The name of the Arduino skeleton file.
-		$ARDUINO_SKEL = $compiler_config["arduino_skel"];
 	}
 
 	private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
@@ -495,8 +486,8 @@ class CompilerHandler
     \brief Creates objects for every source file in a directory.
 
     \param string $directory The directory where the sources are located.
-    \param mixed $exclude_files An array of files to exclude from the compilation.
     \param bool $send_headers <b>TRUE</b> if this directory contains a library.
+    \param bool libc_headers <b>TRUE</b> when creating core object files
     \param string $mcu <b>mcu</b> build flag.
     \param string $f_cpu <b>f_cpu</b> build flag.
     \param string $core <b>core</b> build flag.
@@ -509,16 +500,8 @@ class CompilerHandler
     and contains the response to be sent back to the user.
      */
 
-    function create_objects($compiler_config, $directory, $exclude_files, $send_headers, $libc_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
+    function create_objects($compiler_config, $directory, $send_headers, $libc_headers, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid)
     {
-        if ($exclude_files)
-        {
-            if (is_string($exclude_files))
-                $exclude = $exclude_files;
-            elseif (is_array($exclude_files))
-                $exclude = implode("|", $exclude_files);
-        }
-
         $request_template = array(
             "format" => "object",
             "version" => $version,
@@ -554,11 +537,6 @@ class CompilerHandler
 
         foreach ($sources as $filename)
         {
-            // Do not proceed if this file should not be compiled.
-            //TODO: Check if /tmp/codebender/ fix fucks this up
-            if (isset($exclude) && preg_match("/(?:$exclude)/", pathinfo($filename, PATHINFO_BASENAME)))
-                continue;
-
             // For every source file and set of build options there is a
             // corresponding object file. If that object is missing, a new
             // compile request is sent to the service.
