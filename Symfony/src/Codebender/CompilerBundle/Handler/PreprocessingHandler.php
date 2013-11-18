@@ -15,7 +15,6 @@ class PreprocessingHandler
 	/**
 	\brief Generates valid C++ code from Arduino source code.
 
-	\param string $skel The contents of the Arduino skeleton file.
 	\param string $code The input source code.
 	\param string $filename (optional) The name of the input file.
 	\return Valid C++ code, the result of processing the input.
@@ -27,9 +26,9 @@ class PreprocessingHandler
 	- lack of function prototypes
 
 	A skeleton file is provided in the Arduino core files that contains a
-	<b>main()</b> function. Its contents have to be at the top of the output file.
+	<b>main()</b> function. Its contents have to be linked to the output file later.
 	The prototypes of the functions defined in the input file should be added
-	beneath that. This is required to avoid compiler errors regarding undefined
+	above the code. This is required to avoid compiler errors regarding undefined
 	functions.
 
 	The programmer is not aware of this modifications to his code. In case of a
@@ -46,7 +45,7 @@ class PreprocessingHandler
 	- pointers to functions
 	- arrays, structs, and unions
 	 */
-	function ino_to_cpp($skel, $code, $filename = NULL)
+	function ino_to_cpp($code, $filename = NULL)
 	{
 		// Supported primitives for parameters and return values. They are put
 		// in a string, separated by "|" to be used in regular expressions.
@@ -78,12 +77,10 @@ class PreprocessingHandler
 		// int *foo(volatile int *bar, int baz)
 		$REGEX = "/^\s*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*\((?:\s*(?:$VOID|((?:$QUALS)\s*)*((?:$SPECS)\s*)*(?:$TYPES)\s*\**\s*\w+\s*,?)\s*)*\)/";
 
-		$new_code = "";
+        // Firstly, include the Arduino header file
+		$new_code = "#include <Arduino.h>\n";
 
-		// Firstly, include the contents of the skeleton file.
-		$new_code .= $skel;
-
-		// Secondly, generate and add the function prototypes.
+        // Secondly, generate and add the function prototypes.
 		foreach (explode("\n", $code) as $line)
 			if (preg_match($REGEX, $line, $matches))
 				$new_code .= $matches[0].";\n";
