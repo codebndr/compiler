@@ -31,12 +31,6 @@ class CompilerHandler
 		$this->postproc = $postprocHandl;
 		$this->utility = $utilHandl;
         $this->object_directory = $objdir;
-
-        if(!file_exists($this->object_directory))
-            if(!mkdir($this->object_directory)){
-                //TODO: Handle the exception returning a json response to the CompilerHandler
-                throw new Exception('Could not create object files directory.');
-            }
 	}
 
 	/**
@@ -122,6 +116,14 @@ class CompilerHandler
 		
 		//Link all core object files to a core.a library
 		$core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
+        //TODO: Figure out why Symfony needs "@" to suppress mkdir wanring
+        if(!file_exists($this->object_directory))
+            if(!@mkdir($this->object_directory)){
+                return array(
+                    "success" => false,
+                    "step" => 5,
+                    "message" => "Could not create object files directory.");
+            }
 		$core_name = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
 		
 		if(!file_exists($core_name)){
@@ -629,8 +631,13 @@ class CompilerHandler
                         "message" => $reply["message"],
                         "debug" => $request);
 
-                //TODO: Make a check here and fail gracefully
-                file_put_contents("$object_file.o", base64_decode($reply["output"]));
+                //TODO: Figure out why Symfony needs "@" to suppress file_put_contents wanring
+                if(!@file_put_contents("$object_file.o", base64_decode($reply["output"]))){
+                    return array(
+                        "success" => false,
+                        "step" => 5,
+                        "message" => "Could not create one of the object files.");
+                }
             }
 
             $object_files[] = $object_file;
