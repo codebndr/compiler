@@ -537,12 +537,21 @@ class CompilerHandler
 
         foreach ($sources as $filename)
         {
+            // If $send_headers is set the compiler is trying to make the object files
+            // for some library. In order to make the object filename unique across
+            // several libraries, the library name should be added to it. In this case,
+            // the library name is included in the $directory variable.
+
             // For every source file and set of build options there is a
             // corresponding object file. If that object is missing, a new
             // compile request is sent to the service.
             //TODO: Existing Library .o files will probably not be used right now (due to /tmp/compiler.random/ dir)
             //TODO: Investigate security issue
-            $object_file = $this->object_directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
+            if($send_headers){
+               $object_file =$this->object_directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."______".pathinfo($directory, PATHINFO_BASENAME)."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
+            }
+            else
+                $object_file = $this->object_directory."/".pathinfo(str_replace("/", "__", $directory."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______".pathinfo(str_replace("/", "__", "$filename"), PATHINFO_FILENAME);
             if (!file_exists("$object_file.o"))
             {
                 // Include any header files in the request.
