@@ -48,10 +48,13 @@ class UtilityHandler
 		// Examples: foo.c bar.cpp
 		$REGEX = "/(.*)\.($EXTENSIONS)$/";
 
+        if(!file_exists($directory))
+            mkdir($directory, 0777, true);
+
 		foreach ($request_files as $file)
 		{
-			$filename = $file->filename;
-			$content = $file->content;
+			$filename = $file["filename"];
+			$content = $file["content"];
 
 			$failure_response = array(
 				"success" => false,

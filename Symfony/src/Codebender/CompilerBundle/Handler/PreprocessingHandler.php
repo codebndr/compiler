@@ -255,7 +255,7 @@ class PreprocessingHandler
 	 */
 	function validate_input($request)
 	{
-		$request = json_decode($request);
+		$request = json_decode($request, true);
 
 		// Request must be successfully decoded.
 		if ($request === NULL)
@@ -265,27 +265,27 @@ class PreprocessingHandler
 			&& array_key_exists("version", $request)
 			&& array_key_exists("build", $request)
 			&& array_key_exists("files", $request)
-			&& is_object($request->build)
+			&& is_array($request["build"])
 			&& array_key_exists("libraries", $request)
-			&& array_key_exists("mcu", $request->build)
-			&& array_key_exists("f_cpu", $request->build)
-			&& array_key_exists("core", $request->build)
-			&& array_key_exists("variant", $request->build)
-			&& is_array($request->files))
+			&& array_key_exists("mcu", $request["build"])
+			&& array_key_exists("f_cpu", $request["build"])
+			&& array_key_exists("core", $request["build"])
+			&& array_key_exists("variant", $request["build"])
+			&& is_array($request["files"]))
 		)
 			return NULL;
 
 		// Leonardo-specific flags.
-		if ($request->build->variant == "leonardo")
-			if (!(array_key_exists("vid", $request->build)
-				&& array_key_exists("pid", $request->build))
+		if ($request["build"]["variant"] == "leonardo")
+			if (!(array_key_exists("vid", $request["build"])
+				&& array_key_exists("pid", $request["build"]))
 			)
 				return NULL;
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
 		foreach (array("version", "mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
-			if (isset($request->build->$i) && escapeshellcmd($request->build->$i) != $request->build->$i)
+			if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i])
 				return NULL;
 
 		// Request is valid.
