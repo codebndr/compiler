@@ -30,7 +30,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function extract_files($directory, $request_files)
+	function extract_files($directory, &$request_files, $lib_extraction)
 	{
 		// File extensions used by Arduino projects. They are put in a string,
 		// separated by "|" to be used in regular expressions. They are also
@@ -51,10 +51,11 @@ class UtilityHandler
         if(!file_exists($directory))
             mkdir($directory, 0777, true);
 
-		foreach ($request_files as $file)
+		foreach ($request_files as $key => &$file)
 		{
 			$filename = $file["filename"];
 			$content = $file["content"];
+            $ignore = false;
 
 			$failure_response = array(
 				"success" => false,
@@ -70,13 +71,26 @@ class UtilityHandler
 			if (strpos($filename, DIRECTORY_SEPARATOR))
 			{
 				$new_directory = pathinfo($filename, PATHINFO_DIRNAME);
-				if (!file_exists("$directory/$new_directory"))
-					mkdir("$directory/$new_directory", 0777, true);
-				// There is no reason to check whether mkdir()
-				// succeeded, given that the call to
-				// file_put_contents() that follows would fail
-				// as well.
+                if ($lib_extraction === true){
+                    if ($new_directory === "utility"){
+                        if (!file_exists("$directory/$new_directory"))
+                            mkdir("$directory/$new_directory", 0777, true);
+                        // There is no reason to check whether mkdir()
+                        // succeeded, given that the call to
+                        // file_put_contents() that follows would fail
+                        // as well.
+                    }
+                    else{
+                        unset($request_files[$key]);
+                        $ignore = true;
+                    }
+                }
+                else
+                    if (!file_exists("$directory/$new_directory"))
+                        mkdir("$directory/$new_directory", 0777, true);
 			}
+            if ($ignore === true)
+                continue;
 
 			if (file_put_contents("$directory/$filename", $content) === false)
 				return $failure_response;

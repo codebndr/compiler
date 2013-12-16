@@ -76,7 +76,7 @@ class CompilerHandler
         $files["libs"] = array();
         foreach($libraries as $library => $library_files){
 
-            $tmp = $this->extractFiles($library_files, $compiler_dir, $files["libs"][$library], "libraries/$library");
+            $tmp = $this->extractFiles($library_files, $compiler_dir, $files["libs"][$library], "libraries/$library", true);
             if ($tmp["success"] == false)
                 return $tmp;
         }
@@ -211,7 +211,7 @@ class CompilerHandler
 		else return array("success" => true);
 	}
 
-	private function extractFiles($request, &$dir, &$files, $suffix)
+	private function extractFiles($request, &$dir, &$files, $suffix, $lib_extraction = false)
 	{
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
@@ -225,7 +225,7 @@ class CompilerHandler
 				"step" => 1,
 				"message" => "Failed to create temporary directory.");
 
-        $response = $this->utility->extract_files("$dir/$suffix", $request);
+        $response = $this->utility->extract_files("$dir/$suffix", $request, $lib_extraction);
 
 		if ($response["success"] === false)
 			return $response;
