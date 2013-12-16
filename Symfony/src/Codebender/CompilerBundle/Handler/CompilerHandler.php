@@ -289,9 +289,11 @@ class CompilerHandler
 		{
 			foreach ($files[$ext] as $file)
 			{
-                if($caching)
-                    $object_file =$this->object_directory."/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}".(($name_params['variant'] == "leonardo") ? "_${name_params['vid']}_${name_params['pid']}" : "")."______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
-				else
+                if($caching){
+                    $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}".(($name_params['variant'] == "leonardo") ? "_${name_params['vid']}_${name_params['pid']}" : "")."______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
+                    $object_file = escapeshellarg($object_filename);
+                }
+                else
                     $object_file = escapeshellarg($file);
                 if(!file_exists("$object_file.o")){
                     // From hereon, $file is shell escaped and thus should only be used in calls
@@ -343,7 +345,7 @@ class CompilerHandler
 				    $files["o"][] = array_shift($files[$ext]);
                 }
                 else{
-                    $files["o"][] = $object_file;
+                    $files["o"][] = $object_filename;
                     array_shift($files[$ext]);
                 }
 			}
