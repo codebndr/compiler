@@ -59,7 +59,7 @@ class DefaultController extends Controller
             //Get the compiler service
 			$compiler = $this->get('compiler_handler');
 
-			$reply = $compiler->main($request, $params, true);
+			$reply = $compiler->main($request, $params);
 
 			return new Response(json_encode($reply));
 		}
