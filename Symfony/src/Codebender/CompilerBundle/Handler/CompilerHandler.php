@@ -291,14 +291,15 @@ class CompilerHandler
 			{
                 if($caching){
                     $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}".(($name_params['variant'] == "leonardo") ? "_${name_params['vid']}_${name_params['pid']}" : "")."______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
-                    $object_file = escapeshellarg($object_filename);
+                    $object_file = $object_filename;
                 }
                 else
-                    $object_file = escapeshellarg($file);
+                    $object_file = $file;
                 if(!file_exists("$object_file.o")){
                     // From hereon, $file is shell escaped and thus should only be used in calls
                     // to exec().
                     $file = escapeshellarg($file);
+                    $object_file = escapeshellarg($object_file);
 
                     //replace exec() calls with $this->utility->debug_exec() for debugging
                     if ($ext == "c")
