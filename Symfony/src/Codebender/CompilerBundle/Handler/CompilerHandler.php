@@ -54,12 +54,6 @@ class CompilerHandler
 		$tmp = $this->requestValid($request);
 		if($tmp["success"] === false)
 			return $tmp;
-
-        //Set logging to true if requested, and create the directory where logfiles are stored.
-        //TODO: Replace $tmp variable name
-		$tmp = $this->setLoggingParams($request, $compiler_config);
-        if($tmp["success"] === false)
-            return $tmp;
 		
 		$this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
@@ -81,6 +75,12 @@ class CompilerHandler
                 return $tmp;
         }
 
+        //Set logging to true if requested, and create the directory where logfiles are stored.
+        //TODO: Replace $tmp variable name
+        $tmp = $this->setLoggingParams($request, $compiler_config, $compiler_dir);
+        if($tmp["success"] === false)
+            return $tmp;
+
 		// Step 2: Preprocess Arduino source files.
 		$tmp = $this->preprocessIno($files["sketch_files"]);
 		if ($tmp["success"] == false)
@@ -98,6 +98,13 @@ class CompilerHandler
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
 
+        $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
+        if ($compiler_config['logging'] === true){
+            if ($log_content !== false)
+                $ret["log"] = $log_content;
+            else
+                return array("success" => "false", "message" => "Failed to access logfile.");
+        }
         if (!$ret["success"])
 			return $ret;
 
@@ -113,16 +120,32 @@ class CompilerHandler
 		if ($format == "object")
 		{
 			$content = base64_encode(file_get_contents($files["sketch_files"]["o"][0].".o"));
-			if (count($files["sketch_files"]["o"]) != 1 || !$content)
-				return array(
+			if (count($files["sketch_files"]["o"]) != 1 || !$content){
+				if ($compiler_config['logging'] === false)
+                    return array(
 					"success" => false,
 					"step" => -1, //TODO: Fix this step?
 					"message" => "");
-			else
-				return array(
+                else
+                    return array(
+                        "success" => false,
+                        "step" => -1, //TODO: Fix this step?
+                        "message" => "",
+                        "log" => $log_content);
+            }
+			else{
+                if ($compiler_config['logging'] === false)
+				    return array(
 					"success" => true,
 					"time" => microtime(true) - $start_time,
 					"output" => $content);
+                else
+                    return array(
+                        "success" => true,
+                        "time" => microtime(true) - $start_time,
+                        "output" => $content,
+                        "log" => $log_content);
+            }
 		}
 
         // Step 5: Create objects for core files (if core file does not already exist)
@@ -131,10 +154,17 @@ class CompilerHandler
         //TODO: Figure out why Symfony needs "@" to suppress mkdir wanring
         if(!file_exists($this->object_directory))
             if(!@mkdir($this->object_directory)){
-                return array(
-                    "success" => false,
-                    "step" => 5,
-                    "message" => "Could not create object files directory.");
+                if ($compiler_config['logging'] === false)
+                    return array(
+                        "success" => false,
+                        "step" => 5,
+                        "message" => "Could not create object files directory.");
+                else
+                    return array(
+                        "success" => false,
+                        "step" => 5,
+                        "message" => "Could not create object files directory.",
+                        "log" => $log_content);
             }
 		//Generate full pathname of the cores library and then check if the library exists.
         $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
@@ -144,13 +174,29 @@ class CompilerHandler
             //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
             $tmp = $this->makeCoresTmp($core_dir, $compiler_dir, $files);
 
-            if(!$tmp["success"])
-                return $tmp;
+            if(!$tmp["success"]){
+                if ($compiler_config['logging'] === false)
+                    return $tmp;
+                else{
+                    $tmp["log"] = $log_content;
+                    return $tmp;
+                }
+            }
 
             $ret = $this->handleCompile("$compiler_dir/core", $files["core"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["core"], "object");
 
-            if(!$ret["success"])
+            $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
+
+            if(!$ret["success"]){
+                if ($compiler_config['logging'] === true){
+                    if ($log_content !== false){
+                        $ret["log"] = $log_content;
+                    }
+                    else
+                        return array("success" => "false", "message" => "Failed to access logfile.");
+                }
                 return $ret;
+            }
 
             foreach($files["core"]["o"] as $core_object){
                 //Link object file to library.
@@ -171,6 +217,14 @@ class CompilerHandler
 
             $ret = $this->handleCompile("$compiler_dir/libraries/$library_name", $files["libs"][$library_name], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format, true, $lib_object_naming_params);
 
+            $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
+            if ($compiler_config['logging'] === true){
+                if ($log_content !== false)
+                    $ret["log"] = $log_content;
+                else
+                    return array("success" => "false", "message" => "Failed to access logfile.");
+            }
+
             if(!$ret["success"])
                 return $ret;
 
@@ -187,16 +241,36 @@ class CompilerHandler
 		if($compiler_config['logging']){
 						file_put_contents($compiler_config['logFileName'], "$LD $LDFLAGS $target_arch $object_files $core_library -o $compiler_dir/files/$OUTPUT.elf $LDFLAGS_TAIL\n", FILE_APPEND);
 					}
-		if ($ret_link)
-			return array(
-				"success" => false,
-				"step" => 7,
-				"message" => implode("\n", $output));
+
+		if ($ret_link){
+            $returner =array(
+                    "success" => false,
+                    "step" => 7,
+                    "message" => implode("\n", $output));
+            if ($compiler_config['logging'] === false)
+                return $returner;
+            else{
+                $log_content = @file_get_contents($compiler_config['logFileName']);
+                if (!$log_content)
+                    return array("success" => "false", "message" => "Failed to access logfile.");
+                else
+                    return array_merge($returner, array("log" => $log_content));
+            }
+        }
 
 		// Step 8: Convert the output to the requested format and measure its
 		// size.
 		$tmp = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
-		return $tmp;
+
+        if ($compiler_config['logging'] === false)
+            return $tmp;
+        else{
+            $log_content = @file_get_contents($compiler_config['logFileName']);
+            if (!$log_content)
+                return array("success" => "false", "message" => "Failed to access logfile.");
+            else
+                return array_merge($tmp, array("log" => $log_content));
+        }
 
 	}
 
@@ -456,7 +530,7 @@ class CompilerHandler
 		$pid = ($variant == "leonardo") ? $request["build"]["pid"] : "null";
 	}
 	
-	private function setLoggingParams($request, &$compiler_config)
+	private function setLoggingParams($request, &$compiler_config, $compiler_dir)
 	{
 		//Check if $request['logging'] exists and is true, then make the logfile, otherwise set
 		//$compiler_config['logdir'] to false and return to caller
@@ -483,8 +557,9 @@ class CompilerHandler
                 if(!@mkdir($directory))
                     return array("success"=>false, "message"=>"Failed to create logfiles directory.");
 
+            $compiler_part = str_replace(".", "_", substr($compiler_dir, strpos($compiler_dir, "compiler")));
 			
-			$compiler_config['logFileName'] = $directory ."/". $basename ."_". $randPart .".txt";
+			$compiler_config['logFileName'] = $directory ."/". $basename ."_".$compiler_part."_". $randPart .".txt";
 			
 			file_put_contents($compiler_config['logFileName'], '');
 		}
