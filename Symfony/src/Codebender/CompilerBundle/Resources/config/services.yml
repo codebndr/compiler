@@ -11,7 +11,7 @@ services:
 #        arguments: [@service_id, "plain_value", %parameter%]
     compiler_handler:
         class:			"%compiler_handler.class%"
-        arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "%objdir%"]
+        arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "%temp_dir%/%objdir%"]
     utility_handler:
         class:			"%utility_handler.class%"
     preprocessing_handler:

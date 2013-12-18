@@ -45,7 +45,7 @@ class CompilerHandler
 
 		$this->set_values($compiler_config,
 			$CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR);
+			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $TEMP_DIR);
 
 		$start_time = microtime(true);
 
@@ -62,7 +62,7 @@ class CompilerHandler
 			$initCall is set to false
 		*/
 		if($initCall)	
-			$this->setLoggingParams(json_encode($request), $compiler_config);
+			$this->setLoggingParams(json_encode($request), $compiler_config, $TEMP_DIR);
 		
 		$this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
 
@@ -70,7 +70,7 @@ class CompilerHandler
 		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
 
 		// Step 1: Extract the files included in the request.
-		$tmp = $this->extractFiles($request, $dir, $files);
+		$tmp = $this->extractFiles($request, $TEMP_DIR, $dir, $files);
 		if ($tmp["success"] == false)
 			return $tmp;
 
@@ -197,12 +197,12 @@ class CompilerHandler
 		else return array("success" => true);
 	}
 
-	private function extractFiles($request, &$dir, &$files)
+	private function extractFiles($request, $temp_dir, &$dir, &$files)
 	{
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
 		// default and is automatically removed upon execution completion.
-		$dir = System::mktemp("-t /tmp/ -d compiler.");
+		$dir = System::mktemp("-t $temp_dir/ -d compiler.");
 
 		if (!$dir)
 			return array(
@@ -403,7 +403,7 @@ class CompilerHandler
 	private function set_values($compiler_config,
 	                            &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
 	                            &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-	                            &$OUTPUT, &$ARDUINO_CORES_DIR)
+	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$TEMP_DIR)
 	{
 		// External binaries.
 		$CC = $compiler_config["cc"];
@@ -426,6 +426,8 @@ class CompilerHandler
 		$SIZE_FLAGS = $compiler_config["size_flags"];
 		// The default name of the output file.
 		$OUTPUT = $compiler_config["output"];
+        // The tmp folder where logfiles and object files are placed
+        $TEMP_DIR = $compiler_config["temp_dir"];
 		// Path to arduino-core-files repository.
 		$ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
 	}
@@ -446,7 +448,7 @@ class CompilerHandler
 		$pid = ($variant == "leonardo") ? $request->build->pid : "null";
 	}
 	
-	private function setLoggingParams($request, &$compiler_config)
+	private function setLoggingParams($request, &$compiler_config, $temp_dir)
 	{
 		$temp = json_decode($request,true);
 		//Check if $request['logging'] exists and is true, then make the logfile, otherwise set
@@ -469,8 +471,8 @@ class CompilerHandler
 			if(!isset($basename)){$basename="logfile";}
 			
 			$compiler_config['logging'] = true;
-			$directory = $compiler_config['logdir'];
-			if(!file_exists($directory)){mkdir($directory);}
+			$directory = $temp_dir."/".$compiler_config['logdir'];
+			if(!file_exists($directory)){mkdir($directory, 0777, true);}
 			
 			$compiler_config['logFileName'] = $directory ."/". $basename ."_". $randPart .".txt";
 			
