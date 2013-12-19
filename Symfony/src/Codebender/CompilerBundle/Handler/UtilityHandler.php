@@ -30,7 +30,7 @@ class UtilityHandler
 	In case of error, the return value is an array that has a key <b>success</b>
 	and contains the response to be sent back to the user.
 	 */
-	function extract_files($directory, $request_files)
+	function extract_files($directory, $request_files, $lib_extraction)
 	{
 		// File extensions used by Arduino projects. They are put in a string,
 		// separated by "|" to be used in regular expressions. They are also
@@ -48,10 +48,14 @@ class UtilityHandler
 		// Examples: foo.c bar.cpp
 		$REGEX = "/(.*)\.($EXTENSIONS)$/";
 
+        if(!file_exists($directory))
+            mkdir($directory, 0777, true);
+
 		foreach ($request_files as $file)
 		{
-			$filename = $file->filename;
-			$content = $file->content;
+			$filename = $file["filename"];
+			$content = $file["content"];
+            $ignore = false;
 
 			$failure_response = array(
 				"success" => false,
@@ -67,16 +71,23 @@ class UtilityHandler
 			if (strpos($filename, DIRECTORY_SEPARATOR))
 			{
 				$new_directory = pathinfo($filename, PATHINFO_DIRNAME);
-				if (!file_exists("$directory/$new_directory"))
-					mkdir("$directory/$new_directory", 0777, true);
-				// There is no reason to check whether mkdir()
-				// succeeded, given that the call to
-				// file_put_contents() that follows would fail
-				// as well.
+
+                if (($lib_extraction === true) && ($new_directory !== "utility"))
+                    $ignore = true;
+                if (!file_exists("$directory/$new_directory"))
+                    mkdir("$directory/$new_directory", 0777, true);
+                // There is no reason to check whether mkdir()
+                // succeeded, given that the call to
+                // file_put_contents() that follows would fail
+                // as well.
+
 			}
 
 			if (file_put_contents("$directory/$filename", $content) === false)
 				return $failure_response;
+
+            if ($ignore)
+                continue;
 
 			if (preg_match($REGEX, $filename, $matches))
 				$files[$matches[2]][] = "$directory/$matches[1]";
