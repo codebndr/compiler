@@ -33,6 +33,7 @@ parameters:
     temp_dir: "/tmp"
     objdir: "codebender_object_files"
     logdir: "codebender_log"
+    archive_dir: "compiler_archives"
 
     # -------- You shouldn't need to edit anything beyond this point. -------- \\
 

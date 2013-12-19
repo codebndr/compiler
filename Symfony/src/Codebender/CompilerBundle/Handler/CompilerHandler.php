@@ -45,7 +45,7 @@ class CompilerHandler
 
         $this->set_values($compiler_config,
             $CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $TEMP_DIR);
+            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $TEMP_DIR, $ARCHIVE_DIR);
 
         $start_time = microtime(true);
 
@@ -76,21 +76,32 @@ class CompilerHandler
                 return $tmp;
         }
 
+        if (!array_key_exists("archive", $request) || ($request["archive"] !== false && $request["archive"] !== true))
+            $ARCHIVE_OPTION = false;
+        else
+            $ARCHIVE_OPTION = $request["archive"];
+        //return array("success" => false, "archive option" => $ARCHIVE_OPTION);
+        if ($ARCHIVE_OPTION === true){
+            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($arch_ret["success"] === false)
+                return $arch_ret;
+        }
+
         //Set logging to true if requested, and create the directory where logfiles are stored.
         //TODO: Replace $tmp variable name
         $tmp = $this->setLoggingParams($request, $compiler_config, $TEMP_DIR, $compiler_dir);
         if($tmp["success"] === false)
-            return $tmp;
+            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 2: Preprocess Arduino source files.
         $tmp = $this->preprocessIno($files["sketch_files"]);
         if ($tmp["success"] == false)
-            return $tmp;
+            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 3: Preprocess Header includes.
         $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $version, $core, $variant);
         if ($tmp["success"] == false)
-            return $tmp;
+            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 4: Syntax-check and compile source files.
         //Use the include paths for the AVR headers that are bundled with each Arduino SDK version
@@ -99,20 +110,27 @@ class CompilerHandler
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
 
+        if ($ARCHIVE_OPTION === true){
+            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($arch_ret["success"] === false)
+                return $arch_ret;
+        }
+
         $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
         if ($compiler_config['logging'] === true){
             if ($log_content !== false)
                 $ret["log"] = $log_content;
             else
-                return array("success" => "false", "message" => "Failed to access logfile.");
+                return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
         }
         if (!$ret["success"])
-            return $ret;
+            return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         if ($format == "syntax")
-            return array(
-                "success" => true,
-                "time" => microtime(true) - $start_time);
+            return array_merge(array(
+                    "success" => true,
+                    "time" => microtime(true) - $start_time),
+                ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         //Keep all object files urls needed for linking.
         $objects_to_link = $files["sketch_files"]["o"];
@@ -123,29 +141,33 @@ class CompilerHandler
             $content = base64_encode(file_get_contents($files["sketch_files"]["o"][0].".o"));
             if (count($files["sketch_files"]["o"]) != 1 || !$content){
                 if ($compiler_config['logging'] === false)
-                    return array(
-                        "success" => false,
-                        "step" => -1, //TODO: Fix this step?
-                        "message" => "");
+                    return array_merge(array(
+                            "success" => false,
+                            "step" => -1, //TODO: Fix this step?
+                            "message" => ""),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 else
-                    return array(
-                        "success" => false,
-                        "step" => -1, //TODO: Fix this step?
-                        "message" => "",
-                        "log" => $log_content);
+                    return array_merge(array(
+                            "success" => false,
+                            "step" => -1, //TODO: Fix this step?
+                            "message" => "",
+                            "log" => $log_content),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
             else{
                 if ($compiler_config['logging'] === false)
-                    return array(
-                        "success" => true,
-                        "time" => microtime(true) - $start_time,
-                        "output" => $content);
+                    return array_merge(array(
+                            "success" => true,
+                            "time" => microtime(true) - $start_time,
+                            "output" => $content),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 else
-                    return array(
-                        "success" => true,
-                        "time" => microtime(true) - $start_time,
-                        "output" => $content,
-                        "log" => $log_content);
+                    return array_merge(array(
+                            "success" => true,
+                            "time" => microtime(true) - $start_time,
+                            "output" => $content,
+                            "log" => $log_content),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
         }
 
@@ -156,16 +178,18 @@ class CompilerHandler
         if(!file_exists($this->object_directory))
             if(!@mkdir($this->object_directory)){
                 if ($compiler_config['logging'] === false)
-                    return array(
-                        "success" => false,
-                        "step" => 5,
-                        "message" => "Could not create object files directory.");
+                    return array_merge(array(
+                            "success" => false,
+                            "step" => 5,
+                            "message" => "Could not create object files directory."),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 else
-                    return array(
-                        "success" => false,
-                        "step" => 5,
-                        "message" => "Could not create object files directory.",
-                        "log" => $log_content);
+                    return array_merge(array(
+                            "success" => false,
+                            "step" => 5,
+                            "message" => "Could not create object files directory.",
+                            "log" => $log_content),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
         //Generate full pathname of the cores library and then check if the library exists.
         $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
@@ -177,10 +201,10 @@ class CompilerHandler
 
             if(!$tmp["success"]){
                 if ($compiler_config['logging'] === false)
-                    return $tmp;
+                    return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 else{
                     $tmp["log"] = $log_content;
-                    return $tmp;
+                    return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 }
             }
 
@@ -188,15 +212,21 @@ class CompilerHandler
 
             $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
 
+            if ($ARCHIVE_OPTION === true){
+                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+                if ($arch_ret["success"] === false)
+                    return $arch_ret;
+            }
+
             if(!$ret["success"]){
                 if ($compiler_config['logging'] === true){
                     if ($log_content !== false){
                         $ret["log"] = $log_content;
                     }
                     else
-                        return array("success" => "false", "message" => "Failed to access logfile.");
+                        return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
                 }
-                return $ret;
+                return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
 
             foreach($files["core"]["o"] as $core_object){
@@ -218,16 +248,22 @@ class CompilerHandler
 
             $ret = $this->handleCompile("$compiler_dir/libraries/$library_name", $files["libs"][$library_name], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format, true, $lib_object_naming_params);
 
+            if ($ARCHIVE_OPTION === true){
+                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+                if ($arch_ret["success"] === false)
+                    return $arch_ret;
+            }
+
             $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
             if ($compiler_config['logging'] === true){
                 if ($log_content !== false)
                     $ret["log"] = $log_content;
                 else
-                    return array("success" => "false", "message" => "Failed to access logfile.");
+                    return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
 
             if(!$ret["success"])
-                return $ret;
+                return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
             $objects_to_link = array_merge($objects_to_link, $files["libs"][$library_name]["o"]);
         }
@@ -244,16 +280,21 @@ class CompilerHandler
         }
 
         if ($ret_link){
-            $returner =array(
+            if ($ARCHIVE_OPTION === true){
+                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+                if ($arch_ret["success"] === false)
+                    return $arch_ret;
+            }
+            $returner = array_merge(array(
                 "success" => false,
                 "step" => 7,
-                "message" => implode("\n", $output));
+                "message" => implode("\n", $output)), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             if ($compiler_config['logging'] === false)
                 return $returner;
             else{
                 $log_content = @file_get_contents($compiler_config['logFileName']);
                 if (!$log_content)
-                    return array("success" => "false", "message" => "Failed to access logfile.");
+                    return array("success" => "false", "message" => "Failed to access logfile.", "archive" => $ARCHIVE_PATH);
                 else
                     return array_merge($returner, array("log" => $log_content));
             }
@@ -263,14 +304,20 @@ class CompilerHandler
         // size.
         $tmp = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
 
+        if ($ARCHIVE_OPTION === true){
+            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($arch_ret["success"] === false)
+                return $arch_ret;
+        }
+
         if ($compiler_config['logging'] === false)
-            return $tmp;
+            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
         else{
             $log_content = @file_get_contents($compiler_config['logFileName']);
             if (!$log_content)
-                return array("success" => "false", "message" => "Failed to access logfile.");
+                return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             else
-                return array_merge($tmp, array("log" => $log_content));
+                return array_merge($tmp, array("log" => $log_content), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
         }
 
     }
@@ -284,6 +331,28 @@ class CompilerHandler
                 "step" => 0,
                 "message" => "Invalid input.");
         else return array("success" => true);
+    }
+
+    private function createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, &$ARCHIVE_PATH)
+    {
+        if (!file_exists($ARCHIVE_PATH)){
+            // Create a directory in tmp folder and store archive files there
+            if (!file_exists("$TEMP_DIR/$ARCHIVE_DIR"))
+                if (!@mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true))
+                    return array("success" => false, "message" => "Failed to create archive directory.");
+
+            do{
+                $tar_random_name = uniqid(rand(), true) . '.tar.gz';
+            }while (file_exists("$TEMP_DIR/$ARCHIVE_DIR/$tar_random_name"));
+            $ARCHIVE_PATH = "$TEMP_DIR/$ARCHIVE_DIR/$tar_random_name";
+        }
+
+        // The archive files include all the files of the project and the libraries needed to compile it
+        exec("tar -zcvf $ARCHIVE_PATH -C $TEMP_DIR/ ". pathinfo($compiler_dir, PATHINFO_BASENAME), $output, $ret_var);
+
+        if ($ret_var !=0)
+            return array("success" => false, "message" => "Failed to archive project files.");
+        return array("success" => true);
     }
 
     private function extractFiles($request, $temp_dir, &$dir, &$files, $suffix, $lib_extraction = false)
@@ -488,7 +557,7 @@ class CompilerHandler
     private function set_values($compiler_config,
                                 &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
                                 &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$TEMP_DIR)
+                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR)
     {
         // External binaries.
         $CC = $compiler_config["cc"];
@@ -513,6 +582,8 @@ class CompilerHandler
         $OUTPUT = $compiler_config["output"];
         // The tmp folder where logfiles and object files are placed
         $TEMP_DIR = $compiler_config["temp_dir"];
+        // The directory name where archive files are stored in $TEMP_DIR
+        $ARCHIVE_DIR = $compiler_config["archive_dir"];
         // Path to arduino-core-files repository.
         $ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
     }
