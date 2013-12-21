@@ -44,7 +44,7 @@ class CompilerHandler
         error_reporting(E_ALL & ~E_STRICT);
 
         $this->set_values($compiler_config,
-            $CC, $CPP, $AS, $AR, $LD, $CLANG, $OBJCOPY, $SIZE, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
+            $BINUTILS, $CLANG, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
             $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $TEMP_DIR, $ARCHIVE_DIR);
 
         $start_time = microtime(true);
@@ -56,6 +56,8 @@ class CompilerHandler
             return $tmp;
 
         $this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+
+        $this->set_avr($version, $ARDUINO_CORES_DIR, $BINUTILS, $CC, $CPP, $AS, $AR, $LD, $OBJCOPY, $SIZE);
 
         $target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
         $clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
@@ -554,20 +556,40 @@ class CompilerHandler
 
     }
 
+    private function set_avr($version, $ARDUINO_CORES_DIR, $BINUTILS, &$CC, &$CPP, &$AS, &$AR, &$LD, &$OBJCOPY, &$SIZE)
+    {
+        // External binaries.
+        $binaries = array("cc" => "-gcc", "cpp" => "-g++", "as" => "-gcc", "ar" => "-ar", "ld" => "-gcc", "objcopy" => "-objcopy", "size" => "-size");
+
+        $binpaths = array();
+        foreach ($binaries as $key => $value){
+            if (!file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/bin/avr$value"))
+                $binpaths[$key] = "$BINUTILS/avr$value";
+            else
+                $binpaths[$key] = "$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/bin/avr$value";
+        }
+
+        $CC = $binpaths["cc"];
+        $CPP = $binpaths["cpp"];
+        $AS = $binpaths["as"];
+        $AR = $binpaths["ar"];
+        $LD = $binpaths["ld"];
+        $OBJCOPY = $binpaths["objcopy"];
+        $SIZE = $binpaths["size"];
+
+    }
     private function set_values($compiler_config,
-                                &$CC, &$CPP, &$AS, &$AR, &$LD, &$CLANG, &$OBJCOPY, &$SIZE, &$CFLAGS, &$CPPFLAGS,
+                                &$BINUTILS, &$CLANG, &$CFLAGS, &$CPPFLAGS,
                                 &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
                                 &$OUTPUT, &$ARDUINO_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR)
     {
         // External binaries.
-        $CC = $compiler_config["cc"];
-        $CPP = $compiler_config["cpp"];
-        $AS = $compiler_config["as"];
-        $AR = $compiler_config["ar"];
-        $LD = $compiler_config["ld"];
+        //If the current version of the core files does not include its own binaries, then use the default
+        //ones included in the binutils parameter
+        $BINUTILS = $compiler_config["binutils"];
+        //Clang is used to return the output in case of an error, it's version independent, so its
+        //value is set by set_values function.
         $CLANG = $compiler_config["clang"];
-        $OBJCOPY = $compiler_config["objcopy"];
-        $SIZE = $compiler_config["size"];
         // Standard command-line arguments used by the binaries.
         $CFLAGS = $compiler_config["cflags"];
         $CPPFLAGS = $compiler_config["cppflags"];

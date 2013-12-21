@@ -22,14 +22,8 @@ parameters:
     # Paths to various executables used by the compiler. These depend on the
     # distribution used and the method of installation. Linking is performed by
     # avr-gcc (same as cc).
-    cc: "/usr/bin/avr-gcc"
-    cpp: "/usr/bin/avr-g++"
-    as: "/usr/bin/avr-gcc"
-    ar: "/usr/bin/avr-ar"
-    ld: "/usr/bin/avr-gcc"
+    binutils: "/usr/bin"
     clang: "/usr/bin/clang"
-    objcopy: "/usr/bin/avr-objcopy"
-    size: "/usr/bin/avr-size"
     temp_dir: "/tmp"
     objdir: "codebender_object_files"
     logdir: "codebender_log"
