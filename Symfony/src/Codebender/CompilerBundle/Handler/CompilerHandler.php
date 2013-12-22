@@ -107,7 +107,17 @@ class CompilerHandler
 
         // Step 4: Syntax-check and compile source files.
         //Use the include paths for the AVR headers that are bundled with each Arduino SDK version
-        $core_includes = " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
+        //These may differ between linux and MAC OS versions of the Arduino core files, so check before including
+        $core_includes = "";
+        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include"))
+            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include";
+        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed"))
+            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed";
+        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include"))
+            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
+        elseif (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include"))
+            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
+
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
