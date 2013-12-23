@@ -717,7 +717,8 @@ class CompilerHandler
     private function handleCompile($compile_directory, &$files_array, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories, $format, $caching = false, $name_params = null){
 
         //Add any include directories needed
-        $include_directories .= " -I$compile_directory ";
+        if (pathinfo($compile_directory, PATHINFO_BASENAME) !== "files")
+            $include_directories .= " -I$compile_directory ";
 
         if(file_exists("$compile_directory/utility"))
             $include_directories .= " -I$compile_directory/utility ";
