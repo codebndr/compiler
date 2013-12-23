@@ -249,6 +249,10 @@ class CompilerHandler
                     file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_library $core_object.o"."\n", FILE_APPEND);
             }
         }
+        else{
+            if($compiler_config['logging'])
+                file_put_contents($compiler_config['logFileName'],"\nUsing previously compiled version of $core_library\n", FILE_APPEND);
+        }
 
 
         // Step 6: Create objects for libraries.
@@ -496,6 +500,10 @@ class CompilerHandler
                             "debug" => $avr_output);
                     }
                     unset($output);
+                }
+                else{
+                    if($compiler_config['logging'])
+                        file_put_contents($compiler_config['logFileName'],"\nUsing previously compiled version of $object_file.o\n", FILE_APPEND);
                 }
 
                 if(!$caching){
