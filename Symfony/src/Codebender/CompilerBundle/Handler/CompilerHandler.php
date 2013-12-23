@@ -187,8 +187,14 @@ class CompilerHandler
         //Link all core object files to a core.a library.
         $core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
         //TODO: Figure out why Symfony needs "@" to suppress mkdir wanring
-        if(!file_exists($this->object_directory))
-            if(!@mkdir($this->object_directory)){
+        if(!file_exists($this->object_directory)){
+            //The code below was added to ensure that no error will be returned because of multithreaded execution.
+            $make_dir_success = @mkdir($this->object_directory, 0777, true);
+            if (!$make_dir_success && !is_dir($this->object_directory)) {
+                usleep(rand( 5000 , 10000 ));
+                $make_dir_success = @mkdir($this->object_directory, 0777, true);
+            }
+            if(!$make_dir_success){
                 if ($compiler_config['logging'] === false)
                     return array_merge(array(
                             "success" => false,
@@ -203,11 +209,15 @@ class CompilerHandler
                             "log" => $log_content),
                         ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
+        }
+
         //Generate full pathname of the cores library and then check if the library exists.
         $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
 
-        if(!file_exists($core_library)){
+        $lock = fopen("$core_library.LOCK", "w");
 
+        flock($lock, LOCK_EX);
+        if (!file_exists($core_library)){
             //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
             $tmp = $this->makeCoresTmp($core_dir, $TEMP_DIR, $compiler_dir, $files);
 
@@ -230,7 +240,7 @@ class CompilerHandler
                     return $arch_ret;
             }
 
-            if(!$ret["success"]){
+            if (!$ret["success"]){
                 if ($compiler_config['logging'] === true){
                     if ($log_content !== false){
                         $ret["log"] = $log_content;
@@ -241,19 +251,22 @@ class CompilerHandler
                 return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
 
-            foreach($files["core"]["o"] as $core_object){
+            foreach ($files["core"]["o"] as $core_object){
                 //Link object file to library.
                 exec("$AR $ARFLAGS $core_library $core_object.o", $output);
 
-                if($compiler_config['logging'])
+                if ($compiler_config['logging'])
                     file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_library $core_object.o"."\n", FILE_APPEND);
             }
+            flock($lock, LOCK_UN);
+            fclose($lock);
         }
         else{
+            flock($lock, LOCK_UN);
+            fclose($lock);
             if($compiler_config['logging'])
                 file_put_contents($compiler_config['logFileName'],"\nUsing previously compiled version of $core_library\n", FILE_APPEND);
         }
-
 
         // Step 6: Create objects for libraries.
         foreach ($files["libs"] as $library_name => $library_files){
@@ -353,9 +366,16 @@ class CompilerHandler
     {
         if (!file_exists($ARCHIVE_PATH)){
             // Create a directory in tmp folder and store archive files there
-            if (!file_exists("$TEMP_DIR/$ARCHIVE_DIR"))
-                if (!@mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true))
+            if (!file_exists("$TEMP_DIR/$ARCHIVE_DIR")){
+                //The code below was added to ensure that no error will be returned because of multithreaded execution.
+                $make_dir_success = @mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true);
+                if (!$make_dir_success && !is_dir("$TEMP_DIR/$ARCHIVE_DIR")) {
+                    usleep(rand( 5000 , 10000 ));
+                    $make_dir_success = @mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true);
+                }
+                if (!$make_dir_success)
                     return array("success" => false, "message" => "Failed to create archive directory.");
+            }
 
             do{
                 $tar_random_name = uniqid(rand(), true) . '.tar.gz';
@@ -376,8 +396,12 @@ class CompilerHandler
         // Create a temporary directory to place all the files needed to process
         // the compile request. This directory is created in $TMPDIR or /tmp by
         // default and is automatically removed upon execution completion.
-        if(!$dir)
-            $dir = System::mktemp("-t $temp_dir/ -d compiler.");
+        $cnt = 0;
+        if (!$dir)
+            do {
+                $dir = @System::mktemp("-t $temp_dir/ -d compiler.");
+                $cnt++;
+            } while (!$dir && $cnt <= 2);
 
         if (!$dir)
             return array(
@@ -452,9 +476,13 @@ class CompilerHandler
                 if($caching){
                     $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}".(($name_params['variant'] == "leonardo") ? "_${name_params['vid']}_${name_params['pid']}" : "")."______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
                     $object_file = $object_filename;
+                    //Lock the file so that only one compiler instance (thread) will compile every library object file
+                    $lock = fopen("$object_file.o.LOCK", "w");
+                    $lock_check = flock($lock, LOCK_EX);
                 }
                 else
                     $object_file = $file;
+
                 if(!file_exists("$object_file.o")){
                     // From hereon, $file is shell escaped and thus should only be used in calls
                     // to exec().
@@ -500,10 +528,16 @@ class CompilerHandler
                             "debug" => $avr_output);
                     }
                     unset($output);
+                    if ($caching && $lock_check){
+                        flock($lock, LOCK_UN);
+                        fclose($lock);
+                    }
                 }
-                else{
+                elseif ($caching && $lock_check){
                     if($compiler_config['logging'])
-                        file_put_contents($compiler_config['logFileName'],"\nUsing previously compiled version of $object_file.o\n", FILE_APPEND);
+                        file_put_contents($compiler_config['logFileName'],"Using previously compiled version of $object_file.o\n", FILE_APPEND);
+                    flock($lock, LOCK_UN);
+                    fclose($lock);
                 }
 
                 if(!$caching){
@@ -667,9 +701,16 @@ class CompilerHandler
 
             $compiler_config['logging'] = true;
             $directory = $temp_dir."/".$compiler_config['logdir'];
-            if(!file_exists($directory))
-                if(!@mkdir($directory, 0777, true))
+            //The code below was added to ensure that no error will be returned because of multithreaded execution.
+            if(!file_exists($directory)){
+                $make_dir_success = @mkdir($directory, 0777, true);
+                if (!$make_dir_success && !is_dir($directory)) {
+                    usleep(rand( 5000 , 10000 ));
+                    $make_dir_success = @mkdir($directory, 0777, true);
+                }
+                if(!$make_dir_success)
                     return array("success"=>false, "message"=>"Failed to create logfiles directory.");
+            }
 
             $compiler_part = str_replace(".", "_", substr($compiler_dir, strpos($compiler_dir, "compiler")));
 
