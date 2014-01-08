@@ -45,7 +45,7 @@ class CompilerHandler
 
         $this->set_values($compiler_config,
             $BINUTILS, $CLANG, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $TEMP_DIR, $ARCHIVE_DIR);
+            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $TEMP_DIR, $ARCHIVE_DIR);
 
         $start_time = microtime(true);
 
@@ -100,8 +100,8 @@ class CompilerHandler
         if ($tmp["success"] == false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
-        // Step 3: Preprocess Header includes.
-        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $version, $core, $variant);
+        // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
+        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $version, $core, $variant);
         if ($tmp["success"] == false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
@@ -185,7 +185,7 @@ class CompilerHandler
 
         // Step 5: Create objects for core files (if core file does not already exist)
         //Link all core object files to a core.a library.
-        $core_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
+
         //TODO: Figure out why Symfony needs "@" to suppress mkdir wanring
         if(!file_exists($this->object_directory)){
             //The code below was added to ensure that no error will be returned because of multithreaded execution.
@@ -212,14 +212,14 @@ class CompilerHandler
         }
 
         //Generate full pathname of the cores library and then check if the library exists.
-        $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $core_dir."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
+        $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $CORE_DIR."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
 
         $lock = fopen("$core_library.LOCK", "w");
 
         flock($lock, LOCK_EX);
         if (!file_exists($core_library)){
             //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
-            $tmp = $this->makeCoresTmp($core_dir, $TEMP_DIR, $compiler_dir, $files);
+            $tmp = $this->makeCoresTmp($CORE_DIR, $TEMP_DIR, $compiler_dir, $files);
 
             if(!$tmp["success"]){
                 if ($compiler_config['logging'] === false)
@@ -438,16 +438,41 @@ class CompilerHandler
         return array("success" => true);
     }
 
-    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $version, $core, $variant)
+    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, &$CORE_DIR, $version, $core, $variant)
     {
         try
         {
             // Create command-line arguments for header search paths. Note that the
             // current directory is added to eliminate the difference between <>
             // and "" in include preprocessor directives.
-            //TODO: make it compatible with non-default hardware (variants & cores)
             $include_directories = array();
-            $include_directories["core"] = " -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core -I$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant";
+            if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core")){ //standard cores
+                $CORE_DIR = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
+                if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant"))
+                    $variant_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant";
+                else {  //this handles cores that only include some variants and use the standard core files
+                    if (is_dir($EXTERNAL_CORES_DIR)){
+                        if (false !== ($externals = @scandir($EXTERNAL_CORES_DIR)))
+                            foreach ($externals as $dirname)
+                                if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != "..")
+                                    if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/$variant"))
+                                        $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/$variant";
+                    }
+                }
+            }
+            elseif (is_dir($EXTERNAL_CORES_DIR)){ //non standard cores like ATtiny
+                if (false !== ($externals = @scandir($EXTERNAL_CORES_DIR)))
+                    foreach ($externals as $dirname)
+                        if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != ".." && file_exists("$EXTERNAL_CORES_DIR/$dirname/cores/$core")){
+                            $CORE_DIR = "$EXTERNAL_CORES_DIR/$dirname/cores/$core";
+                            if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/$variant"))
+                                $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/$variant";
+                        }
+            }
+            elseif (empty($CORE_DIR))
+                return array("success" => false, "step" => 3, "message" => "Failed to detect core files.");
+            $include_directories["core"] = " -I$CORE_DIR" . ((!empty($variant_dir)) ? " -I$variant_dir" : "");
+
 
             $include_directories["main"] = $include_directories["core"];
             foreach ($libraries as $library_name => $library_files)
@@ -633,7 +658,7 @@ class CompilerHandler
     private function set_values($compiler_config,
                                 &$BINUTILS, &$CLANG, &$CFLAGS, &$CPPFLAGS,
                                 &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR)
+                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$EXTERNAL_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR)
     {
         // External binaries.
         //If the current version of the core files does not include its own binaries, then use the default
@@ -660,6 +685,8 @@ class CompilerHandler
         $ARCHIVE_DIR = $compiler_config["archive_dir"];
         // Path to arduino-core-files repository.
         $ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
+        // Path to external core files (for example arduino ATtiny)
+        $EXTERNAL_CORES_DIR = $compiler_config["external_core_files"];
     }
 
     private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
