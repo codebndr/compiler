@@ -269,10 +269,15 @@ class CompilerHandler
         }
 
         // Step 6: Create objects for libraries.
+        // The elements of the "build" array are needed to build the unique name of every library object file.
+        $lib_object_naming_params = $request["build"];
+        if (!array_key_exists("variant", $request["build"]))
+            $lib_object_naming_params["variant"] = "";
+        $lib_object_naming_params["vid"] = $vid;
+        $lib_object_naming_params["pid"] = $pid;
+
         foreach ($files["libs"] as $library_name => $library_files){
 
-            //The elements of the "build" array are needed to build the unique name of every library object file.
-            $lib_object_naming_params = $request["build"];
             $lib_object_naming_params["library"] = $library_name;
 
             $ret = $this->handleCompile("$compiler_dir/libraries/$library_name", $files["libs"][$library_name], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format, true, $lib_object_naming_params);
@@ -743,7 +748,11 @@ class CompilerHandler
         $mcu = $request["build"]["mcu"];
         $f_cpu = $request["build"]["f_cpu"];
         $core = $request["build"]["core"];
-        $variant = $request["build"]["variant"];
+        // Some cores do not specify any variants. In this case, set variant to be an empty string
+        if (!array_key_exists("variant", $request["build"]))
+            $variant = "";
+        else
+            $variant = $request["build"]["variant"];
 
         // Set the appropriate variables for vid and pid (Leonardo).
 

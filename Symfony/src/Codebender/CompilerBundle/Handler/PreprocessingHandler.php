@@ -270,13 +270,12 @@ class PreprocessingHandler
 			&& array_key_exists("mcu", $request["build"])
 			&& array_key_exists("f_cpu", $request["build"])
 			&& array_key_exists("core", $request["build"])
-			&& array_key_exists("variant", $request["build"])
 			&& is_array($request["files"]))
 		)
 			return NULL;
 
 		// Leonardo-specific flags.
-		if ($request["build"]["variant"] == "leonardo")
+		if (array_key_exists("variant", $request["build"]) && $request["build"]["variant"] == "leonardo")
 			if (!(array_key_exists("vid", $request["build"])
 				&& array_key_exists("pid", $request["build"]))
 			)
@@ -284,7 +283,10 @@ class PreprocessingHandler
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
-		foreach (array("version", "mcu", "f_cpu", "core", "variant", "vid", "pid") as $i)
+        $values = array("version", "mcu", "f_cpu", "core", "vid", "pid");
+        if (array_key_exists("variant", $request["build"]))
+            $values[] = "variant";
+		foreach ($values as $i)
 			if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i])
 				return NULL;
 
