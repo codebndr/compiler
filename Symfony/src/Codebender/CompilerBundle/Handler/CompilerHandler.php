@@ -500,21 +500,23 @@ class CompilerHandler
                 return array("success" => false, "step" => 3, "message" => "Failed to detect core files.");
 
             // Try to locate the variant
-            if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name']))
-                $variant_dir = "$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name'];
-            else {
-                if (is_dir($EXTERNAL_CORES_DIR)){
-                    if ($variant_specs['modified'] === true){
-                        if (file_exists("$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name']))
-                            $variant_dir = "$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name'];
-                    }
-                    elseif (false !== ($externals = @scandir($EXTERNAL_CORES_DIR))){
-                        foreach ($externals as $dirname)
-                            if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != "..")
-                                if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'])){
-                                    $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'];
-                                    break;
-                                }
+            if ($variant != ""){
+                if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name']))
+                    $variant_dir = "$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name'];
+                else {
+                    if (is_dir($EXTERNAL_CORES_DIR)){
+                        if ($variant_specs['modified'] === true){
+                            if (file_exists("$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name']))
+                                $variant_dir = "$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name'];
+                        }
+                        elseif (false !== ($externals = @scandir($EXTERNAL_CORES_DIR))){
+                            foreach ($externals as $dirname)
+                                if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != "..")
+                                    if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'])){
+                                        $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'];
+                                        break;
+                                    }
+                        }
                     }
                 }
             }
