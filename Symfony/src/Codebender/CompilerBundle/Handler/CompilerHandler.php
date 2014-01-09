@@ -212,7 +212,7 @@ class CompilerHandler
         }
 
         //Generate full pathname of the cores library and then check if the library exists.
-        $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $CORE_DIR."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}".(($variant == "leonardo") ? "_${vid}_${pid}" : "")."_______"."core.a";
+        $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $CORE_DIR."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}_${vid}_${pid}_______"."core.a";
 
         $lock = fopen("$core_library.LOCK", "w");
 
@@ -438,39 +438,84 @@ class CompilerHandler
         return array("success" => true);
     }
 
-    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, &$CORE_DIR, $version, $core, $variant)
+    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, &$CORE_DIR, $version, &$core, &$variant)
     {
         try
         {
             // Create command-line arguments for header search paths. Note that the
             // current directory is added to eliminate the difference between <>
             // and "" in include preprocessor directives.
+
+            // Check if the core or variant contains a semicolon.
+            // When a semicolon exists both the core folder and the core itself are specified.
+            // The same applies to the variant specification.
+
+            $core_specs = array('folder' => "arduino", 'name' => $core, 'modified' => false);
+            $variant_specs = array('folder' => "arduino", 'name' => $variant, 'modified' => false);
+
+            $tmp = explode(":", $core);
+            if (count($tmp) == 2){
+                $core_specs = array('folder' => $tmp[0], 'name' => $tmp[1], 'modified' => true);
+                $core = str_replace(":", "_", $core); //core name is used for object file naming, so it shouldn't contain any semicolons
+            }
+            elseif (count($tmp) != 1)
+                return array("success" => false, "step" => 3, "message" => "Invalid core specifier.");
+
+            $tmp = explode(":", $variant);
+            if (count($tmp) == 2){
+                $variant_specs = array('folder' => $tmp[0], 'name' => $tmp[1], 'modified' => true);
+                $variant = str_replace(":", "_", $variant); //variant name is used for object file naming, so it shouldn't contain any semicolons
+            }
+            elseif (count($tmp) != 1)
+                return array("success" => false, "step" => 3, "message" => "Invalid variant specifier.");
+
+
+
             $include_directories = array();
-            if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core")){ //standard cores
-                $CORE_DIR = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/cores/$core";
-                if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant"))
-                    $variant_dir = "$ARDUINO_CORES_DIR/v$version/hardware/arduino/variants/$variant";
-                else {  //this handles cores that only include some variants and use the standard core files
-                    if (is_dir($EXTERNAL_CORES_DIR)){
-                        if (false !== ($externals = @scandir($EXTERNAL_CORES_DIR)))
-                            foreach ($externals as $dirname)
-                                if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != "..")
-                                    if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/$variant"))
-                                        $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/$variant";
+
+            // Try to locate the core files
+            if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/".$core_specs['folder']."/cores/".$core_specs['name'])){
+                $CORE_DIR = "$ARDUINO_CORES_DIR/v$version/hardware/".$core_specs['folder']."/cores/".$core_specs['name'];
+            }
+            elseif (is_dir($EXTERNAL_CORES_DIR)){
+                if ($core_specs['modified'] === true){
+                    if (file_exists("$EXTERNAL_CORES_DIR/".$core_specs['folder']."/cores/".$core_specs['name']))
+                        $CORE_DIR = "$EXTERNAL_CORES_DIR/".$core_specs['folder']."/cores/".$core_specs['name'];
+                }
+                elseif (false !== ($externals = @scandir($EXTERNAL_CORES_DIR))){
+                    foreach ($externals as $dirname)
+                        if (is_dir("$EXTERNAL_CORES_DIR/$dirname/") && $dirname != "." && $dirname != ".." && file_exists("$EXTERNAL_CORES_DIR/$dirname/cores/".$core_specs['name'])){
+                            $CORE_DIR = "$EXTERNAL_CORES_DIR/$dirname/cores/".$core_specs['name'];
+                            break;
+                        }
+                    }
+            }
+
+            if (empty($CORE_DIR))
+                return array("success" => false, "step" => 3, "message" => "Failed to detect core files.");
+
+            // Try to locate the variant
+            if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name']))
+                $variant_dir = "$ARDUINO_CORES_DIR/v$version/hardware/".$variant_specs['folder']."/variants/".$variant_specs['name'];
+            else {
+                if (is_dir($EXTERNAL_CORES_DIR)){
+                    if ($variant_specs['modified'] === true){
+                        if (file_exists("$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name']))
+                            $variant_dir = "$EXTERNAL_CORES_DIR/".$variant_specs['folder']."/variants/".$variant_specs['name'];
+                    }
+                    elseif (false !== ($externals = @scandir($EXTERNAL_CORES_DIR))){
+                        foreach ($externals as $dirname)
+                            if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != "..")
+                                if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'])){
+                                    $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/".$variant_specs['name'];
+                                    break;
+                                }
                     }
                 }
             }
-            elseif (is_dir($EXTERNAL_CORES_DIR)){ //non standard cores like ATtiny
-                if (false !== ($externals = @scandir($EXTERNAL_CORES_DIR)))
-                    foreach ($externals as $dirname)
-                        if (is_dir("$EXTERNAL_CORES_DIR/$dirname") && $dirname != "." && $dirname != ".." && file_exists("$EXTERNAL_CORES_DIR/$dirname/cores/$core")){
-                            $CORE_DIR = "$EXTERNAL_CORES_DIR/$dirname/cores/$core";
-                            if ($variant != "" && file_exists("$EXTERNAL_CORES_DIR/$dirname/variants/$variant"))
-                                $variant_dir = "$EXTERNAL_CORES_DIR/$dirname/variants/$variant";
-                        }
-            }
-            elseif (empty($CORE_DIR))
-                return array("success" => false, "step" => 3, "message" => "Failed to detect core files.");
+
+            if (!empty($variant) && empty($variant_dir))
+                return array("success" => false, "step" => 3, "message" => "Failed to detect variant.");
             $include_directories["core"] = " -I$CORE_DIR" . ((!empty($variant_dir)) ? " -I$variant_dir" : "");
 
 
@@ -499,7 +544,7 @@ class CompilerHandler
             foreach ($files[$ext] as $file)
             {
                 if($caching){
-                    $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}".(($name_params['variant'] == "leonardo") ? "_${name_params['vid']}_${name_params['pid']}" : "")."______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
+                    $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}_${name_params['vid']}_${name_params['pid']}______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
                     $object_file = $object_filename;
                     //Lock the file so that only one compiler instance (thread) will compile every library object file
                     $lock = fopen("$object_file.o.LOCK", "w");
@@ -701,8 +746,9 @@ class CompilerHandler
         $variant = $request["build"]["variant"];
 
         // Set the appropriate variables for vid and pid (Leonardo).
-        $vid = ($variant == "leonardo") ? $request["build"]["vid"] : "null";
-        $pid = ($variant == "leonardo") ? $request["build"]["pid"] : "null";
+
+        $vid = (isset($request["build"]["vid"])) ? $request["build"]["vid"] : "null";
+        $pid = (isset($request["build"]["pid"])) ? $request["build"]["pid"] : "null";
     }
 
     private function setLoggingParams($request, &$compiler_config, $temp_dir, $compiler_dir)
