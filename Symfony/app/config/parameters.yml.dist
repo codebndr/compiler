@@ -16,6 +16,7 @@ parameters:
 
     # Path to cores.
     arduino_cores_dir: "/opt/codebender/codebender-arduino-core-files"
+    external_core_files: "/opt/codebender/external-core-files"
 
     auth_key: "youMustChangeThis"
 
