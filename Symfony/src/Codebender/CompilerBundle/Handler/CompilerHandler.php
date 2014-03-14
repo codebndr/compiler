@@ -55,7 +55,7 @@ class CompilerHandler
         if($tmp["success"] === false)
             return $tmp;
 
-        $this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid);
+        $this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid, $compiler_config);
 
         $this->set_avr($version, $ARDUINO_CORES_DIR, $BINUTILS, $CC, $CPP, $AS, $AR, $LD, $OBJCOPY, $SIZE);
 
@@ -118,6 +118,16 @@ class CompilerHandler
         elseif (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include"))
             $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
 
+		if ($format == "autocomplete"){
+			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch);
+
+			if ($ARCHIVE_OPTION === true){
+				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+				if ($arch_ret["success"] === false)
+					return $arch_ret;
+			}
+			return array($autocompleteRet["success"]);
+		}
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
@@ -741,7 +751,7 @@ class CompilerHandler
         $EXTERNAL_CORES_DIR = $compiler_config["external_core_files"];
     }
 
-    private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid)
+    private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid, &$compiler_config)
     {
         // Extract the request options for easier access.
         $format = $request["format"];
@@ -755,6 +765,12 @@ class CompilerHandler
             $variant = "";
         else
             $variant = $request["build"]["variant"];
+
+		if ($format == "autocomplete") {
+			$compiler_config["autocmpfile"] = $request["position"]["file"];
+			$compiler_config["autocmprow"] = $request["position"]["row"];
+			$compiler_config["autocmpcol"] = $request["position"]["column"];
+		}
 
         // Set the appropriate variables for vid and pid (Leonardo).
 
@@ -868,5 +884,49 @@ class CompilerHandler
 
         return $compile_res;
     }
+
+	private function doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories){
+
+//		$compiler_config["autocmpfile"]
+//		$compiler_config["autocmprow"]
+//		$compiler_config["autocmpcol"]
+
+		$file = $compile_directory . "/" . $compiler_config["autocmpfile"];
+		var_dump($file);
+		$filename =  pathinfo($file, PATHINFO_DIRNAME) . "/" . pathinfo($file, PATHINFO_FILENAME);
+		var_dump($filename);
+		$filename = escapeshellarg($filename);
+		$ext = pathinfo($file, PATHINFO_EXTENSION);
+		if ($ext == "ino")
+			$ext = "cpp";
+
+		$commandline = "";
+
+		if ($ext == "c")
+		{
+			$commandline = "$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $filename.o $filename.$ext 2>&1";
+		}
+		elseif ($ext == "cpp")
+		{
+			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
+		}
+
+		$result =  exec($commandline, $output, $ret_compile);
+		if ($ret_compile){
+			var_dump($commandline);
+			return array("success" => false);
+		}
+
+		return array("success" => true);
+	}
+
+	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch){
+
+		$include_directories .= " -I$compile_directory ";
+
+		$compile_res = $this->doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories);
+
+		return $compile_res;
+	}
 
 }
