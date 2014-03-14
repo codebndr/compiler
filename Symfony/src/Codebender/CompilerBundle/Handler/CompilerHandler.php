@@ -905,11 +905,16 @@ class CompilerHandler
 		if ($ext == "c")
 		{
 			$commandline = "$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $filename.o $filename.$ext 2>&1";
+			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
+			$json_data = json_encode($json_array);
 		}
 		elseif ($ext == "cpp")
 		{
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
+			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
+			$json_data = json_encode($json_array);
 		}
+
 
 		$result =  exec($commandline, $output, $ret_compile);
 		if ($ret_compile){
