@@ -126,7 +126,7 @@ class CompilerHandler
 				if ($arch_ret["success"] === false)
 					return $arch_ret;
 			}
-			return array($autocompleteRet["success"]);
+			return $autocompleteRet;
 		}
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
@@ -892,13 +892,15 @@ class CompilerHandler
 //		$compiler_config["autocmpcol"]
 
 		$file = $compile_directory . "/" . $compiler_config["autocmpfile"];
-		var_dump($file);
+
 		$filename =  pathinfo($file, PATHINFO_DIRNAME) . "/" . pathinfo($file, PATHINFO_FILENAME);
-		var_dump($filename);
+
 		$filename = escapeshellarg($filename);
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
-		if ($ext == "ino")
+		if ($ext == "ino"){
 			$ext = "cpp";
+			$compiler_config["autocmpfile"] = "$filename.$ext";
+		}
 
 		$commandline = "";
 
@@ -907,22 +909,30 @@ class CompilerHandler
 			$commandline = "$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
 			$json_data = json_encode($json_array);
+			file_put_contents("/tmp/autocc.json", $json_data);
 		}
 		elseif ($ext == "cpp")
 		{
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
 			$json_data = json_encode($json_array);
+			file_put_contents("/tmp/autocc.json", $json_data);
+		}
+
+		$result = exec("path/to/python path/to/python/script " . $json_data, $output, $retval);
+		if (!$retval){
+			$command_output = implode("\n", $output);
+			return array("success" => true, "autocomplete" => $command_output);
 		}
 
 
-		$result =  exec($commandline, $output, $ret_compile);
-		if ($ret_compile){
-			var_dump($commandline);
-			return array("success" => false);
-		}
+		//$result =  exec($commandline, $output, $ret_compile);
+//		if ($ret_compile){
+//			var_dump($commandline);
+//			return array("success" => false);
+//		}
 
-		return array("success" => true);
+		return array("success" => false);
 	}
 
 	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch){
