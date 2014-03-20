@@ -919,20 +919,13 @@ class CompilerHandler
 			file_put_contents("/tmp/autocc.json", $json_data);
 		}
 
-		$result = exec("path/to/python path/to/python/script " . $json_data, $output, $retval);
-		if (!$retval){
-			$command_output = implode("\n", $output);
-			return array("success" => true, "autocomplete" => $command_output);
-		}
+		$result = exec("/usr/bin/python2.7 /vagrant/autocompletion/main.py /tmp/autocc.json", $output, $retval);
 
+		if ($retval == 1)
+			return array("success" => false, "retval" => $retval);
 
-		//$result =  exec($commandline, $output, $ret_compile);
-//		if ($ret_compile){
-//			var_dump($commandline);
-//			return array("success" => false);
-//		}
-
-		return array("success" => false);
+		$command_output = implode("\n", $output);
+		return array("success" => true, "retval" => $retval, "autocomplete" => $command_output);
 	}
 
 	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch){
