@@ -899,7 +899,6 @@ class CompilerHandler
 
 		$filename =  pathinfo($file, PATHINFO_DIRNAME) . "/" . pathinfo($file, PATHINFO_FILENAME);
 
-		$filename = escapeshellarg($filename);
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
 		if ($ext == "ino"){
 			$ext = "cpp";
@@ -913,6 +912,8 @@ class CompilerHandler
 		$compiler_part = str_replace(".", "_", substr($compile_directory, strpos($compile_directory, "compiler")));
 		$autocompletionJSON = $autocompletionDir ."/". str_replace(" ", "_", pathinfo($file, PATHINFO_FILENAME)) ."_".$compiler_part."_". $randPart .".json";
 
+		$filename = escapeshellarg($filename);
+		$compiler_config["autocmpfile"] = escapeshellarg($compiler_config["autocmpfile"]);
 
 		if ($ext == "c")
 		{
