@@ -946,7 +946,7 @@ class CompilerHandler
 			usleep(rand( 5000 , 10000 ));
 			$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
 		}
-		if (!$make_dir_success)
+		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir"))
 			return array("success" => false, "message" => "Failed to create autocompletion directory");
 
 		$include_directories .= " -I$compile_directory ";
