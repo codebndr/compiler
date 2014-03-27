@@ -524,24 +524,12 @@ class CompilerHandler
             if (!empty($variant) && empty($variant_dir))
                 return array("success" => false, "step" => 3, "message" => "Failed to detect variant.");
 
-			// Check external core file directories for files that override the requested cores
-			// If an external core directory with the same name as the standard core directory exists, add its path to
-			// the include paths, only if the requested variant is in the same external core. Otherwise, use only the standard
-			// core directory.
-			//TODO: Find a better way to detect overriding of core files
-			if (false !== ($externals = @scandir($EXTERNAL_CORES_DIR))){
-				foreach ($externals as $extern_dir){
-					if (is_dir("$EXTERNAL_CORES_DIR/$extern_dir") && $extern_dir != "." && $extern_dir != ".."){
-						$directory = "$EXTERNAL_CORES_DIR/$extern_dir/cores/".$core_specs['name'];
-						if (file_exists($directory) && $directory != $CORE_DIR && $variant_dir == "$EXTERNAL_CORES_DIR/$extern_dir/variants/".$variant_specs['name']){
-							$CORE_OVERRIDE_DIR = $directory;
-							break;
-						}
-					}
-				}
-				if (empty($CORE_OVERRIDE_DIR))
-					$CORE_OVERRIDE_DIR = "";
-			}
+			// Check the override file directories for files that override the requested cores
+			if (is_dir("$EXTERNAL_CORES_DIR/override_cores/".$core_specs['name']."/") )
+				$CORE_OVERRIDE_DIR = "$EXTERNAL_CORES_DIR/override_cores/".$core_specs['name']."/";
+			else
+				$CORE_OVERRIDE_DIR = "";
+
 
 			$include_directories["core"] = ((!empty($CORE_OVERRIDE_DIR)) && ($CORE_OVERRIDE_DIR != "")) ? " -I$CORE_OVERRIDE_DIR" : "";
 			$include_directories["core"] .=  " -I$CORE_DIR";
@@ -832,8 +820,7 @@ class CompilerHandler
 
     /**
     \brief Reads all core files from the respective directory and passes their contents to extractFiles function
-    which then rights them to the compiler temp directory
-
+    which then writes them to the compiler temp directory
 
     \param string $core_files_directory The directory containing the core files.
     \param string $tmp_compiler The tmp directory where the actual compilation process takes place.
