@@ -925,10 +925,8 @@ class CompilerHandler
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
 		}
-		if (!empty($json_array))
-			file_put_contents($autocompletionJSON, json_encode($json_array));
-		else
-			return array("success" => false, "message" => "Failed to create the json input for the autocompletion process.");
+		if (empty($json_array) || (false === file_put_contents($autocompletionJSON, json_encode($json_array))))
+			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
 		$result = exec("$PYTHON $AUTOCOMPLETER $autocompletionJSON", $output, $retval);
 
@@ -947,7 +945,7 @@ class CompilerHandler
 			$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
 		}
 		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir"))
-			return array("success" => false, "message" => "Failed to create autocompletion directory");
+			return array("success" => false, "message" => "Failed to create autocompletion file structure.");
 
 		$include_directories .= " -I$compile_directory ";
 
