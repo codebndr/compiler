@@ -910,8 +910,7 @@ class CompilerHandler
 
 		$commandline = "";
 
-		$filename = escapeshellarg($filename);
-		$compiler_config["autocmpfile"] = escapeshellarg($compiler_config["autocmpfile"]);
+		$compiler_config["autocmpfile"] = escapeshellarg("$filename.$ext");
 
 		if ($ext == "c")
 		{
