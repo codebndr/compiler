@@ -934,6 +934,8 @@ class CompilerHandler
 			return array("success" => false, "message" => "There was an error during autocompletion process.", "retval" => $retval);
 
 		$command_output = implode("\n", $output);
+		if (false === json_decode($command_output, true))
+			return array("success" => false, "message" => "Failed to handle autocompletion output.");
 
 		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output);
 	}
