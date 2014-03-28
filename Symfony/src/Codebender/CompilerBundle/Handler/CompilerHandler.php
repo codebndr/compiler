@@ -15,6 +15,7 @@ namespace Codebender\CompilerBundle\Handler;
 // This file uses mktemp() to create a temporary directory where all the files
 // needed to process the compile request are stored.
 require_once "System.php";
+use Doctrine\Tests\ORM\Functional\ManyToManyBidirectionalAssociationTest;
 use System;
 use Codebender\CompilerBundle\Handler\MCUHandler;
 
@@ -45,7 +46,8 @@ class CompilerHandler
 
         $this->set_values($compiler_config,
             $BINUTILS, $CLANG, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
-            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $TEMP_DIR, $ARCHIVE_DIR);
+            $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR,
+			$TEMP_DIR, $ARCHIVE_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
         $start_time = microtime(true);
 
@@ -119,7 +121,7 @@ class CompilerHandler
             $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
 
 		if ($format == "autocomplete"){
-			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch);
+			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
 			if ($ARCHIVE_OPTION === true){
 				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -720,7 +722,7 @@ class CompilerHandler
     private function set_values($compiler_config,
                                 &$BINUTILS, &$CLANG, &$CFLAGS, &$CPPFLAGS,
                                 &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
-                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$EXTERNAL_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR)
+                                &$OUTPUT, &$ARDUINO_CORES_DIR, &$EXTERNAL_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR, &$AUTOCC_DIR, &$PYTHON, &$AUTOCOMPLETER)
     {
         // External binaries.
         //If the current version of the core files does not include its own binaries, then use the default
@@ -729,6 +731,8 @@ class CompilerHandler
         //Clang is used to return the output in case of an error, it's version independent, so its
         //value is set by set_values function.
         $CLANG = $compiler_config["clang"];
+		//Path to Python binaries, needed for the execution of the autocompletion script.
+		$PYTHON = $compiler_config["python"];
         // Standard command-line arguments used by the binaries.
         $CFLAGS = $compiler_config["cflags"];
         $CPPFLAGS = $compiler_config["cppflags"];
@@ -745,6 +749,10 @@ class CompilerHandler
         $TEMP_DIR = $compiler_config["temp_dir"];
         // The directory name where archive files are stored in $TEMP_DIR
         $ARCHIVE_DIR = $compiler_config["archive_dir"];
+		// The directory where autocompletion files are stored.
+		$AUTOCC_DIR = $compiler_config["autocompletion_dir"];
+		// The name of the python script that will be executed for autocompletion.
+		$AUTOCOMPLETER = $compiler_config["autocompleter"];
         // Path to arduino-core-files repository.
         $ARDUINO_CORES_DIR = $compiler_config["arduino_cores_dir"];
         // Path to external core files (for example arduino ATtiny)
@@ -886,17 +894,12 @@ class CompilerHandler
         return $compile_res;
     }
 
-	private function doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories){
-
-//		$compiler_config["autocmpfile"]
-//		$compiler_config["autocmprow"]
-//		$compiler_config["autocmpcol"]
+	private function doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, $autocompletionDir, $PYTHON, $AUTOCOMPLETER){
 
 		$file = $compile_directory . "/" . $compiler_config["autocmpfile"];
 
 		$filename =  pathinfo($file, PATHINFO_DIRNAME) . "/" . pathinfo($file, PATHINFO_FILENAME);
 
-		$filename = escapeshellarg($filename);
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
 		if ($ext == "ino"){
 			$ext = "cpp";
@@ -905,35 +908,52 @@ class CompilerHandler
 
 		$commandline = "";
 
+		// Create a pseudo-random name for the json file, using the same process
+		$randPart = date('YmdHis');
+		$compiler_part = str_replace(".", "_", substr($compile_directory, strpos($compile_directory, "compiler"), 15));
+		$autocompletionJSON = $autocompletionDir ."/". str_replace(" ", "_", pathinfo($file, PATHINFO_FILENAME)) . "_" . $compiler_part . "_" . $randPart . ".json";
+
+		$filename = escapeshellarg($filename);
+		$compiler_config["autocmpfile"] = escapeshellarg($compiler_config["autocmpfile"]);
+
 		if ($ext == "c")
 		{
 			$commandline = "$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
-			$json_data = json_encode($json_array);
-			file_put_contents("/tmp/autocc.json", $json_data);
+
 		}
 		elseif ($ext == "cpp")
 		{
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
-			$json_data = json_encode($json_array);
-			file_put_contents("/tmp/autocc.json", $json_data);
-		}
 
-		$result = exec("/usr/bin/python2.7 /vagrant/autocompletion/main.py 500 /tmp/autocc.json", $output, $retval);
+		}
+		if (empty($json_array) || (false === file_put_contents($autocompletionJSON, json_encode($json_array))))
+			return array("success" => false, "message" => "Failed to process autocompletion data.");
+
+		$result = exec("$PYTHON $AUTOCOMPLETER 500 $autocompletionJSON", $output, $retval);
 
 		if ($retval != 0)
 			return array("success" => false, "retval" => $retval);
 
 		$command_output = implode("\n", $output);
+
 		return array("success" => true, "retval" => $retval, "autocomplete" => $command_output);
 	}
 
-	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch){
+	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
+
+		$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
+		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir")) {
+			usleep(rand( 5000 , 10000 ));
+			$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
+		}
+		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir"))
+			return array("success" => false, "message" => "Failed to create autocompletion file structure.");
 
 		$include_directories .= " -I$compile_directory ";
 
-		$compile_res = $this->doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories);
+		$compile_res = $this->doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, "$tmpDir/$autoccDir", $PYTHON, $AUTOCOMPLETER);
 
 		return $compile_res;
 	}
