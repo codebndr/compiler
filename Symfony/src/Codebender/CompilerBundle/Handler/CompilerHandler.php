@@ -778,6 +778,7 @@ class CompilerHandler
 			$compiler_config["autocmpfile"] = $request["position"]["file"];
 			$compiler_config["autocmprow"] = $request["position"]["row"];
 			$compiler_config["autocmpcol"] = $request["position"]["column"];
+			$compiler_config["autocmpmaxresults"] = $request["maxresults"];
 			$compiler_config["autocmpprefix"] = $request["prefix"];
 		}
 
@@ -931,7 +932,7 @@ class CompilerHandler
 		if (empty($json_array) || (false === file_put_contents($autocompletionJSON, json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
-		$result = exec("$PYTHON $AUTOCOMPLETER 500 $autocompletionJSON", $output, $retval);
+		$result = exec("$PYTHON $AUTOCOMPLETER" . $compiler_config["autocmpmaxresults"] . " $autocompletionJSON", $output, $retval);
 
 		if ($retval != 0)
 			return array("success" => false, "retval" => $retval);
