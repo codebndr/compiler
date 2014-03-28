@@ -910,11 +910,6 @@ class CompilerHandler
 
 		$commandline = "";
 
-		// Create a pseudo-random name for the json file, using the same process
-		$randPart = date('YmdHis');
-		$compiler_part = str_replace(".", "_", substr($compile_directory, strpos($compile_directory, "compiler"), 15));
-		$autocompletionJSON = $autocompletionDir ."/". str_replace(" ", "_", pathinfo($file, PATHINFO_FILENAME)) . "_" . $compiler_part . "_" . $randPart . ".json";
-
 		$filename = escapeshellarg($filename);
 		$compiler_config["autocmpfile"] = escapeshellarg($compiler_config["autocmpfile"]);
 
@@ -930,10 +925,10 @@ class CompilerHandler
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
 
 		}
-		if (empty($json_array) || (false === file_put_contents($autocompletionJSON, json_encode($json_array))))
+		if (empty($json_array) || (false === file_put_contents("$compile_directory/autocc.json", json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
-		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $autocompletionJSON", $output, $retval);
+		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
 
 		if ($retval != 0)
 			return array("success" => false, "retval" => $retval);
