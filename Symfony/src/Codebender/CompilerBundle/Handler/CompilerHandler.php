@@ -63,6 +63,7 @@ class CompilerHandler
 
         $target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
         $clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
+		$autocc_clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 
         // Step 1(part 1): Extract the project files included in the request.
         $files = array();
@@ -121,7 +122,7 @@ class CompilerHandler
             $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
 
 		if ($format == "autocomplete"){
-			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
+			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
 			if ($ARCHIVE_OPTION === true){
 				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -932,7 +933,7 @@ class CompilerHandler
 		if (empty($json_array) || (false === file_put_contents($autocompletionJSON, json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
-		$result = exec("$PYTHON $AUTOCOMPLETER" . $compiler_config["autocmpmaxresults"] . " $autocompletionJSON", $output, $retval);
+		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $autocompletionJSON", $output, $retval);
 
 		if ($retval != 0)
 			return array("success" => false, "retval" => $retval);
