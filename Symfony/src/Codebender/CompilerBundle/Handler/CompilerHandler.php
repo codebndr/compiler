@@ -931,11 +931,11 @@ class CompilerHandler
 		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
 
 		if ($retval != 0)
-			return array("success" => false, "retval" => $retval);
+			return array("success" => false, "message" => "There was an error during autocompletion process.", "retval" => $retval);
 
 		$command_output = implode("\n", $output);
 
-		return array("success" => true, "retval" => $retval, "autocomplete" => $command_output);
+		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output);
 	}
 
 	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
