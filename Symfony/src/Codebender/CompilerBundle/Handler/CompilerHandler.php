@@ -910,7 +910,7 @@ class CompilerHandler
 		// Create a pseudo-random name for the json file, using the same process
 		$randPart = date('YmdHis');
 		$compiler_part = str_replace(".", "_", substr($compile_directory, strpos($compile_directory, "compiler"), 15));
-		$autocompletionJSON = $autocompletionDir ."/". str_replace(" ", "_", pathinfo($file, PATHINFO_FILENAME)) ."_".$compiler_part."_". $randPart .".json";
+		$autocompletionJSON = $autocompletionDir ."/". str_replace(" ", "_", pathinfo($file, PATHINFO_FILENAME)) . "_" . $compiler_part . "_" . $randPart . ".json";
 
 		$filename = escapeshellarg($filename);
 		$compiler_config["autocmpfile"] = escapeshellarg($compiler_config["autocmpfile"]);
@@ -934,6 +934,7 @@ class CompilerHandler
 			return array("success" => false, "retval" => $retval);
 
 		$command_output = implode("\n", $output);
+
 		return array("success" => true, "retval" => $retval, "autocomplete" => $command_output);
 	}
 
