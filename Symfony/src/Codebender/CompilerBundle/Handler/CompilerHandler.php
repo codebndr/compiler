@@ -905,12 +905,10 @@ class CompilerHandler
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
 		if ($ext == "ino"){
 			$ext = "cpp";
-			$compiler_config["autocmpfile"] = "$filename.$ext";
 		}
+		$compiler_config["autocmpfile"] = "$filename.$ext";
 
 		$commandline = "";
-
-		$compiler_config["autocmpfile"] = escapeshellarg("$filename.$ext");
 
 		if ($ext == "c")
 		{
