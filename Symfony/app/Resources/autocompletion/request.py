@@ -1,4 +1,4 @@
-import sys, json, socket, mcu
+import sys, json, socket
 
 from complete import Completer, CodeCompletionResults
 from response import Response
@@ -48,13 +48,10 @@ def _parse_json_data(d):
 def correct_clang_arguments(fname, args):
     clang_args = ['-c ' + fname]
 
-    # find includes, defines & mcu macro
+    # find includes & defines
     for arg in args:
         if arg.startswith('-I') or arg.startswith('-D'):
             clang_args.append(arg)
-        elif arg.startswith('-mmcu'):
-            machine = arg.split('-mmcu')[1][1:]
-            clang_args.append('-D' + mcu.get_def(machine))
 
     return clang_args
 
