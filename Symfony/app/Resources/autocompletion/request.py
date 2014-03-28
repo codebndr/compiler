@@ -1,4 +1,4 @@
-import sys, json, socket
+import sys, json
 
 from complete import Completer, CodeCompletionResults
 from response import Response
@@ -68,13 +68,17 @@ class Request(object):
         self.fname, self.line, self.column, self.prefix, cmd = _parse_json_data(d)
         self.args = correct_clang_arguments(self.fname, cmd)
 
+        self.is_ino = (self.fname[:-4] == ".ino")
+        self.is_cpp = (self.fname[:-2] == ".c" or self.fname[:-4] == ".cpp")
+        self.is_hdr = (self.fname[:-2] == ".h" or self.fname[:-4] == ".hpp")
+
         print >> sys.stderr, self
 
     def get_response(self):
-        if socket.gethostname() != "nx9420":
+        if self.is_ino:
             cpp_lines = file_len(self.fname)
-            ino_lines = file_len(self.fname[:-3] + 'ino');
-            self.line = self.line + (cpp_lines - ino_lines);
+            ino_lines = file_len(self.fname[:-3] + 'ino')
+            self.line = self.line + (cpp_lines - ino_lines)
 
         completer = Completer(self.fname, self.line, self.column, self.args)
         code_completion = CodeCompletionResults(completer.code_completion)
