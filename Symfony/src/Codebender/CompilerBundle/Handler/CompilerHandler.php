@@ -903,6 +903,8 @@ class CompilerHandler
 		$filename =  pathinfo($file, PATHINFO_DIRNAME) . "/" . pathinfo($file, PATHINFO_FILENAME);
 
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
+		if (!in_array($ext, array("c", "cpp", "h", "hpp")))
+			return array("success" => false, "message" => "Sorry, autocompletion is only supported for .c, .cpp or .h files.");
 		if ($ext == "ino"){
 			$ext = "cpp";
 		}
