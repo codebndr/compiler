@@ -770,6 +770,7 @@ class CompilerHandler
 			$compiler_config["autocmpfile"] = $request["position"]["file"];
 			$compiler_config["autocmprow"] = $request["position"]["row"];
 			$compiler_config["autocmpcol"] = $request["position"]["column"];
+			$compiler_config["autocmpprefix"] = $request["prefix"];
 		}
 
         // Set the appropriate variables for vid and pid (Leonardo).
@@ -907,19 +908,19 @@ class CompilerHandler
 		if ($ext == "c")
 		{
 			$commandline = "$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $filename.o $filename.$ext 2>&1";
-			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
+			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
 			$json_data = json_encode($json_array);
 			file_put_contents("/tmp/autocc.json", $json_data);
 		}
 		elseif ($ext == "cpp")
 		{
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
-			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "command" => $commandline);
+			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
 			$json_data = json_encode($json_array);
 			file_put_contents("/tmp/autocc.json", $json_data);
 		}
 
-		$result = exec("/usr/bin/python2.7 /vagrant/autocompletion/main.py /tmp/autocc.json", $output, $retval);
+		$result = exec("/usr/bin/python2.7 /vagrant/autocompletion/main.py 500 /tmp/autocc.json", $output, $retval);
 
 		if ($retval == 1)
 			return array("success" => false, "retval" => $retval);
