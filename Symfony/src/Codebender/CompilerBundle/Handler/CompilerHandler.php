@@ -922,7 +922,7 @@ class CompilerHandler
 
 		$result = exec("/usr/bin/python2.7 /vagrant/autocompletion/main.py 500 /tmp/autocc.json", $output, $retval);
 
-		if ($retval == 1)
+		if ($retval != 0)
 			return array("success" => false, "retval" => $retval);
 
 		$command_output = implode("\n", $output);
