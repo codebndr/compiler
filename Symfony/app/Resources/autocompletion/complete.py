@@ -1,4 +1,4 @@
-import sys, json, time
+import sys
 # should configure PYTHONPATH environment variable at /etc/apache2/envvars
 from clang import cindex
 from errors import *
@@ -42,7 +42,6 @@ class CursorKind(object):
         self.is_preprocessing = cx_cursor_kind.is_preprocessing()
         self.is_unexposed = cx_cursor_kind.is_unexposed()
 
-# TODO: define Chunk from String's constructor
 class Chunk(object):
     def __init__(self, cx_completion_chunk):
         self.cx_completion_chunk = cx_completion_chunk
@@ -73,9 +72,39 @@ class String(object):
         self.availability = cx_completion_string.availability.name
         self.briefComment = cx_completion_string.briefComment.spelling
 
+        self.typed_chunk = None
         self.chunks = []
         for i in range(cx_completion_string.num_chunks):
-            self.chunks.append(Chunk(cx_completion_string[i]))
+            chunk = Chunk(cx_completion_string[i])
+
+            if chunk.is_kind_typed_text:
+                self.typed_chunk = chunk
+
+            self.chunks.append(chunk)
+
+    def startswith(self, prefix, case_insensitive=True):
+        if self.typed_chunk is None:
+            return True
+
+        spelling = self.typed_chunk.spelling
+
+        if case_insensitive:
+            prefix = prefix.lower()
+            spelling = spelling.lower()
+
+        return spelling.startswith(prefix)
+
+    def contains(self, sub, case_insensitive=True):
+        if self.typed_chunk is None:
+            return True
+
+        spelling = self.typed_chunk.spelling
+
+        if case_insensitive:
+            sub = sub.lower()
+            spelling = spelling.lower()
+
+        return sub in spelling
 
 class Result(object):
     def __init__(self, cx_code_completion_result):
@@ -84,6 +113,11 @@ class Result(object):
         self.cursor_kind = CursorKind(cx_code_completion_result.kind)
         self.string = String(cx_code_completion_result.string)
 
+    def startswith(self, prefix, case_insensitive=True):
+        return self.string.startswith(prefix, case_insensitive)
+
+    def contains(self, sub, case_insensitive=True):
+        return self.string.contains(sub, case_insensitive)
 
 class CodeCompletionResults(object):
     def __init__(self, cx_code_completion_results):
@@ -94,65 +128,6 @@ class CodeCompletionResults(object):
 
         self.results = \
             convert_ccr_structure(cx_code_completion_results.results)
-
-class CodeCompletionEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, Diagnostic):
-            return {
-                'severity': obj.severity,
-                'file': obj.file,
-                'line': obj.line,
-                'column': obj.column,
-                'message': obj.message
-            }
-        elif isinstance(obj, CursorKind):
-            return {
-                'name': obj.name,
-                'value': obj.value,
-
-                'is_declaration': obj.is_declaration,
-                'is_reference': obj.is_reference,
-                'is_expression': obj.is_expression,
-                'is_statement': obj.is_statement,
-                'is_attribute': obj.is_attribute,
-                'is_invalid': obj.is_invalid,
-                'is_translation_unit': obj.is_translation_unit,
-                'is_preprocessing': obj.is_preprocessing,
-                'is_unexposed': obj.is_unexposed
-            }
-        elif isinstance(obj, Chunk):
-            return {
-                'kind': obj.kind,
-                'spelling': obj.spelling,
-
-                'is_kind_optional': obj.is_kind_optional,
-                'is_kind_typed_text': obj.is_kind_typed_text,
-                'is_kind_place_holder': obj.is_kind_place_holder,
-                'is_kind_informative': obj.is_kind_informative,
-                'is_kind_result_type': obj.is_kind_result_type,
-
-                'string': obj.string
-            }
-        elif isinstance(obj, String):
-            return {
-                'priority': obj.priority,
-                'availability': obj.availability,
-                'briefComment': obj.briefComment,
-                'chunks': obj.chunks
-            }
-        elif isinstance(obj, Result):
-            return {
-                'cursor_kind': obj.cursor_kind,
-                'string': obj.string
-            }
-        elif isinstance(obj, CodeCompletionResults):
-            return {
-                'diagnostics': obj.diagnostics,
-                'results': obj.results
-            }
-
-        return json.JSONEncoder.default(self, obj)
-
 
 class Completer(object):
     def __init__(self, fname, line, column, args):
@@ -167,5 +142,5 @@ class Completer(object):
             print >> sys.stderr, "Error: Failed to load Translation Unit"
             sys.exit(COMPL_TU_LOAD)
 
-        self.results = \
+        self.code_completion = \
             self.TU.codeComplete(self.fname, self.line, self.column)

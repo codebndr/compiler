@@ -1,6 +1,7 @@
-import sys, json, mcu
+import sys, json, socket, mcu
 
-from complete import Completer, CodeCompletionEncoder, CodeCompletionResults
+from complete import Completer, CodeCompletionResults
+from response import Response
 from errors import *
 
 def _read_json_file(p):
@@ -25,11 +26,13 @@ def _parse_json_data(d):
         fname = d['file']
         line = d['row'];
         column = d['column'];
+        prefix = d['prefix'];
         cmd = d['command'].split()
 
         valid = (isinstance(fname, str) or isinstance(fname, unicode)) and \
                 (isinstance(cmd[0], str) or isinstance(cmd[0], unicode)) and \
-                isinstance(line, int) and (isinstance(column, int))
+                (isinstance(prefix, str) or isinstance(prefix, unicode)) and \
+                 isinstance(line, int) and (isinstance(column, int))
         if not valid:
             sys.exit(REQ_INV_TYPES)
     except KeyError as e:
@@ -37,8 +40,9 @@ def _parse_json_data(d):
     except AttributeError as e:
         sys.exit(REQ_ATTRIB_ERROR)
 
-    # Remove single quotes in filenames
-    return (fname.replace("'", ""), line, column,
+    # Remove single quotes in filenames and update column position
+    # base on the prefix's length
+    return (fname.replace("'", ""), line, column - len(prefix), prefix,
             [str(x.replace("'", "")) for x in cmd])
 
 def correct_clang_arguments(fname, args):
@@ -64,33 +68,31 @@ class Request(object):
     def __init__(self, path):
         s = _read_json_file(path)
         d = _load_json_string(s)
-        self.fname, self.line, self.column, cmd = _parse_json_data(d)
+        self.fname, self.line, self.column, self.prefix, cmd = _parse_json_data(d)
         self.args = correct_clang_arguments(self.fname, cmd)
-
-        cpp_lines = file_len(self.fname)
-        ino_lines = file_len(self.fname[:-3] + 'ino')
-
-        self.line = self.line + (cpp_lines - ino_lines)
 
         print >> sys.stderr, self
 
     def get_response(self):
-        self.completer = Completer(self.fname, self.line, self.column, self.args)
-        self.results = CodeCompletionResults(self.completer.results)
+        if socket.gethostname() != "nx9420":
+            cpp_lines = file_len(self.fname)
+            ino_lines = file_len(self.fname[:-3] + 'ino');
+            self.line = self.line + (cpp_lines - ino_lines);
 
-        self.encoder = CodeCompletionEncoder()
-        return self.encoder.encode(self.results)
+        completer = Completer(self.fname, self.line, self.column, self.args)
+        code_completion = CodeCompletionResults(completer.code_completion)
+
+        return Response(code_completion, self.prefix);
 
     def __str__(self):
         ret = ''
         ret = ret + 'file name: ' + self.fname + '\n'
         ret = ret + 'line: ' + str(self.line) + '\n'
         ret = ret + 'column: ' + str(self.column) + '\n'
+        ret = ret + 'prefix: ' + str(self.prefix) + '\n'
 
         ret = ret + 'args:\n'
         for arg in self.args:
             ret = ret + '\t' + arg + '\n'
 
         return ret
-
-
