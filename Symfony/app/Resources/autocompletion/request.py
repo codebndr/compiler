@@ -1,15 +1,15 @@
-import sys, syslog, json
+import json
 
 from complete import Completer, CodeCompletionResults
 from response import Response
-from errors import *
+from logger import *
 
 def _read_json_file(p):
     try:
         with open(p, 'r') as f:
             s = f.read()
     except IOError as e:
-        sys.exit(REQ_IO_ERROR)
+        log_error(REQ_IO_ERROR)
 
     return s
 
@@ -17,7 +17,7 @@ def _load_json_string(s):
     try:
         d = json.loads(s)
     except:
-        sys.exit(REQ_JSON_LOADS_ERROR)
+        log_error(REQ_JSON_LOADS_ERROR)
 
     return d
 
@@ -34,11 +34,11 @@ def _parse_json_data(d):
                 (isinstance(prefix, str) or isinstance(prefix, unicode)) and \
                  isinstance(line, int) and (isinstance(column, int))
         if not valid:
-            sys.exit(REQ_INV_TYPES)
+            log_error(REQ_INV_TYPES)
     except KeyError as e:
-        sys.exit(REQ_KEY_ERROR)
+        log_error(REQ_KEY_ERROR)
     except AttributeError as e:
-        sys.exit(REQ_ATTRIB_ERROR)
+        log_error(REQ_ATTRIB_ERROR)
 
     # Remove single quotes in filenames and update column position
     # base on the prefix's length
@@ -81,8 +81,6 @@ class Request(object):
         d = _load_json_string(s)
         self.fname, self.line, self.column, self.prefix, cmd = _parse_json_data(d)
         self.args = correct_clang_arguments(self.fname, cmd)
-
-        syslog.syslog(str(self))
 
     def get_response(self):
         self.line = self.line + calculate_line_diff(self.fname)
