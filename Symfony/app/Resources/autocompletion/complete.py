@@ -1,4 +1,4 @@
-import sys
+import sys, syslog
 # should configure PYTHONPATH environment variable at /etc/apache2/envvars
 from clang import cindex
 from errors import *
@@ -139,7 +139,7 @@ class Completer(object):
         try:
             self.TU = cindex.TranslationUnit.from_source(fname, args)
         except cindex.TranslationUnitLoadError:
-            print >> sys.stderr, "Error: Failed to load Translation Unit"
+            syslog.syslog("Error: Failed to load Translation Unit")
             sys.exit(COMPL_TU_LOAD)
 
         self.code_completion = \

@@ -1,4 +1,4 @@
-import sys, json
+import sys, syslog, json
 
 from complete import Completer, CodeCompletionResults
 from response import Response
@@ -61,6 +61,20 @@ def file_len(fname):
             pass
     return i + 1
 
+def calculate_line_diff(fname):
+    import os.path
+
+    ln_diff = 0
+
+    # if the cpp file was produced from an ino file
+    # we need to calculate the correct line difference
+    if fname.endswith('.cpp') and os.path.isfile(fname[:-4] + '.ino'):
+        cpp_lines = file_len(fname)
+        ino_lines = file_len(fname[:-4] + '.ino')
+        ln_diff = cpp_lines - ino_lines
+
+    return ln_diff
+
 class Request(object):
     def __init__(self, path):
         s = _read_json_file(path)
@@ -68,17 +82,10 @@ class Request(object):
         self.fname, self.line, self.column, self.prefix, cmd = _parse_json_data(d)
         self.args = correct_clang_arguments(self.fname, cmd)
 
-        self.is_ino = (self.fname[:-4] == ".ino")
-        self.is_cpp = (self.fname[:-2] == ".c" or self.fname[:-4] == ".cpp")
-        self.is_hdr = (self.fname[:-2] == ".h" or self.fname[:-4] == ".hpp")
-
-        print >> sys.stderr, self
+        syslog.syslog(str(self))
 
     def get_response(self):
-        if self.is_ino:
-            cpp_lines = file_len(self.fname)
-            ino_lines = file_len(self.fname[:-3] + 'ino')
-            self.line = self.line + (cpp_lines - ino_lines)
+        self.line = self.line + calculate_line_diff(self.fname)
 
         completer = Completer(self.fname, self.line, self.column, self.args)
         code_completion = CodeCompletionResults(completer.code_completion)
