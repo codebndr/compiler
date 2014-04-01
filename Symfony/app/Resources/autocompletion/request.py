@@ -61,14 +61,18 @@ def file_len(fname):
             pass
     return i + 1
 
-def calculate_line_diff(fname):
+def has_ino_origin(fname):
     import os.path
 
+    return (fname.endswith('.cpp') or fname.endswith('.c')) and \
+            os.path.isfile(fname[:-4] + '.ino')
+
+def calculate_line_diff(fname):
     ln_diff = 0
 
     # if the cpp file was produced from an ino file
     # we need to calculate the correct line difference
-    if fname.endswith('.cpp') and os.path.isfile(fname[:-4] + '.ino'):
+    if has_ino_origin(fname):
         cpp_lines = file_len(fname)
         ino_lines = file_len(fname[:-4] + '.ino')
         ln_diff = cpp_lines - ino_lines
