@@ -1,4 +1,4 @@
-import sys, json
+import json
 
 def get_entry_availability(availability):
     if availability == "Available":

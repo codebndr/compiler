@@ -1,15 +1,15 @@
-import sys, json, socket
+import json
 
 from complete import Completer, CodeCompletionResults
 from response import Response
-from errors import *
+from logger import *
 
 def _read_json_file(p):
     try:
         with open(p, 'r') as f:
             s = f.read()
     except IOError as e:
-        sys.exit(REQ_IO_ERROR)
+        log_error(REQ_IO_ERROR)
 
     return s
 
@@ -17,7 +17,7 @@ def _load_json_string(s):
     try:
         d = json.loads(s)
     except:
-        sys.exit(REQ_JSON_LOADS_ERROR)
+        log_error(REQ_JSON_LOADS_ERROR)
 
     return d
 
@@ -34,11 +34,11 @@ def _parse_json_data(d):
                 (isinstance(prefix, str) or isinstance(prefix, unicode)) and \
                  isinstance(line, int) and (isinstance(column, int))
         if not valid:
-            sys.exit(REQ_INV_TYPES)
+            log_error(REQ_INV_TYPES)
     except KeyError as e:
-        sys.exit(REQ_KEY_ERROR)
+        log_error(REQ_KEY_ERROR)
     except AttributeError as e:
-        sys.exit(REQ_ATTRIB_ERROR)
+        log_error(REQ_ATTRIB_ERROR)
 
     # Remove single quotes in filenames and update column position
     # base on the prefix's length
@@ -61,6 +61,24 @@ def file_len(fname):
             pass
     return i + 1
 
+def has_ino_origin(fname):
+    import os.path
+
+    return (fname.endswith('.cpp') or fname.endswith('.c')) and \
+            os.path.isfile(fname[:-4] + '.ino')
+
+def calculate_line_diff(fname):
+    ln_diff = 0
+
+    # if the cpp file was produced from an ino file
+    # we need to calculate the correct line difference
+    if has_ino_origin(fname):
+        cpp_lines = file_len(fname)
+        ino_lines = file_len(fname[:-4] + '.ino')
+        ln_diff = cpp_lines - ino_lines
+
+    return ln_diff
+
 class Request(object):
     def __init__(self, path):
         s = _read_json_file(path)
@@ -68,13 +86,8 @@ class Request(object):
         self.fname, self.line, self.column, self.prefix, cmd = _parse_json_data(d)
         self.args = correct_clang_arguments(self.fname, cmd)
 
-        print >> sys.stderr, self
-
     def get_response(self):
-        if socket.gethostname() != "nx9420":
-            cpp_lines = file_len(self.fname)
-            ino_lines = file_len(self.fname[:-3] + 'ino');
-            self.line = self.line + (cpp_lines - ino_lines);
+        self.line = self.line + calculate_line_diff(self.fname)
 
         completer = Completer(self.fname, self.line, self.column, self.args)
         code_completion = CodeCompletionResults(completer.code_completion)

@@ -1,7 +1,6 @@
-import sys
 # should configure PYTHONPATH environment variable at /etc/apache2/envvars
 from clang import cindex
-from errors import *
+from logger import *
 
 def convert_diagnostics(cx_diagnostics):
     diagnostics = []
@@ -139,8 +138,7 @@ class Completer(object):
         try:
             self.TU = cindex.TranslationUnit.from_source(fname, args)
         except cindex.TranslationUnitLoadError:
-            print >> sys.stderr, "Error: Failed to load Translation Unit"
-            sys.exit(COMPL_TU_LOAD)
+            log_error(COMPL_TU_LOAD)
 
         self.code_completion = \
             self.TU.codeComplete(self.fname, self.line, self.column)
