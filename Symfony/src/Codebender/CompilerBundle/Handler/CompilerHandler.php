@@ -129,7 +129,7 @@ class CompilerHandler
 				if ($arch_ret["success"] === false)
 					return $arch_ret;
 			}
-			return $autocompleteRet;
+			return array_merge($autocompleteRet, array("total_compiler_exec_time" => microtime(true) - $start_time));
 		}
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
@@ -927,16 +927,18 @@ class CompilerHandler
 		if (empty($json_array) || (false === file_put_contents("$compile_directory/autocc.json", json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
+		$time = microtime(true);
 		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
+		$exec_time = microtime(true) - $time;
 
 		if ($retval != 0)
-			return array("success" => false, "message" => "There was an error during autocompletion process.", "retval" => $retval);
+			return array("success" => false, "message" => "There was an error during autocompletion process.", "retval" => $retval, "autocc_exec_time" => $exec_time);
 
 		$command_output = implode("\n", $output);
 		if (false === json_decode($command_output, true))
-			return array("success" => false, "message" => "Failed to handle autocompletion output.");
+			return array("success" => false, "message" => "Failed to handle autocompletion output.", "autocc_exec_time" => $exec_time);
 
-		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output);
+		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output, "autocc_exec_time" => $exec_time);
 	}
 
 	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
