@@ -101,7 +101,7 @@ class CompilerHandler
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
-        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $version, $core, $variant);
+        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $CORE_OVERRIDE_DIR, $version, $core, $variant);
         if ($tmp["success"] == false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
@@ -219,7 +219,7 @@ class CompilerHandler
         flock($lock, LOCK_EX);
         if (!file_exists($core_library)){
             //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
-            $tmp = $this->makeCoresTmp($CORE_DIR, $TEMP_DIR, $compiler_dir, $files);
+            $tmp = $this->makeCoresTmp($CORE_DIR, $CORE_OVERRIDE_DIR, $TEMP_DIR, $compiler_dir, $files);
 
             if(!$tmp["success"]){
                 if ($compiler_config['logging'] === false)
@@ -443,7 +443,7 @@ class CompilerHandler
         return array("success" => true);
     }
 
-    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, &$CORE_DIR, $version, &$core, &$variant)
+    public function preprocessHeaders($libraries, &$include_directories, $dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, &$CORE_DIR, &$CORE_OVERRIDE_DIR, $version, &$core, &$variant)
     {
         try
         {
@@ -523,8 +523,17 @@ class CompilerHandler
 
             if (!empty($variant) && empty($variant_dir))
                 return array("success" => false, "step" => 3, "message" => "Failed to detect variant.");
-            $include_directories["core"] = " -I$CORE_DIR" . ((!empty($variant_dir)) ? " -I$variant_dir" : "");
 
+			// Check the override file directories for files that override the requested cores
+			if (is_dir("$EXTERNAL_CORES_DIR/override_cores/".$core_specs['name']."/") )
+				$CORE_OVERRIDE_DIR = "$EXTERNAL_CORES_DIR/override_cores/".$core_specs['name']."/";
+			else
+				$CORE_OVERRIDE_DIR = "";
+
+
+			$include_directories["core"] = ((!empty($CORE_OVERRIDE_DIR)) && ($CORE_OVERRIDE_DIR != "")) ? " -I$CORE_OVERRIDE_DIR" : "";
+			$include_directories["core"] .=  " -I$CORE_DIR";
+			$include_directories["core"] .= (!empty($variant_dir)) ? " -I$variant_dir" : "";
 
             $include_directories["main"] = $include_directories["core"];
             foreach ($libraries as $library_name => $library_files)
@@ -811,14 +820,13 @@ class CompilerHandler
 
     /**
     \brief Reads all core files from the respective directory and passes their contents to extractFiles function
-    which then rights them to the compiler temp directory
-
+    which then writes them to the compiler temp directory
 
     \param string $core_files_directory The directory containing the core files.
     \param string $tmp_compiler The tmp directory where the actual compilation process takes place.
     \return array An array containing the function results.
      */
-    private function makeCoresTmp($core_files_directory, $temp_directory, $tmp_compiler, &$files){
+    private function makeCoresTmp($core_files_directory, $core_overrd_directory, $temp_directory, $tmp_compiler, &$files){
 
         $core = array();
         if(false === ($scanned_files = @scandir($core_files_directory)))
@@ -826,16 +834,24 @@ class CompilerHandler
 
         // Get the contents of the core files
         foreach ($scanned_files as $core_file)
-            if(!is_dir("$core_files_directory/$core_file"))
-                $core[] = array("filename" => $core_file, "content" => file_get_contents("$core_files_directory/$core_file"));
+            if(!is_dir("$core_files_directory/$core_file")){
+				if (!empty($core_overrd_directory) && $core_overrd_directory !="" && file_exists("$core_overrd_directory/$core_file"))
+					$core[] = array("filename" => $core_file, "content" => file_get_contents("$core_overrd_directory/$core_file"), "filepath" => "$core_overrd_directory/$core_file");
+				else
+					$core[] = array("filename" => $core_file, "content" => file_get_contents("$core_files_directory/$core_file"), "filepath" => "$core_files_directory/$core_file");
+			}
 
         // Check if the version of the core files includes an avr-libc directory and scan
         if(file_exists("$core_files_directory/avr-libc")){
             if(false === ($scanned_avr_files = @scandir("$core_files_directory/avr-libc")))
                 return array( "success"=>false, "step"=>5, "message"=>"Failed to read core files." );
             foreach($scanned_avr_files as $avr_file)
-                if(!is_dir("$core_files_directory/avr-libc/$avr_file"))
-                    $core[] = array("filename" => "avr-libc/$avr_file", "content" => file_get_contents("$core_files_directory/avr-libc/$avr_file"));
+                if(!is_dir("$core_files_directory/avr-libc/$avr_file")){
+					if (!empty($core_overrd_directory) && $core_overrd_directory !="" && file_exists("$core_overrd_directory/avr-libc/$avr_file"))
+						$core[] = array("filename" => "avr-libc/$avr_file", "content" => file_get_contents("$core_overrd_directory/avr-libc/$avr_file"), "filepath" => "$core_overrd_directory/avr-libc/$avr_file");
+					else
+						$core[] = array("filename" => "avr-libc/$avr_file", "content" => file_get_contents("$core_files_directory/avr-libc/$avr_file"), "filepath" => "$core_files_directory/avr-libc/$avr_file");
+				}
         }
 
 
