@@ -32,7 +32,7 @@ def log_error(exit_code, msg=""):
     elif exit_code == COMPL_TU_LOAD:
         s = "COMPL_TU_LOAD: " \
             "Clang failed to load the translation unit"
-    elif exit_code == IVK_WRONG_ARGS:
+    elif exit_code == IVK_WRONG_NUM_ARGS:
         s = "INVK_WRONG_NUM_ARGS: " \
             "The python script has been invoked with wrong arguments" \
             "Usage: ./autocomplete number_of_results path_to_compiler_json"
