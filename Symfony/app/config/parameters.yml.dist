@@ -24,11 +24,14 @@ parameters:
     # distribution used and the method of installation. Linking is performed by
     # avr-gcc (same as cc).
     binutils: "/usr/bin"
+    python: "/usr/bin/python"
     clang: "/usr/bin/clang"
     temp_dir: "/tmp"
     objdir: "codebender_object_files"
     logdir: "codebender_log"
     archive_dir: "compiler_archives"
+    autocompletion_dir: "autocompletion"
+    autocompleter: "path_to_autocompleter_script"
 
     # -------- You shouldn't need to edit anything beyond this point. -------- \\
 
