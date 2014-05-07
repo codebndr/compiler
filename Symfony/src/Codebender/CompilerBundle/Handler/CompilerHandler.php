@@ -122,7 +122,7 @@ class CompilerHandler
             $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
 
 		if ($format == "autocomplete"){
-			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
+			$autocompleteRet = $this->handleAutocompletion($ARDUINO_CORES_DIR, "$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
 			if ($ARCHIVE_OPTION === true){
 				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -912,7 +912,7 @@ class CompilerHandler
         return $compile_res;
     }
 
-	private function doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, $autocompletionDir, $PYTHON, $AUTOCOMPLETER){
+	private function doAutocomplete($ARDUINO_CORES_DIR, $compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, $autocompletionDir, $PYTHON, $AUTOCOMPLETER){
 
 		$file = $compile_directory . "/" . $compiler_config["autocmpfile"];
 
@@ -943,8 +943,15 @@ class CompilerHandler
 		if (empty($json_array) || (false === file_put_contents("$compile_directory/autocc.json", json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
+		if (!is_dir("$ARDUINO_CORES_DIR/clang/"))
+			return array("success" => false, "message" => "Failed to locate python bindings directory.");
+
 		$time = microtime(true);
-		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
+		// Set the PYTHONPATH environment variable here, instead of setting a global variable in
+		// every machine the compiler runs on.
+		$SET_PYTHONPATH = "export PYTHONPATH=\"$ARDUINO_CORES_DIR/clang/v3_5/bindings/python:\$PYTHONPATH\"";
+		$result = exec("$SET_PYTHONPATH && $PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
+
 		$exec_time = microtime(true) - $time;
 
 		if ($retval != 0)
@@ -957,7 +964,7 @@ class CompilerHandler
 		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output, "autocc_exec_time" => $exec_time);
 	}
 
-	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
+	private function handleAutocompletion($ARDUINO_CORES_DIR, $compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
 
 		$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
 		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir")) {
@@ -969,7 +976,7 @@ class CompilerHandler
 
 		$include_directories .= " -I$compile_directory ";
 
-		$compile_res = $this->doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, "$tmpDir/$autoccDir", $PYTHON, $AUTOCOMPLETER);
+		$compile_res = $this->doAutocomplete($ARDUINO_CORES_DIR, $compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, "$tmpDir/$autoccDir", $PYTHON, $AUTOCOMPLETER);
 
 		return $compile_res;
 	}
