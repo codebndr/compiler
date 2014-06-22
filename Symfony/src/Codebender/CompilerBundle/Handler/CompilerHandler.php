@@ -740,9 +740,13 @@ class CompilerHandler
         $BINUTILS = $compiler_config["binutils"];
         //Clang is used to return the output in case of an error, it's version independent, so its
         //value is set by set_values function.
-        $CLANG = $compiler_config["clang"];
+
+	$LDLIBRARYPATH="LD_LIBRARY_PATH=" . $compiler_config["arduino_cores_dir"] . "/clang/v3_5/lib:\$LD_LIBRARY_PATH";
+        $CLANG = $LDLIBRARYPATH . " " . $compiler_config["clang"];
 		//Path to Python binaries, needed for the execution of the autocompletion script.
-		$PYTHON = $compiler_config["python"];
+	$PYTHONPATH="PYTHONPATH=" . $compiler_config["arduino_cores_dir"] . "/clang/v3_5/bindings/python:\$PYTHONPATH";
+	$PYTHON = $LDLIBRARYPATH . " " . $PYTHONPATH . " " . $compiler_config["python"];
+
         // Standard command-line arguments used by the binaries.
         $CFLAGS = $compiler_config["cflags"];
         $CPPFLAGS = $compiler_config["cppflags"];
