@@ -45,7 +45,7 @@ parameters:
     arflags: "rcs"
     ldflags: "-Os -Wl,--gc-sections"
     ldflags_tail: "-lm -lc"
-    clang_flags: "-w -fsyntax-only -fcolor-diagnostics"
+    clang_flags: "--target=msp430 -w -fsyntax-only -fcolor-diagnostics"
     objcopy_flags: "-R .eeprom"
     size_flags: ""
 
