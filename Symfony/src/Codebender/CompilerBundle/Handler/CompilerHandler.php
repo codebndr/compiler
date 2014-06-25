@@ -1010,4 +1010,27 @@ class CompilerHandler
         return $clang_elements;
     }
 
+    private function getGccErrorFileList ($avr_output) {
+        /**
+         * Avr gcc's output processing
+         */
+        // Get all 'filename.extension:line' elements.
+        // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
+        preg_match_all('/(\w+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
+
+        $gcc_elements = array();
+        foreach ($gcc_matches[0] as $element) {
+
+            // The first part is filename.extension, the second represents the line.
+            $split = explode(':', $element);
+            if (!array_key_exists($split[0], $gcc_elements)) {
+                $gcc_elements[$split[0]] = array();
+                $gcc_elements[$split[0]][] = $split[1];
+                continue;
+            }
+            $gcc_elements[$split[0]][] = $split[1];
+        }
+        return $gcc_elements;
+    }
+
 }
