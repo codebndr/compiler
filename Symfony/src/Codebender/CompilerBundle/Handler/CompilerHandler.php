@@ -989,7 +989,7 @@ class CompilerHandler
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
-            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val) && array_key_exists($key + 1, $clang_matches) && strpos($clang_matches[$key +1 ],"error:") !== false)
+            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val) && array_key_exists($key + 1, $clang_matches) && strpos($clang_matches[$key +1 ],"error:") !== false || strpos($clang_matches[$key +1 ],"note:") !== false)
                 $elements[] = $val;
         }
         // Split the elements from above and get an associative array structure of [filename => lines]
