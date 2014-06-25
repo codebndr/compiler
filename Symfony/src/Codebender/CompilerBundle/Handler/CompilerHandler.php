@@ -978,4 +978,36 @@ class CompilerHandler
 		return $compile_res;
 	}
 
+    private function getClangErrorFileList ($clang_output) {
+        /**
+         * Clang's output processing
+         */
+        // Get all the 'filename.extension:line:column' elements. Include only those followed by an 'error' statement.
+        $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
+
+        $clang_matches = preg_split('/(\w+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        $elements = array();
+        foreach ($clang_matches as $key => $val ) {
+            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val) && array_key_exists($key + 1, $clang_matches) && strpos($clang_matches[$key +1 ],"error:") !== false)
+                $elements[] = $val;
+        }
+        // Split the elements from above and get an associative array structure of [filename => lines]
+        $clang_elements = array();
+        foreach ($elements as $element) {
+
+            // The first part is filename.extension, the second represents the line,
+            // and the third one is the column number (not used for now).
+            $split = explode(':', $element);
+
+            if (!array_key_exists($split[0], $clang_elements)) {
+                $clang_elements[$split[0]] = array();
+                $clang_elements[$split[0]][] = $split[1];
+                continue;
+            }
+            $clang_elements[$split[0]][] = $split[1];
+        }
+        return $clang_elements;
+    }
+
 }
