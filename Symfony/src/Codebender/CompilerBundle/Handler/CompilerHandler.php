@@ -18,19 +18,22 @@ require_once "System.php";
 use Doctrine\Tests\ORM\Functional\ManyToManyBidirectionalAssociationTest;
 use System;
 use Codebender\CompilerBundle\Handler\MCUHandler;
+use Symfony\Bridge\Monolog\Logger;
 
 class CompilerHandler
 {
     private $preproc;
     private $postproc;
     private $utility;
+    private $compiler_logger;
     private $object_directory;
 
-    function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, $objdir)
+    function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, Logger $logger, $objdir)
     {
         $this->preproc = $preprocHandl;
         $this->postproc = $postprocHandl;
         $this->utility = $utilHandl;
+        $this->compiler_logger = $logger;
         $this->object_directory = $objdir;
     }
 
