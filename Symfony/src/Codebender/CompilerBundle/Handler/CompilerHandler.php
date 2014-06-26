@@ -1024,7 +1024,12 @@ class CompilerHandler
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
-            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val) && array_key_exists($key + 1, $clang_matches) && (strpos($clang_matches[$key +1 ],"error:") !== false || strpos($clang_matches[$key +1 ],"note:") !== false))
+            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val)
+                && array_key_exists($key + 1, $clang_matches)
+                && (strpos($clang_matches[$key +1 ],"error:") !== false
+                    || strpos($clang_matches[$key +1 ],"note:") !== false
+                    || strpos($clang_matches[$key +1 ],"in asm") !== false
+                    || strpos($clang_matches[$key],"in asm") !== false))
                 $elements[] = $val;
         }
 
