@@ -138,6 +138,24 @@ class CompilerHandler
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
 
+        // If clang output was different than gcc output, log the filenames and library names.
+        if (array_key_exists("clang_diff", $ret)) {
+
+            $req_elements = array();
+            $req_elements[] = "Files: ";
+            foreach ($request["files"] as $file) {
+                $req_elements[] = $file["filename"];
+            }
+
+            if ($request["libraries"]) {
+                $req_elements[] = "Libraries: ";
+                foreach ($request["libraries"] as $key => $var) {
+                    $req_elements[] = $key;
+                }
+            }
+            $this->compiler_logger->addInfo(implode(" ", $req_elements));
+        }
+
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
             if ($arch_ret["success"] === false)
@@ -623,11 +641,25 @@ class CompilerHandler
                         }
                         $output = str_replace("$dir/", "", $output); // XXX
                         $output = $this->postproc->ansi_to_html(implode("\n", $output));
-                        return array(
+
+                        $resp = array(
                             "success" => false,
                             "step" => 4,
                             "message" => $output,
                             "debug" => $avr_output);
+
+                        /**
+                         * When an error occurs, compare the output of both avr-gcc and clang
+                         * and if significant differences are detected, return a modified version of the clang output.
+                         */
+                        $clangElements = $this->getClangErrorFileList ($output);
+                        $gccElements = $this->getGccErrorFileList ($avr_output);
+
+                        if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                            return array_merge($resp, array("clang_diff" => true));
+
+                        return $resp;
+
                     }
                     unset($output);
                     if ($caching && $lock_check){
