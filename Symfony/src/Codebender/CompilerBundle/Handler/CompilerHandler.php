@@ -1027,11 +1027,11 @@ class CompilerHandler
         // Get all the 'filename.extension:line:column' elements. Include only those followed by an 'error' statement.
         $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
 
-        $clang_matches = preg_split('/(\w+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $clang_matches = preg_split('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
-            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val)
+            if (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $val)
                 && array_key_exists($key + 1, $clang_matches)
                 && (strpos($clang_matches[$key +1 ],"error:") !== false
                     || strpos($clang_matches[$key +1 ],"note:") !== false
@@ -1064,7 +1064,7 @@ class CompilerHandler
          */
         // Get all 'filename.extension:line' elements.
         // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
-        preg_match_all('/(\w+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
+        preg_match_all('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
 
         $gcc_elements = array();
         foreach ($gcc_matches[0] as $element) {
