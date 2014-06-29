@@ -18,19 +18,22 @@ require_once "System.php";
 use Doctrine\Tests\ORM\Functional\ManyToManyBidirectionalAssociationTest;
 use System;
 use Codebender\CompilerBundle\Handler\MCUHandler;
+use Symfony\Bridge\Monolog\Logger;
 
 class CompilerHandler
 {
     private $preproc;
     private $postproc;
     private $utility;
+    private $compiler_logger;
     private $object_directory;
 
-    function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, $objdir)
+    function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, Logger $logger, $objdir)
     {
         $this->preproc = $preprocHandl;
         $this->postproc = $postprocHandl;
         $this->utility = $utilHandl;
+        $this->compiler_logger = $logger;
         $this->object_directory = $objdir;
     }
 
@@ -134,6 +137,24 @@ class CompilerHandler
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
+
+        // If clang output was different than gcc output, log the filenames and library names.
+        if (array_key_exists("clang_diff", $ret)) {
+
+            $req_elements = array();
+            $req_elements[] = "Files: ";
+            foreach ($request["files"] as $file) {
+                $req_elements[] = $file["filename"];
+            }
+
+            if ($request["libraries"]) {
+                $req_elements[] = "Libraries: ";
+                foreach ($request["libraries"] as $key => $var) {
+                    $req_elements[] = $key;
+                }
+            }
+            $this->compiler_logger->addInfo(implode(" ", $req_elements));
+        }
 
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -620,11 +641,25 @@ class CompilerHandler
                         }
                         $output = str_replace("$dir/", "", $output); // XXX
                         $output = $this->postproc->ansi_to_html(implode("\n", $output));
-                        return array(
+
+                        $resp = array(
                             "success" => false,
                             "step" => 4,
                             "message" => $output,
                             "debug" => $avr_output);
+
+                        /**
+                         * When an error occurs, compare the output of both avr-gcc and clang
+                         * and if significant differences are detected, return a modified version of the clang output.
+                         */
+                        $clangElements = $this->getClangErrorFileList ($output);
+                        $gccElements = $this->getGccErrorFileList ($avr_output);
+
+                        if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                            return array_merge($resp, array("clang_diff" => true));
+
+                        return $resp;
+
                     }
                     unset($output);
                     if ($caching && $lock_check){
@@ -740,9 +775,13 @@ class CompilerHandler
         $BINUTILS = $compiler_config["binutils"];
         //Clang is used to return the output in case of an error, it's version independent, so its
         //value is set by set_values function.
-        $CLANG = $compiler_config["clang"];
+
+	$LDLIBRARYPATH="LD_LIBRARY_PATH=" . $compiler_config["arduino_cores_dir"] . "/clang/v3_5/lib:\$LD_LIBRARY_PATH";
+        $CLANG = $LDLIBRARYPATH . " " . $compiler_config["clang"];
 		//Path to Python binaries, needed for the execution of the autocompletion script.
-		$PYTHON = $compiler_config["python"];
+	$PYTHONPATH="PYTHONPATH=" . $compiler_config["arduino_cores_dir"] . "/clang/v3_5/bindings/python:\$PYTHONPATH";
+	$PYTHON = $LDLIBRARYPATH . " " . $PYTHONPATH . " " . $compiler_config["python"];
+
         // Standard command-line arguments used by the binaries.
         $CFLAGS = $compiler_config["cflags"];
         $CPPFLAGS = $compiler_config["cppflags"];
@@ -980,5 +1019,66 @@ class CompilerHandler
 
 		return $compile_res;
 	}
+
+    private function getClangErrorFileList ($clang_output) {
+        /**
+         * Clang's output processing
+         */
+        // Get all the 'filename.extension:line:column' elements. Include only those followed by an 'error' statement.
+        $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
+
+        $clang_matches = preg_split('/(\w+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        $elements = array();
+        foreach ($clang_matches as $key => $val ) {
+            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val)
+                && array_key_exists($key + 1, $clang_matches)
+                && (strpos($clang_matches[$key +1 ],"error:") !== false
+                    || strpos($clang_matches[$key +1 ],"note:") !== false
+                    || strpos($clang_matches[$key +1 ],"in asm") !== false
+                    || strpos($clang_matches[$key],"in asm") !== false))
+                $elements[] = $val;
+        }
+
+        // Split the elements from above and get an associative array structure of [filename => lines]
+        $clang_elements = array();
+        foreach ($elements as $element) {
+
+            // The first part is filename.extension, the second represents the line,
+            // and the third one is the column number (not used for now).
+            $split = explode(':', $element);
+
+            if (!array_key_exists($split[0], $clang_elements)) {
+                $clang_elements[$split[0]] = array();
+                $clang_elements[$split[0]][] = $split[1];
+                continue;
+            }
+            $clang_elements[$split[0]][] = $split[1];
+        }
+        return $clang_elements;
+    }
+
+    private function getGccErrorFileList ($avr_output) {
+        /**
+         * Avr gcc's output processing
+         */
+        // Get all 'filename.extension:line' elements.
+        // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
+        preg_match_all('/(\w+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
+
+        $gcc_elements = array();
+        foreach ($gcc_matches[0] as $element) {
+
+            // The first part is filename.extension, the second represents the line.
+            $split = explode(':', $element);
+            if (!array_key_exists($split[0], $gcc_elements)) {
+                $gcc_elements[$split[0]] = array();
+                $gcc_elements[$split[0]][] = $split[1];
+                continue;
+            }
+            $gcc_elements[$split[0]][] = $split[1];
+        }
+        return $gcc_elements;
+    }
 
 }

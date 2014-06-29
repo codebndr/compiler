@@ -25,7 +25,7 @@ parameters:
     # avr-gcc (same as cc).
     binutils: "/usr/bin"
     python: "/usr/bin/python"
-    clang: "/usr/bin/clang"
+    clang: "/opt/codebender/codebender-arduino-core-files/clang/v3_5/bin/clang"
     temp_dir: "/tmp"
     objdir: "codebender_object_files"
     logdir: "codebender_log"
@@ -45,7 +45,7 @@ parameters:
     arflags: "rcs"
     ldflags: "-Os -Wl,--gc-sections"
     ldflags_tail: "-lm -lc"
-    clang_flags: "-w -fsyntax-only -fcolor-diagnostics"
+    clang_flags: "--target=msp430 -w -fsyntax-only -fcolor-diagnostics"
     objcopy_flags: "-R .eeprom"
     size_flags: ""
 

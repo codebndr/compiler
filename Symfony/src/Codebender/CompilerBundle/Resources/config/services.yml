@@ -11,10 +11,18 @@ services:
 #        arguments: [@service_id, "plain_value", %parameter%]
     compiler_handler:
         class:			"%compiler_handler.class%"
-        arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "%temp_dir%/%objdir%"]
+        arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "@compiler_logger", "%temp_dir%/%objdir%"]
     utility_handler:
         class:			"%utility_handler.class%"
     preprocessing_handler:
         class:			"%preprocessing_handler.class%"
     postprocessing_handler:
         class:			"%postprocessing_handler.class%"
+    compiler_logger:
+        class: Symfony\Bridge\Monolog\Logger
+        arguments: [compiler_logger_name]
+        calls:
+            - [pushHandler, [@compiler_log_handler]]
+    compiler_log_handler:
+        class: Monolog\Handler\StreamHandler
+        arguments: [%kernel.logs_dir%/compiler.log]
