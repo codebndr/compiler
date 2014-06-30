@@ -1044,7 +1044,7 @@ class CompilerHandler
         // Get all the 'filename.extension:line:column' elements. Include only those followed by an 'error' statement.
         $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
 
-        $clang_matches = preg_split('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $clang_matches = preg_split('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
