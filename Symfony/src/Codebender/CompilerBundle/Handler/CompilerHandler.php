@@ -125,7 +125,7 @@ class CompilerHandler
             $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
 
 		if ($format == "autocomplete"){
-			$autocompleteRet = $this->handleAutocompletion("$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
+			$autocompleteRet = $this->handleAutocompletion($ARDUINO_CORES_DIR, "$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
 			if ($ARCHIVE_OPTION === true){
 				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -655,8 +655,23 @@ class CompilerHandler
                         $clangElements = $this->getClangErrorFileList ($output);
                         $gccElements = $this->getGccErrorFileList ($avr_output);
 
-                        if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                        if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
+                            $this->compiler_logger->addInfo("Mismatch between clang and gcc output found.");
+                            $new_clang_output = $this->cleanUpClangOutput($output);
+
+                            $clangElements = $this->getClangErrorFileList ($new_clang_output);
+                            if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                                $this->compiler_logger->addInfo("Clang still reports errors in different files than gcc.");
+                            else
+                                $this->compiler_logger->addInfo("Clang reports errors in the same files as gcc.");
+
+                            $this->compiler_logger->addInfo("Gcc output: " . $avr_output);
+                            $this->compiler_logger->addInfo("Clang initial output: " . $output);
+                            $this->compiler_logger->addInfo("Clang reformated output: " . $new_clang_output);
+
+                            $resp["new_message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
+                        }
 
                         return $resp;
 
@@ -951,7 +966,7 @@ class CompilerHandler
         return $compile_res;
     }
 
-	private function doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, $autocompletionDir, $PYTHON, $AUTOCOMPLETER){
+	private function doAutocomplete($ARDUINO_CORES_DIR, $compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, $autocompletionDir, $PYTHON, $AUTOCOMPLETER){
 
 		$file = $compile_directory . "/" . $compiler_config["autocmpfile"];
 
@@ -982,8 +997,15 @@ class CompilerHandler
 		if (empty($json_array) || (false === file_put_contents("$compile_directory/autocc.json", json_encode($json_array))))
 			return array("success" => false, "message" => "Failed to process autocompletion data.");
 
+		if (!is_dir("$ARDUINO_CORES_DIR/clang/"))
+			return array("success" => false, "message" => "Failed to locate python bindings directory.");
+
 		$time = microtime(true);
-		$result = exec("$PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
+		// Set the PYTHONPATH environment variable here, instead of setting a global variable in
+		// every machine the compiler runs on.
+		$SET_PYTHONPATH = "export PYTHONPATH=\"$ARDUINO_CORES_DIR/clang/v3_5/bindings/python:\$PYTHONPATH\"";
+		$result = exec("$SET_PYTHONPATH && $PYTHON $AUTOCOMPLETER " . $compiler_config["autocmpmaxresults"] . " $compile_directory/autocc.json", $output, $retval);
+
 		$exec_time = microtime(true) - $time;
 
 		if ($retval != 0)
@@ -996,7 +1018,7 @@ class CompilerHandler
 		return array("success" => true, "retval" => $retval, "message" => "Autocompletion was successful!", "autocomplete" => $command_output, "autocc_exec_time" => $exec_time);
 	}
 
-	private function handleAutocompletion($compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
+	private function handleAutocompletion($ARDUINO_CORES_DIR, $compile_directory, $include_directories, $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $tmpDir, $autoccDir, $PYTHON, $AUTOCOMPLETER){
 
 		$make_dir_success = @mkdir("$tmpDir/$autoccDir", 0777, true);
 		if (!$make_dir_success && !is_dir("$tmpDir/$autoccDir")) {
@@ -1008,7 +1030,7 @@ class CompilerHandler
 
 		$include_directories .= " -I$compile_directory ";
 
-		$compile_res = $this->doAutocomplete($compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, "$tmpDir/$autoccDir", $PYTHON, $AUTOCOMPLETER);
+		$compile_res = $this->doAutocomplete($ARDUINO_CORES_DIR, $compiler_config, $compile_directory, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $target_arch, $include_directories, "$tmpDir/$autoccDir", $PYTHON, $AUTOCOMPLETER);
 
 		return $compile_res;
 	}
@@ -1020,11 +1042,11 @@ class CompilerHandler
         // Get all the 'filename.extension:line:column' elements. Include only those followed by an 'error' statement.
         $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
 
-        $clang_matches = preg_split('/(\w+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $clang_matches = preg_split('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
-            if (preg_match('/(\w+\.\w+:\d+:\d+:)/', $val)
+            if (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:\d+:)/', $val)
                 && array_key_exists($key + 1, $clang_matches)
                 && (strpos($clang_matches[$key +1 ],"error:") !== false
                     || strpos($clang_matches[$key +1 ],"note:") !== false
@@ -1057,7 +1079,7 @@ class CompilerHandler
          */
         // Get all 'filename.extension:line' elements.
         // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
-        preg_match_all('/(\w+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
+        preg_match_all('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
 
         $gcc_elements = array();
         foreach ($gcc_matches[0] as $element) {
@@ -1072,6 +1094,80 @@ class CompilerHandler
             $gcc_elements[$split[0]][] = $split[1];
         }
         return $gcc_elements;
+    }
+
+    private function cleanUpClangOutput ($clang_output) {
+
+        $clang_output = strip_tags($clang_output);
+        $content_line_array = explode("\n", $clang_output);
+
+        $header = "";
+        $body = "";
+        $final = "";
+        $header_found = false;
+        $libFound = false;
+        $coreFound = false;
+        $asmFound = false;
+
+        foreach ($content_line_array as $key => $line) {
+
+            if ((strpos($line, "In file included from") !== false
+                && preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line))
+                || preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                && strpos($line, "error:") !== false)) {
+
+                if ($header_found === false) {
+                    if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
+                        || strpos($header, "core") !== false
+                        || strpos($body, "in asm") !== false) {
+
+                        if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports library issue.");
+                            $libFound = true;
+                        }
+                        if (strpos($header, "core") !== false && $coreFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports core issue.");
+                            $coreFound = true;
+                        }
+                        if (strpos($body, "in asm") !== false && $asmFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports assembly issue.");
+                            $asmFound = true;
+                        }
+                        $header = "";
+                        $body = "";
+                    }
+
+                    if ($header != "" && $body != "") {
+                        $final .= $header ."\n";
+                        $final .= $body . "\n";
+                    }
+                }
+
+                $header .= $line . "\n";
+                $header_found = true;
+                continue;
+            }
+
+            if (!array_key_exists($key + 1, $content_line_array)) {
+                var_dump($line);
+                if (!preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
+                    || strpos($header, "core") === false
+                    || strpos($body, "in asm") === false) {
+                    if ($header != "" && $body != "") {
+                        $final .= $header ."\n";
+                        $final .= $body . "\n";
+                    }
+                }
+                break;
+            }
+
+            $header_found = false;
+            $body .= $line . "\n";
+
+        }
+
+        return $final;
     }
 
 }
