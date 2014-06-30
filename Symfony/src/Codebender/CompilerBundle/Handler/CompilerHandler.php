@@ -656,6 +656,8 @@ class CompilerHandler
                         $gccElements = $this->getGccErrorFileList ($avr_output);
 
                         if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
+                            $resp["old_message"] = $output;
+
                             $this->compiler_logger->addInfo("Mismatch between clang and gcc output found.");
                             $new_clang_output = $this->cleanUpClangOutput($output);
 
@@ -669,7 +671,7 @@ class CompilerHandler
                             $this->compiler_logger->addInfo("Clang initial output: " . $output);
                             $this->compiler_logger->addInfo("Clang reformated output: " . $new_clang_output);
 
-                            $resp["new_message"] = $new_clang_output;
+                            $resp["message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
                         }
 
