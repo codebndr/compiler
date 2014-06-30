@@ -656,7 +656,15 @@ class CompilerHandler
                         $gccElements = $this->getGccErrorFileList ($avr_output);
 
                         if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
+                            $this->compiler_logger->addInfo("Mismatch between clang and gcc output found.");
                             $new_clang_output = $this->cleanUpClangOutput($output);
+
+                            $clangElements = $this->getClangErrorFileList ($new_clang_output);
+                            if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                                $this->compiler_logger->addInfo("Clang still reports errors in different files than gcc.");
+                            else
+                                $this->compiler_logger->addInfo("Clang reports errors in the same files as gcc.");
+
                             $resp["new_message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
                         }
@@ -1093,6 +1101,9 @@ class CompilerHandler
         $body = "";
         $final = "";
         $header_found = false;
+        $libFound = false;
+        $coreFound = false;
+        $asmFound = false;
 
         foreach ($content_line_array as $key => $line) {
 
@@ -1107,6 +1118,18 @@ class CompilerHandler
                         || strpos($header, "core") !== false
                         || strpos($body, "in asm") !== false) {
 
+                        if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports library issue.");
+                            $libFound = true;
+                        }
+                        if (strpos($header, "core") !== false && $coreFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports core issue.");
+                            $coreFound = true;
+                        }
+                        if (strpos($body, "in asm") !== false && $asmFound === false) {
+                            $this->compiler_logger->addInfo("Clang reports assembly issue.");
+                            $asmFound = true;
+                        }
                         $header = "";
                         $body = "";
                     }
