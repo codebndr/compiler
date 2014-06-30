@@ -1086,6 +1086,7 @@ class CompilerHandler
 
     private function cleanUpClangOutput ($clang_output) {
 
+        $clang_output = strip_tags($clang_output);
         $content_line_array = explode("\n", $clang_output);
 
         $header = "";
