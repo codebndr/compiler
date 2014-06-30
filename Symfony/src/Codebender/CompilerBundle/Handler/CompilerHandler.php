@@ -665,6 +665,10 @@ class CompilerHandler
                             else
                                 $this->compiler_logger->addInfo("Clang reports errors in the same files as gcc.");
 
+                            $this->compiler_logger->addInfo("Gcc output: " . $avr_output);
+                            $this->compiler_logger->addInfo("Clang initial output: " . $output);
+                            $this->compiler_logger->addInfo("Clang reformated output: " . $new_clang_output);
+
                             $resp["new_message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
                         }
