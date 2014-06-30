@@ -1081,4 +1081,62 @@ class CompilerHandler
         return $gcc_elements;
     }
 
+    private function cleanUpClangOutput ($clang_output) {
+
+        $content_line_array = explode("\n", $clang_output);
+
+        $header = "";
+        $body = "";
+        $final = "";
+        $header_found = false;
+
+        foreach ($content_line_array as $key => $line) {
+
+            if ((strpos($line, "In file included from") !== false
+                && preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line))
+                || preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                && strpos($line, "error:") !== false)) {
+
+                if ($header_found === false) {
+                    if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
+                        || strpos($header, "core") !== false
+                        || strpos($body, "in asm") !== false) {
+
+                        $header = "";
+                        $body = "";
+                    }
+
+                    if ($header != "" && $body != "") {
+                        $final .= $header ."\n";
+                        $final .= $body . "\n";
+                    }
+                }
+
+                $header .= $line . "\n";
+                $header_found = true;
+                continue;
+            }
+
+            if (!array_key_exists($key + 1, $content_line_array)) {
+                var_dump($line);
+                if (!preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
+                    || strpos($header, "core") === false
+                    || strpos($body, "in asm") === false) {
+                    if ($header != "" && $body != "") {
+                        $final .= $header ."\n";
+                        $final .= $body . "\n";
+                    }
+                }
+                break;
+            }
+
+            $header_found = false;
+            $body .= $line . "\n";
+
+        }
+
+        return $final;
+    }
+
 }
