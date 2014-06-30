@@ -655,8 +655,11 @@ class CompilerHandler
                         $clangElements = $this->getClangErrorFileList ($output);
                         $gccElements = $this->getGccErrorFileList ($avr_output);
 
-                        if (array_diff(array_keys($clangElements), array_keys($gccElements)))
+                        if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
+                            $new_clang_output = $this->cleanUpClangOutput($output);
+                            $resp["new_message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
+                        }
 
                         return $resp;
 
