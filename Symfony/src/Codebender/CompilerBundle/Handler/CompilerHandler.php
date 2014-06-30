@@ -1114,14 +1114,16 @@ class CompilerHandler
         foreach ($content_line_array as $key => $line) {
 
             if ((strpos($line, "In file included from") !== false
-                && preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line))
-                || preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                    && preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line))
                 || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
-                && strpos($line, "error:") !== false)) {
+                    && strpos($line, "error:") !== false)
+                || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                    && strpos($line, "note:") !== false)) {
 
                 if ($header_found === false) {
                     if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
                         || strpos($header, "core") !== false
+                        || strpos($header, "note:") !== false
                         || strpos($body, "in asm") !== false) {
 
                         if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false) {
@@ -1143,6 +1145,8 @@ class CompilerHandler
                     if ($header != "" && $body != "") {
                         $final .= $header ."\n";
                         $final .= $body . "\n";
+                        $header = "";
+                        $body = "";
                     }
                 }
 
@@ -1152,10 +1156,10 @@ class CompilerHandler
             }
 
             if (!array_key_exists($key + 1, $content_line_array)) {
-                var_dump($line);
                 if (!preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
-                    || strpos($header, "core") === false
-                    || strpos($body, "in asm") === false) {
+                    && strpos($header, "core") === false
+                    && strpos($header, "note:") === false
+                    && strpos($body, "in asm") === false) {
                     if ($header != "" && $body != "") {
                         $final .= $header ."\n";
                         $final .= $body . "\n";
