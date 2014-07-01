@@ -350,7 +350,7 @@ class CompilerHandler
         if ($ret_link){
 
             // Log the fact that an error occurred during linking
-            $this->compiler_logger->addInfo("An error occurred during linking: " . implode("\n", $output));
+            $this->compiler_logger->addInfo("An error occurred during linking: " . json_encode(implode("\n", $output)));
 
             if ($ARCHIVE_OPTION === true){
                 $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -671,9 +671,9 @@ class CompilerHandler
                             else
                                 $this->compiler_logger->addInfo("Clang reports errors in the same files as gcc.");
 
-                            $this->compiler_logger->addInfo("Gcc output: " . $avr_output);
-                            $this->compiler_logger->addInfo("Clang initial output: " . $output);
-                            $this->compiler_logger->addInfo("Clang reformated output: " . $new_clang_output);
+                            $this->compiler_logger->addInfo("Gcc output: " . json_encode($avr_output));
+                            $this->compiler_logger->addInfo("Clang initial output: " . json_encode($output));
+                            $this->compiler_logger->addInfo("Clang reformated output: " . json_encode($new_clang_output));
 
                             $resp["message"] = $new_clang_output;
                             return array_merge($resp, array("clang_diff" => true));
