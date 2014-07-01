@@ -75,6 +75,9 @@ class CompilerHandler
         if ($tmp["success"] == false)
             return $tmp;
 
+        // Add the compiler temp directory to the compiler_config struct.
+        $compiler_config["compiler_dir"] = $compiler_dir;
+
         // Step 1(part 2): Extract the library files included in the request.
         $files["libs"] = array();
         foreach($libraries as $library => $library_files){
