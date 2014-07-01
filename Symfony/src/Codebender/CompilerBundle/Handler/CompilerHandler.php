@@ -141,23 +141,22 @@ class CompilerHandler
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
 
-        // If clang output was different than gcc output, log the filenames and library names.
-        if (array_key_exists("clang_diff", $ret)) {
 
-            $req_elements = array();
-            $req_elements[] = "Files: ";
-            foreach ($request["files"] as $file) {
-                $req_elements[] = $file["filename"];
-            }
 
-            if ($request["libraries"]) {
-                $req_elements[] = "Libraries: ";
-                foreach ($request["libraries"] as $key => $var) {
-                    $req_elements[] = $key;
-                }
-            }
-            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
+        $req_elements = array();
+        $req_elements[] = "Files: ";
+        foreach ($request["files"] as $file) {
+            $req_elements[] = $file["filename"];
         }
+
+        if ($request["libraries"]) {
+            $req_elements[] = "Libraries: ";
+            foreach ($request["libraries"] as $key => $var) {
+                $req_elements[] = $key;
+            }
+        }
+        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
+
 
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -679,7 +678,6 @@ class CompilerHandler
                             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reformated output: " . json_encode($new_clang_output));
 
                             $resp["message"] = $new_clang_output;
-                            return array_merge($resp, array("clang_diff" => true));
                         }
 
                         return $resp;
