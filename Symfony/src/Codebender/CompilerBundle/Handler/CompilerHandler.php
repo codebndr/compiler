@@ -348,6 +348,10 @@ class CompilerHandler
         }
 
         if ($ret_link){
+
+            // Log the fact that an error occurred during linking
+            $this->compiler_logger->addInfo("An error occurred during linking: " . implode("\n", $output));
+
             if ($ARCHIVE_OPTION === true){
                 $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
                 if ($arch_ret["success"] === false)
