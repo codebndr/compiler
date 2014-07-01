@@ -1129,6 +1129,7 @@ class CompilerHandler
                         || (array_key_exists("external_core_files", $compiler_config)
                             && strpos($header, $compiler_config["external_core_files"]) !== false)
                         || strpos($header, "note:") !== false
+                        || strpos($header, "in asm") !== false
                         || strpos($body, "in asm") !== false) {
 
                         if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false) {
@@ -1169,6 +1170,7 @@ class CompilerHandler
                     && (array_key_exists("external_core_files", $compiler_config)
                         && strpos($header, $compiler_config["external_core_files"]) === false)
                     && strpos($header, "note:") === false
+                    && strpos($header, "in asm") === false
                     && strpos($body, "in asm") === false) {
                     if ($header != "" && $body != "") {
                         $final .= $header ."\n";
