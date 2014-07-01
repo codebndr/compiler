@@ -114,6 +114,21 @@ class CompilerHandler
         if ($tmp["success"] == false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
+        // Log the names of the project files and the libraries used in it.
+        $req_elements = array();
+        $req_elements[] = "Files: ";
+        foreach ($request["files"] as $file) {
+            $req_elements[] = $file["filename"];
+        }
+
+        if ($request["libraries"]) {
+            $req_elements[] = "Libraries: ";
+            foreach ($request["libraries"] as $key => $var) {
+                $req_elements[] = $key;
+            }
+        }
+        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
+
         // Step 4: Syntax-check and compile source files.
         //Use the include paths for the AVR headers that are bundled with each Arduino SDK version
         //These may differ between linux and MAC OS versions of the Arduino core files, so check before including
@@ -140,23 +155,6 @@ class CompilerHandler
 
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
-
-
-
-        $req_elements = array();
-        $req_elements[] = "Files: ";
-        foreach ($request["files"] as $file) {
-            $req_elements[] = $file["filename"];
-        }
-
-        if ($request["libraries"]) {
-            $req_elements[] = "Libraries: ";
-            foreach ($request["libraries"] as $key => $var) {
-                $req_elements[] = $key;
-            }
-        }
-        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
-
 
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
