@@ -115,19 +115,21 @@ class CompilerHandler
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Log the names of the project files and the libraries used in it.
-        $req_elements = array();
-        $req_elements[] = "Files: ";
-        foreach ($request["files"] as $file) {
-            $req_elements[] = $file["filename"];
-        }
-
-        if ($request["libraries"]) {
-            $req_elements[] = "Libraries: ";
-            foreach ($request["libraries"] as $key => $var) {
-                $req_elements[] = $key;
+        if ($format == "autocomplete") {
+            $req_elements = array();
+            $req_elements[] = "Files: ";
+            foreach ($request["files"] as $file) {
+                $req_elements[] = $file["filename"];
             }
+
+            if ($request["libraries"]) {
+                $req_elements[] = "Libraries: ";
+                foreach ($request["libraries"] as $key => $var) {
+                    $req_elements[] = $key;
+                }
+            }
+            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
         }
-        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
 
         // Step 4: Syntax-check and compile source files.
         //Use the include paths for the AVR headers that are bundled with each Arduino SDK version
