@@ -1103,7 +1103,6 @@ class CompilerHandler
 
     private function cleanUpClangOutput ($clang_output, $compiler_config) {
 
-        $clang_output = strip_tags($clang_output);
         $content_line_array = explode("\n", $clang_output);
 
         $header = "";
@@ -1152,6 +1151,11 @@ class CompilerHandler
                     }
 
                     if ($header != "" && $body != "") {
+                        if (strpos($header, "</font></b>") == 0)
+                            $header = substr_replace("</font></b>", '', 0, 11);
+                        if (array_key_exists($key + 1, $content_line_array)
+                            && strpos($content_line_array[$key + 1], "</font></b>") == 0)
+                            $body = $body . "</font></b>";
                         $final .= $header ."\n";
                         $final .= $body . "\n";
                         $header = "";
@@ -1173,6 +1177,8 @@ class CompilerHandler
                     && strpos($header, "in asm") === false
                     && strpos($body, "in asm") === false) {
                     if ($header != "" && $body != "") {
+                        if (strpos($header, "</font></b>") == 0)
+                            $header = substr_replace("</font></b>", '', 0, 11);
                         $final .= $header ."\n";
                         $final .= $body . "\n";
                     }
