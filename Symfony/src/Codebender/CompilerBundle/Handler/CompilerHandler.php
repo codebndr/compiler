@@ -1152,7 +1152,7 @@ class CompilerHandler
 
                     if ($header != "" && $body != "") {
                         if (strpos($header, "</font></b>") == 0)
-                            $header = substr_replace("</font></b>", '', 0, 11);
+                            $header = substr_replace($header, '', 0, 11);
                         if (array_key_exists($key + 1, $content_line_array)
                             && strpos($content_line_array[$key + 1], "</font></b>") == 0)
                             $body = $body . "</font></b>";
@@ -1178,7 +1178,7 @@ class CompilerHandler
                     && strpos($body, "in asm") === false) {
                     if ($header != "" && $body != "") {
                         if (strpos($header, "</font></b>") == 0)
-                            $header = substr_replace("</font></b>", '', 0, 11);
+                            $header = substr_replace($header, '', 0, 11);
                         $final .= $header ."\n";
                         $final .= $body . "\n";
                     }
