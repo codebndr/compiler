@@ -662,7 +662,9 @@ class CompilerHandler
                          * and if significant differences are detected, return a modified version of the clang output.
                          */
                         $clangElements = $this->getClangErrorFileList ($output);
+                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reported files: " . implode(" | ", array_keys($clangElements)));
                         $gccElements = $this->getGccErrorFileList ($avr_output);
+                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc reported files: " . implode(" | ", array_keys($gccElements)));
 
                         if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
                             $resp["old_message"] = $output;
