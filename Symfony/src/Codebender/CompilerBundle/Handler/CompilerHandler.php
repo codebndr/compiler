@@ -648,13 +648,9 @@ class CompilerHandler
                         $output = str_replace("$dir/", "", $output); // XXX
                         $output = $this->postproc->ansi_to_html(implode("\n", $output));
 
-                        $output = $this->pathRemover ($output, $compiler_config);
-                        $avr_output = $this->pathRemover ($avr_output, $compiler_config);
-
                         $resp = array(
                             "success" => false,
                             "step" => 4,
-                            "message" => $output,
                             "debug" => $avr_output);
 
                         /**
@@ -689,14 +685,17 @@ class CompilerHandler
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc output: " . json_encode($avr_output));
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang initial output: " . json_encode($output));
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reformated output: " . json_encode($final_clang_output));
+                                $final_clang_output = $this->pathRemover ($final_clang_output, $compiler_config);
                                 $resp["message"] = $final_clang_output;
                             }else {
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc output: " . json_encode($avr_output));
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang initial output: " . json_encode($output));
                                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reformated output: " . json_encode($next_clang_output));
+                                $next_clang_output = $this->pathRemover ($next_clang_output, $compiler_config);
                                 $resp["message"] = $next_clang_output;
                             }
                         }
+                        $resp["message"] = $output;
                         return $resp;
                     }
                     unset($output);
