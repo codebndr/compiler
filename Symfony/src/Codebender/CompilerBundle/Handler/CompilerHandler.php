@@ -115,7 +115,7 @@ class CompilerHandler
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Log the names of the project files and the libraries used in it.
-        if ($format == "autocomplete") {
+        if ($format != "autocomplete") {
             $req_elements = array();
             $req_elements[] = "Files: ";
             foreach ($request["files"] as $file) {
