@@ -1066,17 +1066,21 @@ class CompilerHandler
         // Get all the 'filename.extension:line' elements. Include only those followed by an 'error' statement.
         $tag_free_content = strip_tags($clang_output);     // Remove color tags (as many as possible).
 
-        $clang_matches = preg_split('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $tag_free_content, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
+        $clang_matches = preg_split('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $tag_free_content, -1, PREG_SPLIT_NO_EMPTY | PREG_SPLIT_DELIM_CAPTURE);
 
         $elements = array();
         foreach ($clang_matches as $key => $val ) {
-            if (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $val)
+            if (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $val)
                 && array_key_exists($key + 1, $clang_matches)
                 && (strpos($clang_matches[$key +1 ],"error:") !== false
                     || strpos($clang_matches[$key +1 ],"note:") !== false
                     || strpos($clang_matches[$key +1 ],"in asm") !== false
-                    || strpos($clang_matches[$key],"in asm") !== false))
+                    || strpos($clang_matches[$key],"in asm") !== false)) {
+                if (strpos($val, "In file included from ") !== false)
+                    $val = str_replace("In file included from ", "", $val);
+                    $val = str_replace("In file included from ", "", $val);
                 $elements[] = $val;
+            }
         }
 
         // Split the elements from above and get an associative array structure of [filename => lines]
@@ -1103,7 +1107,7 @@ class CompilerHandler
          */
         // Get all 'filename.extension:line' elements.
         // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
-        preg_match_all('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
+        preg_match_all('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
 
         $gcc_elements = array();
         foreach ($gcc_matches[0] as $element) {
@@ -1135,10 +1139,10 @@ class CompilerHandler
         foreach ($content_line_array as $key => $line) {
 
             if ((strpos($line, "In file included from") !== false
-                    && preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line))
-                || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                    && preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line))
+                || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
                     && strpos($line, "error:") !== false)
-                || (preg_match('/(([!@#$%^&*()-+"\'<>?]*\w*)+\.\w+:\d+:)/', $line)
+                || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
                     && strpos($line, "note:") !== false)) {
 
                 if ($header_found === false) {
