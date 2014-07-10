@@ -645,7 +645,7 @@ class CompilerHandler
                         if($compiler_config['logging']){
                             file_put_contents($compiler_config['logFileName'],"$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $object_file.o $file.$ext\n", FILE_APPEND);
                         }
-                        $output = str_replace("$dir/", "", $output); // XXX
+
                         $output = $this->postproc->ansi_to_html(implode("\n", $output));
 
                         $resp = array(
@@ -697,7 +697,8 @@ class CompilerHandler
                                 return $resp;
                             }
                         }
-                        $resp["message"] = $output;
+
+                        $resp["message"] = $this->pathRemover ($output, $compiler_config);
                         return $resp;
                     }
                     unset($output);
