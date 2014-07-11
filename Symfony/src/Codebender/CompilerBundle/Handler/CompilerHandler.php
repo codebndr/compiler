@@ -1167,7 +1167,7 @@ class CompilerHandler
                             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports core issue.");
                             $coreFound = true;
                         }
-                        if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false) {
+                        if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false && $option == "asm") {
                             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports assembly issue.");
                             $asmFound = true;
                         }
@@ -1219,7 +1219,7 @@ class CompilerHandler
                         && $coreFound === false && $option != "asm") {
                         $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports core issue.");
                     }
-                    if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false) {
+                    if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false && $option == "asm") {
                         $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports assembly issue.");
                     }
                 }
