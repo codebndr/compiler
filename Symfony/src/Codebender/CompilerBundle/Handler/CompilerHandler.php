@@ -158,12 +158,6 @@ class CompilerHandler
         //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
         $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
 
-        if ($ARCHIVE_OPTION === true){
-            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                return $arch_ret;
-        }
-
         $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
         if ($compiler_config['logging'] === true){
             if ($log_content !== false) {
@@ -171,16 +165,26 @@ class CompilerHandler
                 file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
             }
             else
-                return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                $ret["log"] = "Failed to access logfile.";
         }
+
+        if ($ARCHIVE_OPTION === true){
+            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($arch_ret["success"] === false)
+                $ret["archive"] = $arch_ret["message"];
+            else
+                $ret["archive"] = $ARCHIVE_PATH;
+        }
+
         if (!$ret["success"])
-            return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+            return $ret;
 
         if ($format == "syntax")
             return array_merge(array(
                     "success" => true,
                     "time" => microtime(true) - $start_time),
-                ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                    ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
+                    ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
 
         //Keep all object files urls needed for linking.
         $objects_to_link = $files["sketch_files"]["o"];
@@ -190,35 +194,20 @@ class CompilerHandler
         {
             $content = base64_encode(file_get_contents($files["sketch_files"]["o"][0].".o"));
             if (count($files["sketch_files"]["o"]) != 1 || !$content){
-                if ($compiler_config['logging'] === false)
-                    return array_merge(array(
-                            "success" => false,
-                            "step" => -1, //TODO: Fix this step?
-                            "message" => ""),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                else
-                    return array_merge(array(
-                            "success" => false,
-                            "step" => -1, //TODO: Fix this step?
-                            "message" => "",
-                            "log" => $log_content),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                return array_merge(array(
+                        "success" => false,
+                        "step" => -1, //TODO: Fix this step?
+                        "message" => ""),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
+                        ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
             }
-            else{
-                if ($compiler_config['logging'] === false)
-                    return array_merge(array(
-                            "success" => true,
-                            "time" => microtime(true) - $start_time,
-                            "output" => $content),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                else
-                    return array_merge(array(
-                            "success" => true,
-                            "time" => microtime(true) - $start_time,
-                            "output" => $content,
-                            "log" => $log_content),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-            }
+            else
+                return array_merge(array(
+                        "success" => true,
+                        "time" => microtime(true) - $start_time,
+                        "output" => $content),
+                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
+                        ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
         }
 
         // Step 5: Create objects for core files (if core file does not already exist)
@@ -233,19 +222,12 @@ class CompilerHandler
                 $make_dir_success = @mkdir($this->object_directory, 0777, true);
             }
             if(!$make_dir_success){
-                if ($compiler_config['logging'] === false)
                     return array_merge(array(
                             "success" => false,
                             "step" => 5,
                             "message" => "Could not create object files directory."),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                else
-                    return array_merge(array(
-                            "success" => false,
-                            "step" => 5,
-                            "message" => "Could not create object files directory.",
-                            "log" => $log_content),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                            ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
+                            ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
             }
         }
 
@@ -260,35 +242,34 @@ class CompilerHandler
             $tmp = $this->makeCoresTmp($CORE_DIR, $CORE_OVERRIDE_DIR, $TEMP_DIR, $compiler_dir, $files);
 
             if(!$tmp["success"]){
-                if ($compiler_config['logging'] === false)
-                    return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                else{
-                    $tmp["log"] = $log_content;
-                    return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                }
+                return array_merge($tmp,
+                    ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
+                    ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
             }
 
             $ret = $this->handleCompile("$compiler_dir/core", $files["core"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["core"], "object");
 
             $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
 
+            if ($compiler_config['logging'] === true){
+                if ($log_content !== false){
+                    $ret["log"] = $log_content;
+                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
+                }
+                else
+                    $ret["log"] = "Failed to access logfile.";
+            }
+
             if ($ARCHIVE_OPTION === true){
                 $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
                 if ($arch_ret["success"] === false)
-                    return $arch_ret;
+                    $ret["archive"] = $arch_ret["message"];
+                else
+                    $ret["archive"] = $ARCHIVE_PATH;
             }
 
-            if (!$ret["success"]){
-                if ($compiler_config['logging'] === true){
-                    if ($log_content !== false){
-                        $ret["log"] = $log_content;
-                        file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                    }
-                    else
-                        return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-                }
-                return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-            }
+            if (!$ret["success"])
+                return $ret;
 
             foreach ($files["core"]["o"] as $core_object){
                 //Link object file to library.
@@ -321,12 +302,6 @@ class CompilerHandler
 
             $ret = $this->handleCompile("$compiler_dir/libraries/$library_name", $files["libs"][$library_name], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format, true, $lib_object_naming_params);
 
-            if ($ARCHIVE_OPTION === true){
-                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-                if ($arch_ret["success"] === false)
-                    return $arch_ret;
-            }
-
             $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
             if ($compiler_config['logging'] === true){
                 if ($log_content !== false) {
@@ -334,11 +309,19 @@ class CompilerHandler
                     file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
                 }
                 else
-                    return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                    $ret["log"] = "Failed to access logfile.";
+            }
+
+            if ($ARCHIVE_OPTION === true){
+                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+                if ($arch_ret["success"] === false)
+                    $ret["archive"] = $arch_ret["message"];
+                else
+                    $ret["archive"] = $ARCHIVE_PATH;
             }
 
             if(!$ret["success"])
-                return array_merge($ret, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                return $ret;
 
             $objects_to_link = array_merge($objects_to_link, $files["libs"][$library_name]["o"]);
         }
@@ -359,50 +342,53 @@ class CompilerHandler
             // Log the fact that an error occurred during linking
             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - An error occurred during linking: " . json_encode(implode("\n", $output)));
 
+            $returner = array(
+                "success" => false,
+                "step" => 7,
+                "message" => implode("\n", $output));
+
+            if ($compiler_config['logging'] === true) {
+                $log_content = @file_get_contents($compiler_config['logFileName']);
+                if (!$log_content)
+                    $returner["log"] = "Failed to access logfile.";
+                else {
+                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
+                    $returner["log"] = $log_content;
+                }
+            }
+
             if ($ARCHIVE_OPTION === true){
                 $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
                 if ($arch_ret["success"] === false)
-                    return $arch_ret;
+                    $returner["archive"] = $arch_ret["message"];
+                else
+                    $returner["archive"] = $ARCHIVE_PATH;
             }
-            $returner = array_merge(array(
-                "success" => false,
-                "step" => 7,
-                "message" => implode("\n", $output)), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-            if ($compiler_config['logging'] === false)
-                return $returner;
-            else{
-                $log_content = @file_get_contents($compiler_config['logFileName']);
-                if (!$log_content)
-                    return array("success" => "false", "message" => "Failed to access logfile.", "archive" => $ARCHIVE_PATH);
-                else {
-                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                    return array_merge($returner, array("log" => $log_content));
-                }
-            }
+            return $returner;
         }
 
         // Step 8: Convert the output to the requested format and measure its
         // size.
         $tmp = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
 
-        if ($ARCHIVE_OPTION === true){
-            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                return $arch_ret;
-        }
-
-        if ($compiler_config['logging'] === false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-        else{
+        if ($compiler_config['logging'] === true) {
             $log_content = @file_get_contents($compiler_config['logFileName']);
             if (!$log_content)
-                return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                $tmp["log"] = "Failed to access logfile.";
             else {
                 file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                return array_merge($tmp, array("log" => $log_content), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+                $tmp["log"] = $log_content;
             }
         }
 
+        if ($ARCHIVE_OPTION === true){
+            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($arch_ret["success"] === false)
+                $tmp["archive"] = $arch_ret["message"];
+            else
+                $tmp["archive"] = $ARCHIVE_PATH;
+        }
+        return $tmp;
     }
 
     private function requestValid(&$request)
