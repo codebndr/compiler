@@ -1209,8 +1209,20 @@ class CompilerHandler
                         $final .= $header ."\n";
                         $final .= $body . "\n";
                     }
+                }else {
+                    if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false && $option != "asm") {
+                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports library issue.");
+                    }
+                    if ((strpos($header, $compiler_config["arduino_cores_dir"]) !== false
+                            || (array_key_exists("external_core_files", $compiler_config)
+                                && strpos($header, $compiler_config["external_core_files"]) !== false))
+                        && $coreFound === false && $option != "asm") {
+                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports core issue.");
+                    }
+                    if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false) {
+                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports assembly issue.");
+                    }
                 }
-                break;
             }
 
             $header_found = false;
