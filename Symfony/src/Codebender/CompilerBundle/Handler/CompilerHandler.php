@@ -166,8 +166,10 @@ class CompilerHandler
 
         $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
         if ($compiler_config['logging'] === true){
-            if ($log_content !== false)
+            if ($log_content !== false) {
                 $ret["log"] = $log_content;
+                file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
+            }
             else
                 return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
         }
@@ -280,6 +282,7 @@ class CompilerHandler
                 if ($compiler_config['logging'] === true){
                     if ($log_content !== false){
                         $ret["log"] = $log_content;
+                        file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
                     }
                     else
                         return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
@@ -326,8 +329,10 @@ class CompilerHandler
 
             $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
             if ($compiler_config['logging'] === true){
-                if ($log_content !== false)
+                if ($log_content !== false) {
                     $ret["log"] = $log_content;
+                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
+                }
                 else
                     return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
             }
@@ -369,8 +374,10 @@ class CompilerHandler
                 $log_content = @file_get_contents($compiler_config['logFileName']);
                 if (!$log_content)
                     return array("success" => "false", "message" => "Failed to access logfile.", "archive" => $ARCHIVE_PATH);
-                else
+                else {
+                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
                     return array_merge($returner, array("log" => $log_content));
+                }
             }
         }
 
@@ -390,8 +397,10 @@ class CompilerHandler
             $log_content = @file_get_contents($compiler_config['logFileName']);
             if (!$log_content)
                 return array_merge(array("success" => "false", "message" => "Failed to access logfile."), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
-            else
+            else {
+                file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
                 return array_merge($tmp, array("log" => $log_content), ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+            }
         }
 
     }
