@@ -129,6 +129,8 @@ class CompilerHandler
                 }
             }
             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
+            if ($ARCHIVE_OPTION === true)
+                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . "Archive file: $ARCHIVE_PATH");
         }
 
         // Step 4: Syntax-check and compile source files.
