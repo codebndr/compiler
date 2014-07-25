@@ -10,6 +10,6 @@ codebender_compiler_homepage:
     pattern:  /{auth_key}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:index }
 
-codebender_compiler_deleteAll:
+codebender_compiler_delete_all:
     pattern:  /{auth_key}/{version}/delete/all/
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteAllObjects }
