@@ -597,6 +597,8 @@ class CompilerHandler
             foreach ($files[$ext] as $file)
             {
                 if($caching){
+                    $name_params['core'] = str_replace(":", "_", $name_params['core']);
+                    $name_params['variant'] = str_replace(":", "_", $name_params['variant']);
                     $object_filename = "$this->object_directory/${name_params['mcu']}_${name_params['f_cpu']}_${name_params['core']}_${name_params['variant']}_${name_params['vid']}_${name_params['pid']}______${name_params['library']}_______".((pathinfo(pathinfo($file, PATHINFO_DIRNAME), PATHINFO_FILENAME) == "utility") ? "utility_______" : "") .pathinfo($file, PATHINFO_FILENAME);
                     $object_file = $object_filename;
                     //Lock the file so that only one compiler instance (thread) will compile every library object file
