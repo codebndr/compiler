@@ -9,3 +9,7 @@ codebender_compiler_test:
 codebender_compiler_homepage:
     pattern:  /{auth_key}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:index }
+
+codebender_compiler_deleteAll:
+    pattern:  /{auth_key}/delete/all/
+    defaults: { _controller: CodebenderCompilerBundle:Default:deleteAllObjects }
