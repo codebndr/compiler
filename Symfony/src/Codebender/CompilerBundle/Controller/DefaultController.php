@@ -69,10 +69,13 @@ class DefaultController extends Controller
 		}
 	}
 
-    public function deleteAllObjectsAction($auth_key)
+    public function deleteAllObjectsAction($auth_key, $version)
     {
         if ($this->container->getParameter('auth_key') != $auth_key)
             return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+
+        if ($version != "v1")
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
 
         $tempDir = $this->container->getParameter('temp_dir');
         $objectFilesDir = $this->container->getParameter('objdir');
