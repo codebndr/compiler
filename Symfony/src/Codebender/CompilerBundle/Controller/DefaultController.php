@@ -69,6 +69,56 @@ class DefaultController extends Controller
 		}
 	}
 
+    public function deleteAllObjectsAction($auth_key)
+    {
+        if ($this->container->getParameter('auth_key') != $auth_key)
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+
+        $tempDir = $this->container->getParameter('temp_dir');
+        $objectFilesDir = $this->container->getParameter('objdir');
+        $fileCount = 0;
+        $undeletedFiles = "";
+        $deletionStats = array("success_dot_a" => 0,
+            "failure_dot_a" => 0,
+            "success_dot_o" => 0,
+            "failure_dot_o" => 0,
+            "success_dot_d" => 0,
+            "failure_dot_d" => 0,
+            "success_dot_LOCK" => 0,
+            "failure_dot_LOCK" => 0);
+
+        if ($handle = opendir("$tempDir/$objectFilesDir"))
+        {
+
+            while (false !== ($entry = readdir($handle)))
+            {
+                if ($entry != "." && $entry != ".." && $entry != ".DS_Store")
+                {
+                    $fileCount++;
+                    $extension = pathinfo($entry, PATHINFO_EXTENSION);
+
+                    if (!in_array($extension, array("a", "o", "d", "LOCK")))
+                        continue;
+
+                    if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
+                    {
+                        $deletionStats["failure_dot_$extension"]++;
+                        $undeletedFiles .= $entry . "\n";
+                    }
+                    else
+                        $deletionStats["success_dot_$extension"]++;
+                }
+            }
+            closedir($handle);
+        }else
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
+
+        return new Response(json_encode(array_merge(array("success" => true,
+                "message" => "Object files deletion complete. Found $fileCount files."),
+                $deletionStats,
+                array("Files not deleted" => $undeletedFiles))));
+    }
+
 	/**
 	\brief Creates a list of the configuration parameters to be used in the compilation process.
 
