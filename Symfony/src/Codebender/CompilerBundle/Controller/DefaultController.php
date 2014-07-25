@@ -122,6 +122,61 @@ class DefaultController extends Controller
                 array("Files not deleted" => $undeletedFiles))));
     }
 
+    public function deleteSpecificObjectsAction($auth_key, $version, $option, $to_delete)
+    {
+        if ($this->container->getParameter('auth_key') != $auth_key)
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+
+        if ($version != "v1")
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
+
+        $tempDir = $this->container->getParameter('temp_dir');
+        $objectFilesDir = $this->container->getParameter('objdir');
+
+        if ($option == "core")
+            $to_delete = str_replace(":", "_", $to_delete);
+
+        $response = array();
+        $response["deleted_files"] = "";
+        $response["undeleted_files"] = "";
+
+        if ($handle = opendir("$tempDir/$objectFilesDir"))
+        {
+            while (false !== ($entry = readdir($handle)))
+            {
+                if ($entry == "." || $entry == ".." || $entry == ".DS_Store")
+                    continue;
+
+                if ($option == "library" && strpos($entry, "______" . $to_delete . "_______") === false)
+                    continue;
+
+                if ($option == "core" && strpos($entry, "_" . $to_delete . "_") === false)
+                    continue;
+
+
+                if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
+                    $response["undeleted_files"] .= $entry . "\n";
+                else
+                    $response["deleted_files"] .= $entry . "\n";
+
+            }
+            closedir($handle);
+        }
+        else
+        {
+            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
+        }
+
+        if ($response["undeleted_files"] != "")
+        {
+            $message = ($option == "library") ? "Failed to delete one or more of the specified library object files.": "Failed to delete one or more of the specified core object files.";
+            return new Response(json_encode(array_merge(array("success" => false, "step" => 0, "message" => $message), $response)));
+        }
+
+        $message = ($option == "library") ? "Library deleted successfully.": "Core object files deleted successfully.";
+        return new Response(json_encode(array_merge(array("success" => true, "message" => $message), $response)));
+    }
+
 	/**
 	\brief Creates a list of the configuration parameters to be used in the compilation process.
 
