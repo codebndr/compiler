@@ -1256,7 +1256,7 @@ class CompilerHandler
 
         // Remove any instance of codebender arduino core files folder name from the text
 //        $modified = preg_replace($core_pattern, '', $modified);
-        $modified = str_replace($compiler_config["arduino_cores_dir"], '', $modified);
+        $modified = str_replace($compiler_config["arduino_cores_dir"] . "/v105/", '', $modified);
 
         // Remove any instance of codebender external core file folder name from the text
 //        $modified = preg_replace($external_core_pattern, '', $modified);
