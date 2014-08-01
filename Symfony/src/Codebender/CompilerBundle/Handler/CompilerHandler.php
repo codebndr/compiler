@@ -124,10 +124,12 @@ class CompilerHandler
 
             if ($request["libraries"]) {
                 $req_elements[] = "Libraries: ";
-                foreach ($request["libraries"] as $key => $var) {
-                    $req_elements[] = $key;
+                foreach ($request["libraries"] as $libname => $libfiles) {
+                    foreach ($libfiles as $libfile)
+                        $req_elements[] = $libname . "/" . $libfile["filename"];
                 }
             }
+
             $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
             if ($ARCHIVE_OPTION === true)
                 $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . "Archive file: $ARCHIVE_PATH");
