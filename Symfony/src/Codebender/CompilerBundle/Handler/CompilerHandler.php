@@ -1184,7 +1184,7 @@ class CompilerHandler
                         $body = "";
                     }
 
-                    if ($header != "" && $body != "") {
+                    if ($header != "") {
                         if (strpos($header, "</font></b>") == 0)
                             $header = substr_replace($header, '', 0, 11);
                         if (array_key_exists($key + 1, $content_line_array)
@@ -1211,7 +1211,7 @@ class CompilerHandler
                     || ($option == "asm"
                         && strpos($header, "in asm") === false
                         && strpos($body, "in asm") === false)) {
-                    if ($header != "" && $body != "") {
+                    if ($header != "") {
                         if (strpos($header, "</font></b>") == 0)
                             $header = substr_replace($header, '', 0, 11);
                         $final .= $header ."\n";
