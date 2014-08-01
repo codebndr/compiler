@@ -699,6 +699,8 @@ class CompilerHandler
                                 $this->compiler_logger->addInfo($this->logger_id . " - Clang reformated output: " . json_encode($final_clang_output));
                                 $final_clang_output = $this->pathRemover ($final_clang_output, $compiler_config);
                                 $resp["message"] = $final_clang_output;
+                                if ($resp["message"] == "")
+                                    $resp["message"] = $output;
                                 return $resp;
                             }else {
                                 $this->compiler_logger->addInfo($this->logger_id . " - Gcc output: " . json_encode($avr_output));
@@ -706,6 +708,8 @@ class CompilerHandler
                                 $this->compiler_logger->addInfo($this->logger_id . " - Clang reformated output: " . json_encode($next_clang_output));
                                 $next_clang_output = $this->pathRemover ($next_clang_output, $compiler_config);
                                 $resp["message"] = $next_clang_output;
+                                if ($resp["message"] == "")
+                                    $resp["message"] = $output;
                                 return $resp;
                             }
                         }
