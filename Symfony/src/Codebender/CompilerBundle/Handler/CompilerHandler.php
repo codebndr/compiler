@@ -1154,16 +1154,13 @@ class CompilerHandler
             if ((strpos($line, "In file included from") !== false
                     && preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line))
                 || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
-                    && strpos($line, "error:") !== false)
-                || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
-                    && strpos($line, "note:") !== false)) {
+                    && strpos($line, "error:") !== false)) {
 
                 if ($header_found === false) {
                     if (($option == "non_asm" && preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
                             || strpos($header, $compiler_config["arduino_cores_dir"]) !== false
                             || (array_key_exists("external_core_files", $compiler_config)
-                                && strpos($header, $compiler_config["external_core_files"]) !== false)
-                            || strpos($header, "note:") !== false)
+                                && strpos($header, $compiler_config["external_core_files"]) !== false))
                         || ($option == "asm"
                             && (strpos($header, "in asm") !== false
                                 || strpos($body, "in asm") !== false))) {
@@ -1210,7 +1207,6 @@ class CompilerHandler
                         && strpos($header, $compiler_config["arduino_cores_dir"]) === false
                         && (array_key_exists("external_core_files", $compiler_config)
                             && strpos($header, $compiler_config["external_core_files"]) === false)
-                        && strpos($header, "note:") === false
                         && $option == "non_asm")
                     || ($option == "asm"
                         && strpos($header, "in asm") === false
