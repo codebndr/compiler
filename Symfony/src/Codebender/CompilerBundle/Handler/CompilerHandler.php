@@ -1243,10 +1243,10 @@ class CompilerHandler
 
     private function pathRemover ($output, $compiler_config) {
 
-        $core_pattern = "/" . str_replace("/", "\\/", $compiler_config["arduino_cores_dir"]) . "([.*\\S]*\\/)" . "/";
-        $external_core_pattern = "//";
-        if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
-            $external_core_pattern = "/" . str_replace("/", "\\/", $compiler_config["external_core_files"]) . "([.*\\S]*\\/)" . "/";
+//        $core_pattern = "/" . str_replace("/", "\\/", $compiler_config["arduino_cores_dir"]) . "([.*\\S]*\\/)" . "/";
+//        $external_core_pattern = "//";
+//        if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
+//            $external_core_pattern = "/" . str_replace("/", "\\/", $compiler_config["external_core_files"]) . "([.*\\S]*\\/)" . "/";
 
         // Remove any instance of "compiler.RANDOM/files/" folder name from the text
         $modified = str_replace($compiler_config["compiler_dir"] . "/files/", '', $output);
@@ -1255,10 +1255,13 @@ class CompilerHandler
         $modified = str_replace($compiler_config["compiler_dir"] . "/", '', $modified);
 
         // Remove any instance of codebender arduino core files folder name from the text
-        $modified = preg_replace($core_pattern, '', $modified);
+//        $modified = preg_replace($core_pattern, '', $modified);
+        $modified = preg_replace($compiler_config["arduino_cores_dir"], '', $modified);
 
         // Remove any instance of codebender external core file folder name from the text
-        $modified = preg_replace($external_core_pattern, '', $modified);
+//        $modified = preg_replace($external_core_pattern, '', $modified);
+        if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
+            $modified = preg_replace($compiler_config["external_core_files"], '', $modified);
 
         return $modified;
     }
