@@ -27,6 +27,7 @@ class CompilerHandler
     private $utility;
     private $compiler_logger;
     private $object_directory;
+    private $logger_id;
 
     function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, Logger $logger, $objdir)
     {
@@ -116,21 +117,33 @@ class CompilerHandler
 
         // Log the names of the project files and the libraries used in it.
         if ($format != "autocomplete") {
+            $user_id = "";
+            $sketch_id = "";
             $req_elements = array();
             $req_elements[] = "Files: ";
             foreach ($request["files"] as $file) {
                 $req_elements[] = $file["filename"];
+                if (strpos($file["filename"], ".txt") !== false) {
+                    if (strpos($file["filename"], "user_") !== false)
+                        $user_id = str_replace(".txt", "", str_replace("user_", "", $file["filename"]));
+                    else
+                        $sketch_id = str_replace(".txt", "", $file["filename"]);
+                }
             }
 
             if ($request["libraries"]) {
                 $req_elements[] = "Libraries: ";
-                foreach ($request["libraries"] as $key => $var) {
-                    $req_elements[] = $key;
+                foreach ($request["libraries"] as $libname => $libfiles) {
+                    foreach ($libfiles as $libfile)
+                        $req_elements[] = $libname . "/" . $libfile["filename"];
                 }
             }
-            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . implode(" ", $req_elements));
+
+            $this->logger_id = microtime(true) . "_" . substr($compiler_config['compiler_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
+
+            $this->compiler_logger->addInfo($this->logger_id . " - " . implode(" ", $req_elements));
             if ($ARCHIVE_OPTION === true)
-                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - " . "Archive file: $ARCHIVE_PATH");
+                $this->compiler_logger->addInfo($this->logger_id . " - " . "Archive file: $ARCHIVE_PATH");
         }
 
         // Step 4: Syntax-check and compile source files.
@@ -342,7 +355,7 @@ class CompilerHandler
         if ($ret_link){
 
             // Log the fact that an error occurred during linking
-            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - An error occurred during linking: " . json_encode(implode("\n", $output)));
+            $this->compiler_logger->addInfo($this->logger_id . " - An error occurred during linking: " . json_encode(implode("\n", $output)));
 
             $returner = array(
                 "success" => false,
@@ -657,42 +670,46 @@ class CompilerHandler
                          * and if significant differences are detected, return a modified version of the clang output.
                          */
                         $clangElements = $this->getClangErrorFileList ($output);
-                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reported files: " . implode(" | ", array_keys($clangElements)));
+                        $this->compiler_logger->addInfo($this->logger_id . " - Clang reported files: " . implode(" | ", array_keys($clangElements)));
                         $gccElements = $this->getGccErrorFileList ($avr_output);
-                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc reported files: " . implode(" | ", array_keys($gccElements)));
+                        $this->compiler_logger->addInfo($this->logger_id . " - Gcc reported files: " . implode(" | ", array_keys($gccElements)));
 
                         if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
 
                             $resp["old_message"] = $output;
-                            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Mismatch between clang and gcc output found.");
+                            $this->compiler_logger->addInfo($this->logger_id . " - Mismatch between clang and gcc output found.");
 
                             $next_clang_output = $this->cleanUpClangOutput ($output, $compiler_config, "asm");
 
                             $clangElements = $this->getClangErrorFileList ($next_clang_output);
-                            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reported files after removing asm: " . implode(" | ", array_keys($clangElements)));
+                            $this->compiler_logger->addInfo($this->logger_id . " - Clang reported files after removing asm: " . implode(" | ", array_keys($clangElements)));
 
                             if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Mismatch between clang and gcc output found after removing assembly messages.");
+                                $this->compiler_logger->addInfo($this->logger_id . " - Mismatch between clang and gcc output found after removing assembly messages.");
                                 $final_clang_output = $this->cleanUpClangOutput ($next_clang_output, $compiler_config, "non_asm");
 
                                 $clangElements = $this->getClangErrorFileList ($final_clang_output);
                                 if (array_diff(array_keys($clangElements), array_keys($gccElements))) {
-                                    $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Mismatch between clang and gcc output found after removing assembly/library/core messages.");
+                                    $this->compiler_logger->addInfo($this->logger_id . " - Mismatch between clang and gcc output found after removing assembly/library/core messages.");
                                 }else {
-                                    $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang and gcc issue solved. Both report same files with errors.");
+                                    $this->compiler_logger->addInfo($this->logger_id . " - Clang and gcc issue solved. Both report same files with errors.");
                                 }
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc output: " . json_encode($avr_output));
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang initial output: " . json_encode($output));
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reformated output: " . json_encode($final_clang_output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Gcc output: " . json_encode($avr_output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Clang initial output: " . json_encode($output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Clang reformated output: " . json_encode($final_clang_output));
                                 $final_clang_output = $this->pathRemover ($final_clang_output, $compiler_config);
                                 $resp["message"] = $final_clang_output;
+                                if ($resp["message"] == "")
+                                    $resp["message"] = $this->pathRemover ($output, $compiler_config);
                                 return $resp;
                             }else {
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Gcc output: " . json_encode($avr_output));
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang initial output: " . json_encode($output));
-                                $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reformated output: " . json_encode($next_clang_output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Gcc output: " . json_encode($avr_output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Clang initial output: " . json_encode($output));
+                                $this->compiler_logger->addInfo($this->logger_id . " - Clang reformated output: " . json_encode($next_clang_output));
                                 $next_clang_output = $this->pathRemover ($next_clang_output, $compiler_config);
                                 $resp["message"] = $next_clang_output;
+                                if ($resp["message"] == "")
+                                    $resp["message"] = $this->pathRemover ($output, $compiler_config);
                                 return $resp;
                             }
                         }
@@ -1141,40 +1158,37 @@ class CompilerHandler
             if ((strpos($line, "In file included from") !== false
                     && preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line))
                 || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
-                    && strpos($line, "error:") !== false)
-                || (preg_match('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $line)
-                    && strpos($line, "note:") !== false)) {
+                    && strpos($line, "error:") !== false)) {
 
                 if ($header_found === false) {
                     if (($option == "non_asm" && preg_match('/(\/compiler\.\w+\/libraries\/)/', $header)
                             || strpos($header, $compiler_config["arduino_cores_dir"]) !== false
                             || (array_key_exists("external_core_files", $compiler_config)
-                                && strpos($header, $compiler_config["external_core_files"]) !== false)
-                            || strpos($header, "note:") !== false)
+                                && strpos($header, $compiler_config["external_core_files"]) !== false))
                         || ($option == "asm"
                             && (strpos($header, "in asm") !== false
                                 || strpos($body, "in asm") !== false))) {
 
                         if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false && $option != "asm") {
-                            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports library issue.");
+                            $this->compiler_logger->addInfo($this->logger_id . " - Clang reports library issue.");
                             $libFound = true;
                         }
                         if ((strpos($header, $compiler_config["arduino_cores_dir"]) !== false
                                 || (array_key_exists("external_core_files", $compiler_config)
                                     && strpos($header, $compiler_config["external_core_files"]) !== false))
                             && $coreFound === false && $option != "asm") {
-                            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports core issue.");
+                            $this->compiler_logger->addInfo($this->logger_id . " - Clang reports core issue.");
                             $coreFound = true;
                         }
                         if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false && $option == "asm") {
-                            $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports assembly issue.");
+                            $this->compiler_logger->addInfo($this->logger_id . " - Clang reports assembly issue.");
                             $asmFound = true;
                         }
                         $header = "";
                         $body = "";
                     }
 
-                    if ($header != "" && $body != "") {
+                    if ($header != "") {
                         if (strpos($header, "</font></b>") == 0)
                             $header = substr_replace($header, '', 0, 11);
                         if (array_key_exists($key + 1, $content_line_array)
@@ -1197,12 +1211,11 @@ class CompilerHandler
                         && strpos($header, $compiler_config["arduino_cores_dir"]) === false
                         && (array_key_exists("external_core_files", $compiler_config)
                             && strpos($header, $compiler_config["external_core_files"]) === false)
-                        && strpos($header, "note:") === false
                         && $option == "non_asm")
                     || ($option == "asm"
                         && strpos($header, "in asm") === false
                         && strpos($body, "in asm") === false)) {
-                    if ($header != "" && $body != "") {
+                    if ($header != "") {
                         if (strpos($header, "</font></b>") == 0)
                             $header = substr_replace($header, '', 0, 11);
                         $final .= $header ."\n";
@@ -1210,16 +1223,16 @@ class CompilerHandler
                     }
                 }else {
                     if (preg_match('/(\/compiler\.\w+\/libraries\/)/', $header) && $libFound === false && $option != "asm") {
-                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports library issue.");
+                        $this->compiler_logger->addInfo($this->logger_id . " - Clang reports library issue.");
                     }
                     if ((strpos($header, $compiler_config["arduino_cores_dir"]) !== false
                             || (array_key_exists("external_core_files", $compiler_config)
                                 && strpos($header, $compiler_config["external_core_files"]) !== false))
                         && $coreFound === false && $option != "asm") {
-                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports core issue.");
+                        $this->compiler_logger->addInfo($this->logger_id . " - Clang reports core issue.");
                     }
                     if ((strpos($header, "in asm") !== false || strpos($body, "in asm") !== false) && $asmFound === false && $option == "asm") {
-                        $this->compiler_logger->addInfo($compiler_config["compiler_dir"] . " - Clang reports assembly issue.");
+                        $this->compiler_logger->addInfo($this->logger_id . " - Clang reports assembly issue.");
                     }
                 }
             }
@@ -1234,11 +1247,6 @@ class CompilerHandler
 
     private function pathRemover ($output, $compiler_config) {
 
-        $core_pattern = "/" . str_replace("/", "\\/", $compiler_config["arduino_cores_dir"]) . "([.*\\S]*\\/)" . "/";
-        $external_core_pattern = "//";
-        if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
-            $external_core_pattern = "/" . str_replace("/", "\\/", $compiler_config["external_core_files"]) . "([.*\\S]*\\/)" . "/";
-
         // Remove any instance of "compiler.RANDOM/files/" folder name from the text
         $modified = str_replace($compiler_config["compiler_dir"] . "/files/", '', $output);
 
@@ -1246,10 +1254,11 @@ class CompilerHandler
         $modified = str_replace($compiler_config["compiler_dir"] . "/", '', $modified);
 
         // Remove any instance of codebender arduino core files folder name from the text
-        $modified = preg_replace($core_pattern, '', $modified);
+        $modified = str_replace($compiler_config["arduino_cores_dir"] . "/v105/", '', $modified);
 
         // Remove any instance of codebender external core file folder name from the text
-        $modified = preg_replace($external_core_pattern, '', $modified);
+        if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
+            $modified = str_replace($compiler_config["external_core_files"], '', $modified);
 
         return $modified;
     }
