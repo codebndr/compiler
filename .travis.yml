@@ -5,13 +5,6 @@ php:
 
 before_install:
   - sudo apt-get update
-  - sudo apt-get install phpunit
-  - sudo pear upgrade pear
-  - sudo pear channel-discover pear.phpunit.de
-  - sudo pear channel-discover components.ez.no
-  - sudo pear channel-discover pear.symfony-project.com
-  - sudo pear channel-discover pear.symfony.com
-  - sudo pear install --alldeps phpunit/PHPunit
 
 before_script:
   - cd Symfony
