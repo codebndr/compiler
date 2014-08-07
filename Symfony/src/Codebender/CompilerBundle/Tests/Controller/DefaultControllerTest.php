@@ -123,7 +123,7 @@ class DefaultControllerTest extends WebTestCase
 		$this->assertContains("expected ';' after top level declarator", $response["message"]);
 		$this->assertContains("no matching function for call to 'pinMode'", $response["message"]);
 		$this->assertContains("candidate function not viable: requires 2 arguments, but 1 was provided", $response["message"]);
-		$this->assertContains("2 errors generated.", $response["message"]);
+		// $this->assertContains("2 errors generated.", $response["message"]); //unfortunately we no longer show how many errors were generated
 	}
 
 	public function testBlinkUnoCompileError()
@@ -150,7 +150,7 @@ class DefaultControllerTest extends WebTestCase
 		$this->assertContains("expected ';' after top level declarator", $response["message"]);
 		$this->assertContains("no matching function for call to 'pinMode'", $response["message"]);
 		$this->assertContains("candidate function not viable: requires 2 arguments, but 1 was provided", $response["message"]);
-		$this->assertContains("2 errors generated.", $response["message"]);
+		// $this->assertContains("2 errors generated.", $response["message"]);  //unfortunately we no longer show how many errors were generated
 	}
 
 	public function testIncorrectInputs()
