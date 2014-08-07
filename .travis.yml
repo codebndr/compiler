@@ -1,0 +1,33 @@
+language: php
+php:
+  - 5.5
+  - 5.4
+
+before_install:
+  - sudo apt-get update
+  - sudo apt-get install phpunit
+  - sudo pear upgrade pear
+  - sudo pear channel-discover pear.phpunit.de
+  - sudo pear channel-discover components.ez.no
+  - sudo pear channel-discover pear.symfony-project.com
+  - sudo pear channel-discover pear.symfony.com
+  - sudo pear install --alldeps phpunit/PHPunit
+
+before_script:
+  - cd Symfony
+  - cp app/config/parameters.yml.dist app/config/parameters.yml
+  - composer install
+  - sudo apt-get install -y unzip
+  - sudo mkdir /opt/codebender
+  - wget https://github.com/codebendercc/arduino-core-files/archive/master.zip
+  - unzip master.zip
+  - sudo cp -r arduino-core-files-master /opt/codebender/codebender-arduino-core-files
+  - rm master.zip
+  - wget https://github.com/codebendercc/external_cores/archive/master.zip
+  - unzip master.zip
+  - sudo cp -r external_cores-master /opt/codebender/external-core-files
+
+
+
+
+script: phpunit -c app/
