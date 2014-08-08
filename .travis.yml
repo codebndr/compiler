@@ -27,3 +27,6 @@ script: phpunit -c app/
 
 notifications:
   irc: "chat.freenode.net#codebender.cc"
+  email:
+    recipients:
+      - girder@codebender.cc
