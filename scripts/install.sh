@@ -6,13 +6,13 @@ PACKAGENAME=compiler
 
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	echo "Configuring environment for Linux"
+	sudo apt-get update
 	if [[ ! $TRAVIS ]]; then
 		# Ubuntu Server (on AWS?) lacks UTF-8 for some reason. Give it that
 		sudo locale-gen en_US.UTF-8
 		# Make sure we have up-to-date stuff
 		sudo apt-get install -y php5-intl
 	fi
-	sudo apt-get update
 	# Install dependencies
 	sudo apt-get install -y apache2 libapache2-mod-php5 php-pear php5-curl php5-sqlite acl curl git
 	# Enable Apache configs
