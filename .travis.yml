@@ -8,7 +8,7 @@ before_install:
 
 before_script:
   - scripts/install.sh
-  - cd /opt/codebender/website/Symfony
+  - cd /opt/codebender/compiler/Symfony
   - sudo chmod -R 777 app/cache app/logs
   - echo 'error_reporting =  E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED' >> ~/.phpenv/versions/$(phpenv version-name)/etc/conf.d/travis.ini
 
