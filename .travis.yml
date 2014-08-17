@@ -1,0 +1,32 @@
+language: php
+php:
+  - 5.5
+  - 5.4
+
+before_install:
+  - sudo apt-get update
+
+before_script:
+  - cd Symfony
+  - cp app/config/parameters.yml.dist app/config/parameters.yml
+  - composer install
+  - sudo apt-get install -y unzip
+  - sudo mkdir /opt/codebender
+  - wget https://github.com/codebendercc/arduino-core-files/archive/master.zip
+  - unzip master.zip
+  - sudo cp -r arduino-core-files-master /opt/codebender/codebender-arduino-core-files
+  - rm master.zip
+  - wget https://github.com/codebendercc/external_cores/archive/master.zip
+  - unzip master.zip
+  - sudo cp -r external_cores-master /opt/codebender/external-core-files
+
+
+
+
+script: phpunit -c app/
+
+notifications:
+  irc: "chat.freenode.net#codebender.cc"
+  email:
+    recipients:
+      - girder@codebender.cc
