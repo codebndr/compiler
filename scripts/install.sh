@@ -45,12 +45,12 @@ cd /opt/codebender/$PACKAGENAME
 sudo apt-get install -y unzip
 wget https://github.com/codebendercc/arduino-core-files/archive/master.zip
 unzip master.zip
-cp -r arduino-core-files-master /opt/codebender/codebender-arduino-core-files
+sudo cp -r arduino-core-files-master /opt/codebender/codebender-arduino-core-files
 rm master.zip
 rm -rf arduino-core-files-master
 wget https://github.com/codebendercc/external_cores/archive/master.zip
 unzip master.zip
-cp -r external_cores-master /opt/codebender/external-core-files
+sudo cp -r external_cores-master /opt/codebender/external-core-files
 rm master.zip
 rm -rf external_cores-master
 
