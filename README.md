@@ -1,8 +1,9 @@
-This repository is part of the [codebender.cc](http://www.codebender.cc) maker and artist web platform.
+This repository is part of the [codebender.cc](http://www.codebender.cc) maker and artist web platform.  [![Build Status](https://travis-ci.org/codebendercc/compiler.svg?branch=master)](https://travis-ci.org/codebendercc/compiler)
 
 ## And what's that?
 
-codebender comes to fill the need for reliable and easy to use tools for makers. A need that from our own experience could not be totally fulfilled by any of the existing solutions. Things like installing libraries, updating the software or installing the IDE can be quite a painful process.
+codebender comes to fill the need for reliable and easy to use tools for makers. 
+A need that from our own experience could not be totally fulfilled by any of the existing solutions. Things like installing libraries, updating the software or installing the IDE can be quite a painful process.
 
 In addition to the above, the limited features provided (e.g. insufficient highlighting, indentation and autocompletion) got us starting building codebender, a completely web-based IDE, that requires virtually no installation and offers a great code editor. It also stores your sketches on the cloud.
 
