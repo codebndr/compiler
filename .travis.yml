@@ -20,10 +20,13 @@ before_script:
   - unzip master.zip
   - sudo cp -r external_cores-master /opt/codebender/external-core-files
 
+script:
+  - mkdir -p build/logs
+  - phpunit -c app/  --coverage-clover build/logs/clover.xml
 
-
-
-script: phpunit -c app/
+after_script:
+ - php composer.phar update satooshi/php-coveralls --dev
+ - php vendor/satooshi/php-coveralls/composer/bin/coveralls -v
 
 notifications:
   irc: "chat.freenode.net#codebender.cc"
