@@ -20,6 +20,9 @@
         "sensio/generator-bundle": "2.3.*",
         "incenteev/composer-parameter-handler": "~2.0"
     },
+		"require-dev": {
+			    "satooshi/php-coveralls": "dev-master"
+		},
     "scripts": {
         "post-install-cmd": [
             "Incenteev\\ParameterHandler\\ScriptHandler::buildParameters",
