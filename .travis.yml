@@ -25,7 +25,8 @@ script:
   - phpunit -c app/  --coverage-clover build/logs/clover.xml
 
 after_script:
- - php vendor/bin/coveralls -v
+ - php composer.phar update satooshi/php-coveralls --dev
+ - php vendor/satooshi/php-coveralls/composer/bin/coveralls -v
 
 notifications:
   irc: "chat.freenode.net#codebender.cc"
