@@ -117,17 +117,15 @@ class CompilerHandler
 
         // Log the names of the project files and the libraries used in it.
         if ($format != "autocomplete") {
-            $user_id = "";
-            $sketch_id = "";
-            $req_elements = array();
-            $req_elements[] = "Files: ";
+            $user_id = $sketch_id = "null";
+            $req_elements = array("Files: ");
+
             foreach ($request["files"] as $file) {
                 $req_elements[] = $file["filename"];
                 if (strpos($file["filename"], ".txt") !== false) {
-                    if (strpos($file["filename"], "user_") !== false)
-                        $user_id = str_replace(".txt", "", str_replace("user_", "", $file["filename"]));
-                    else
-                        $sketch_id = str_replace(".txt", "", $file["filename"]);
+                    if (preg_match('/(?<=user_)[\d]+/', $file['filename'], $match)) $user_id = $match[0];
+                    if (preg_match('/(?<=project_)[\d]+/', $file['filename'], $match)) $sketch_id = $match[0];
+
                 }
             }
 
