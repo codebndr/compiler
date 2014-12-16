@@ -713,6 +713,8 @@ class CompilerHandler
                         }
 
                         $resp["message"] = $this->pathRemover ($output, $compiler_config);
+                        if ($resp["message"] == "")
+                            $resp["message"] = $this->pathRemover($avr_output, $compiler_config);
                         return $resp;
                     }
                     unset($output);
