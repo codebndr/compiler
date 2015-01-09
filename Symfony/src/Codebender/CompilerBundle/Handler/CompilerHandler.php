@@ -56,10 +56,9 @@ class CompilerHandler
         $start_time = microtime(true);
 
         // Step 0: Reject the request if the input data is not valid.
-        //TODO: Replace $tmp variable name
-        $tmp = $this->requestValid($request);
-        if($tmp["success"] === false)
-            return $tmp;
+        $tmpVar = $this->requestValid($request);
+        if($tmpVar["success"] === false)
+            return $tmpVar;
 
         $this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid, $compiler_config);
 
@@ -71,10 +70,10 @@ class CompilerHandler
 
         // Step 1(part 1): Extract the project files included in the request.
         $files = array();
-        $tmp = $this->extractFiles($request["files"], $TEMP_DIR, $compiler_dir, $files["sketch_files"], "files");
+        $tmpVar = $this->extractFiles($request["files"], $TEMP_DIR, $compiler_dir, $files["sketch_files"], "files");
 
-        if ($tmp["success"] === false)
-            return $tmp;
+        if ($tmpVar["success"] === false)
+            return $tmpVar;
 
         // Add the compiler temp directory to the compiler_config struct.
         $compiler_config["compiler_dir"] = $compiler_dir;
@@ -83,9 +82,9 @@ class CompilerHandler
         $files["libs"] = array();
         foreach($libraries as $library => $library_files){
 
-            $tmp = $this->extractFiles($library_files, $TEMP_DIR, $compiler_dir, $files["libs"][$library], "libraries/$library", true);
-            if ($tmp["success"] === false)
-                return $tmp;
+            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $compiler_dir, $files["libs"][$library], "libraries/$library", true);
+            if ($tmpVar["success"] === false)
+                return $tmpVar;
         }
 
         if (!array_key_exists("archive", $request) || ($request["archive"] !== false && $request["archive"] !== true))
@@ -100,20 +99,19 @@ class CompilerHandler
         }
 
         //Set logging to true if requested, and create the directory where logfiles are stored.
-        //TODO: Replace $tmp variable name
-        $tmp = $this->setLoggingParams($request, $compiler_config, $TEMP_DIR, $compiler_dir);
-        if($tmp["success"] === false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+        $tmpVar = $this->setLoggingParams($request, $compiler_config, $TEMP_DIR, $compiler_dir);
+        if($tmpVar["success"] === false)
+            return array_merge($tmpVar, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 2: Preprocess Arduino source files.
-        $tmp = $this->preprocessIno($files["sketch_files"]);
-        if ($tmp["success"] === false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+        $tmpVar = $this->preprocessIno($files["sketch_files"]);
+        if ($tmpVar["success"] === false)
+            return array_merge($tmpVar, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
-        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $CORE_OVERRIDE_DIR, $version, $core, $variant);
-        if ($tmp["success"] === false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
+        $tmpVar = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $CORE_OVERRIDE_DIR, $version, $core, $variant);
+        if ($tmpVar["success"] === false)
+            return array_merge($tmpVar, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Log the names of the project files and the libraries used in it.
         if ($format != "autocomplete") {
@@ -252,10 +250,10 @@ class CompilerHandler
         flock($lock, LOCK_EX);
         if (!file_exists($core_library)){
             //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
-            $tmp = $this->makeCoresTmp($CORE_DIR, $CORE_OVERRIDE_DIR, $TEMP_DIR, $compiler_dir, $files);
+            $tmpVar = $this->makeCoresTmp($CORE_DIR, $CORE_OVERRIDE_DIR, $TEMP_DIR, $compiler_dir, $files);
 
-            if(!$tmp["success"]){
-                return array_merge($tmp,
+            if(!$tmpVar["success"]){
+                return array_merge($tmpVar,
                     ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
                     ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
             }
@@ -382,26 +380,26 @@ class CompilerHandler
 
         // Step 8: Convert the output to the requested format and measure its
         // size.
-        $tmp = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
+        $tmpVar = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
 
         if ($compiler_config['logging'] === true) {
             $log_content = @file_get_contents($compiler_config['logFileName']);
             if (!$log_content)
-                $tmp["log"] = "Failed to access logfile.";
+                $tmpVar["log"] = "Failed to access logfile.";
             else {
                 file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                $tmp["log"] = $log_content;
+                $tmpVar["log"] = $log_content;
             }
         }
 
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
             if ($arch_ret["success"] === false)
-                $tmp["archive"] = $arch_ret["message"];
+                $tmpVar["archive"] = $arch_ret["message"];
             else
-                $tmp["archive"] = $ARCHIVE_PATH;
+                $tmpVar["archive"] = $ARCHIVE_PATH;
         }
-        return $tmp;
+        return $tmpVar;
     }
 
     private function requestValid(&$request)
