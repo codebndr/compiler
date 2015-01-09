@@ -72,7 +72,8 @@ class PreprocessingHandler
 		$start = 0;
 		$return_code = "";
 		// Use the code as an array of characters
-		for ($i = 0; $i < strlen($code); $i++)
+		$length = strlen($code);
+		for ($i = 0; $i < $length; $i++)
 		{
 
 			if ($code[$i] == "{")
@@ -95,7 +96,7 @@ class PreprocessingHandler
 
 			}
 		}
-		$return_code .= substr($code, $start, strlen($code) - $start);
+		$return_code .= substr($code, $start, $length - $start);
 
 		return $return_code;
 	}
@@ -238,7 +239,9 @@ class PreprocessingHandler
 			$next_pos = 0;
 		else
 			$next_pos = $position + 1;
-		for ($i = $next_pos; $i < strlen($code); $i++)
+
+		$length = strlen($code);
+		for ($i = $next_pos; $i < $length; $i++)
 		{
 			$return_code .= $code[$i];
 		}
