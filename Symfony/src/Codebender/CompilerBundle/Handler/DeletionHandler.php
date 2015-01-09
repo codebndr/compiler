@@ -105,4 +105,4 @@ class DeletionHandler
 		else
 			$success = false;
 	}
-} 
+}
