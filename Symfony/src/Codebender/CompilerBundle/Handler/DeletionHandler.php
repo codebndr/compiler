@@ -43,7 +43,7 @@ class DeletionHandler
 			"success_dot_LOCK" => 0,
 			"failure_dot_LOCK" => 0);
 
-		if ($handle = opendir($this->object_directory))
+		if ($handle = @opendir($this->object_directory))
 		{
 			$success = true;
 
@@ -80,7 +80,7 @@ class DeletionHandler
 		$response["deleted_files"] = "";
 		$response["undeleted_files"] = "";
 
-		if ($handle = opendir($this->object_directory))
+		if ($handle = @opendir($this->object_directory))
 		{
 			while (false !== ($entry = readdir($handle)))
 			{
