@@ -13,19 +13,19 @@ namespace Codebender\CompilerBundle\Handler;
 class PostprocessingHandler
 {
 	/**
-	\brief Converts text with ANSI color codes to HTML.
-
-	\param string $text The string to convert.
-	\return A string with HTML tags.
-
-	Takes a string with ANSI color codes and converts them to HTML tags. Can be
-	useful for displaying the output of terminal commands on a web page. Handles
-	codes that modify the color (foreground and background) as well as the format
-	(bold, italics, underline and strikethrough). Other codes are ignored.
-
-	An ANSI escape sequence begins with the characters <b>^[</b> (hex 0x1B) and
-	<b>[</b>, and ends with <b>m</b>. The color code is placed in between. Multiple
-	color codes can be included, separated by semicolon.
+	 * \brief Converts text with ANSI color codes to HTML.
+	 *
+	 * \param string $text The string to convert.
+	 * \return A string with HTML tags.
+	 *
+	 * Takes a string with ANSI color codes and converts them to HTML tags. Can be
+	 * useful for displaying the output of terminal commands on a web page. Handles
+	 * codes that modify the color (foreground and background) as well as the format
+	 * (bold, italics, underline and strikethrough). Other codes are ignored.
+	 *
+	 * An ANSI escape sequence begins with the characters <b>^[</b> (hex 0x1B) and
+	 * <b>[</b>, and ends with <b>m</b>. The color code is placed in between. Multiple
+	 * color codes can be included, separated by semicolon.
 	 */
 	function ansi_to_html($text)
 	{
