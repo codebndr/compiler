@@ -933,7 +933,7 @@ class CompilerHandler
 
             file_put_contents($compiler_config['logFileName'], '');
         }
-        elseif(!array_key_exists('logging', $request) or !$request['logging'])
+        elseif(!array_key_exists('logging', $request)|| (!$request['logging']))
             $compiler_config['logging'] = false;
 
         return array("success"=>true);
