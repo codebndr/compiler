@@ -64,7 +64,7 @@ class DefaultControllerTest extends WebTestCase
 
 		$auth_key = $client->getContainer()->getParameter("auth_key");
 
-		$client->request('POST', '/'.$auth_key.'/v1', array(),array(),array(),$data);
+		$client->request('POST', '/'.$auth_key.'/v1', array(), array(), array(), $data);
 
 		$response = json_decode($client->getResponse()->getContent(), true);
 
