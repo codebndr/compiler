@@ -15,7 +15,6 @@ namespace Codebender\CompilerBundle\Handler;
 // This file uses mktemp() to create a temporary directory where all the files
 // needed to process the compile request are stored.
 require_once "System.php";
-use Doctrine\Tests\ORM\Functional\ManyToManyBidirectionalAssociationTest;
 use System;
 use Codebender\CompilerBundle\Handler\MCUHandler;
 use Symfony\Bridge\Monolog\Logger;
