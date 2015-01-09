@@ -92,7 +92,7 @@ class CompilerHandler
             $ARCHIVE_OPTION = false;
         else
             $ARCHIVE_OPTION = $request["archive"];
-        //return array("success" => false, "archive option" => $ARCHIVE_OPTION);
+
         if ($ARCHIVE_OPTION === true){
             $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
             if ($arch_ret["success"] === false)
