@@ -107,7 +107,7 @@ class CompilerHandler
 
         // Step 2: Preprocess Arduino source files.
         $tmp = $this->preprocessIno($files["sketch_files"]);
-        if ($tmp["success"] == false)
+        if ($tmp["success"] === false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
