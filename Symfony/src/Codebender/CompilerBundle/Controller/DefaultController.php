@@ -15,6 +15,7 @@ namespace Codebender\CompilerBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Codebender\CompilerBundle\Handler\CompilerHandler;
+use Codebender\CompilerBundle\Handler\DeletionHandler;
 
 class DefaultController extends Controller
 {
@@ -78,50 +79,19 @@ class DefaultController extends Controller
 		if ($version != "v1")
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
 
-		$tempDir = $this->container->getParameter('temp_dir');
-		$objectFilesDir = $this->container->getParameter('objdir');
-		$fileCount = 0;
-		$undeletedFiles = "";
-		$deletionStats = array("success_dot_a" => 0,
-			"failure_dot_a" => 0,
-			"success_dot_o" => 0,
-			"failure_dot_o" => 0,
-			"success_dot_d" => 0,
-			"failure_dot_d" => 0,
-			"success_dot_LOCK" => 0,
-			"failure_dot_LOCK" => 0);
+		//Get the compiler service
+		/** @var DeletionHandler $deleter */
+		$deleter = $this->get('deletion_handler');
 
-		if ($handle = opendir("$tempDir/$objectFilesDir"))
-		{
+		$deleter->deleteAllObjects($success, $fileCount, $deletionStats, $undeletedFiles);
 
-			while (false !== ($entry = readdir($handle)))
-			{
-				if ($entry != "." && $entry != ".." && $entry != ".DS_Store")
-				{
-					$fileCount++;
-					$extension = pathinfo($entry, PATHINFO_EXTENSION);
-
-					if (!in_array($extension, array("a", "o", "d", "LOCK")))
-						continue;
-
-					if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
-					{
-						$deletionStats["failure_dot_$extension"]++;
-						$undeletedFiles .= $entry."\n";
-					}
-					else
-						$deletionStats["success_dot_$extension"]++;
-				}
-			}
-			closedir($handle);
-		}
-		else
+		if ($success === false)
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
-
-		return new Response(json_encode(array_merge(array("success" => true,
-				"message" => "Object files deletion complete. Found $fileCount files."),
-			$deletionStats,
-			array("Files not deleted" => $undeletedFiles))));
+		else
+			return new Response(json_encode(array_merge(array("success" => true,
+					"message" => "Object files deletion complete. Found $fileCount files."),
+				$deletionStats,
+				array("Files not deleted" => $undeletedFiles))));
 	}
 
 	public function deleteSpecificObjectsAction($auth_key, $version, $option, $to_delete)
