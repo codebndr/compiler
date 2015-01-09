@@ -30,7 +30,7 @@ class UtilityHandler
 	 * In case of error, the return value is an array that has a key <b>success</b>
 	 * and contains the response to be sent back to the user.
 	 */
-	function extract_files($directory, $request_files, $lib_extraction)
+	function extractFiles($directory, $request_files, $lib_extraction)
 	{
 		// File extensions used by Arduino projects. They are put in a string,
 		// separated by "|" to be used in regular expressions. They are also
@@ -135,7 +135,7 @@ class UtilityHandler
 	 *
 	 * \warning It is not possible to redirect the standard error output to a file.
 	 */
-	function debug_exec($command, /** @noinspection PhpUnusedParameterInspection */
+	function execWithDebugging($command, /** @noinspection PhpUnusedParameterInspection */
 	                    &$output, /** @noinspection PhpUnusedParameterInspection */
 	                    &$retval)
 	{

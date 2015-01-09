@@ -27,7 +27,7 @@ class PostprocessingHandler
 	 * <b>[</b>, and ends with <b>m</b>. The color code is placed in between. Multiple
 	 * color codes can be included, separated by semicolon.
 	 */
-	function ansi_to_html($text)
+	function convertANSItoHTML($text)
 	{
 		$FORMAT = array(
 			0 => NULL, // reset modes to default

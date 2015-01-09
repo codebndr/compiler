@@ -47,7 +47,7 @@ class CompilerHandler
 	{
 		error_reporting(E_ALL & ~E_STRICT);
 
-		$this->set_values($compiler_config,
+		$this->setValues($compiler_config,
 			$BINUTILS, $CLANG, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
 			$CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR,
 			$TEMP_DIR, $ARCHIVE_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
@@ -59,9 +59,9 @@ class CompilerHandler
 		if ($tmpVar["success"] === false)
 			return $tmpVar;
 
-		$this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid, $compiler_config);
+		$this->setVariables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid, $compiler_config);
 
-		$this->set_avr($version, $ARDUINO_CORES_DIR, $BINUTILS, $CC, $CPP, $AS, $AR, $LD, $OBJCOPY, $SIZE);
+		$this->setAVR($version, $ARDUINO_CORES_DIR, $BINUTILS, $CC, $CPP, $AS, $AR, $LD, $OBJCOPY, $SIZE);
 
 		$target_arch = "-mmcu=$mcu -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
@@ -438,7 +438,7 @@ class CompilerHandler
 
 	private function requestValid(&$request)
 	{
-		$request = $this->preproc->validate_input($request);
+		$request = $this->preproc->validateInput($request);
 		if (!$request)
 			return array(
 				"success" => false,
@@ -499,7 +499,7 @@ class CompilerHandler
 				"step" => 1,
 				"message" => "Failed to create temporary directory.");
 
-		$response = $this->utility->extract_files("$dir/$suffix", $request, $lib_extraction);
+		$response = $this->utility->extractFiles("$dir/$suffix", $request, $lib_extraction);
 
 		if ($response["success"] === false)
 			return $response;
@@ -513,7 +513,7 @@ class CompilerHandler
 		foreach ($files["ino"] as $file)
 		{
 			$code = file_get_contents("$file.ino");
-			$new_code = $this->preproc->ino_to_cpp($code, "$file.ino");
+			$new_code = $this->preproc->convertInoToCpp($code, "$file.ino");
 			$ret = file_put_contents("$file.cpp", $new_code);
 
 			if ($code === false || !$new_code || !$ret)
@@ -675,7 +675,7 @@ class CompilerHandler
 					$file = escapeshellarg($file);
 					$object_file = escapeshellarg($object_file);
 
-					//replace exec() calls with $this->utility->debug_exec() for debugging
+					//replace exec() calls with $this->utility->execWithDebugging() for debugging
 					if ($ext == "c")
 					{
 						exec("$CC $CFLAGS $core_includes $target_arch $include_directories -c -o $object_file.o $file.$ext 2>&1", $output, $ret_compile);
@@ -710,7 +710,7 @@ class CompilerHandler
 							file_put_contents($compiler_config['logFileName'], "$CLANG $CLANG_FLAGS $core_includes $clang_target_arch $include_directories -c -o $object_file.o $file.$ext\n", FILE_APPEND);
 						}
 
-						$output = $this->postproc->ansi_to_html(implode("\n", $output));
+						$output = $this->postproc->convertANSItoHTML(implode("\n", $output));
 
 						$resp = array(
 							"success" => false,
@@ -868,7 +868,7 @@ class CompilerHandler
 
 	}
 
-	private function set_avr($version, $ARDUINO_CORES_DIR, $BINUTILS, &$CC, &$CPP, &$AS, &$AR, &$LD, &$OBJCOPY, &$SIZE)
+	private function setAVR($version, $ARDUINO_CORES_DIR, $BINUTILS, &$CC, &$CPP, &$AS, &$AR, &$LD, &$OBJCOPY, &$SIZE)
 	{
 		// External binaries.
 		$binaries = array("cc" => "-gcc", "cpp" => "-g++", "as" => "-gcc", "ar" => "-ar", "ld" => "-gcc", "objcopy" => "-objcopy", "size" => "-size");
@@ -892,7 +892,7 @@ class CompilerHandler
 
 	}
 
-	private function set_values($compiler_config,
+	private function setValues($compiler_config,
 	                            &$BINUTILS, &$CLANG, &$CFLAGS, &$CPPFLAGS,
 	                            &$ASFLAGS, &$ARFLAGS, &$LDFLAGS, &$LDFLAGS_TAIL, &$CLANG_FLAGS, &$OBJCOPY_FLAGS, &$SIZE_FLAGS,
 	                            &$OUTPUT, &$ARDUINO_CORES_DIR, &$EXTERNAL_CORES_DIR, &$TEMP_DIR, &$ARCHIVE_DIR, &$AUTOCC_DIR, &$PYTHON, &$AUTOCOMPLETER)
@@ -902,7 +902,7 @@ class CompilerHandler
 		//ones included in the binutils parameter
 		$BINUTILS = $compiler_config["binutils"];
 		//Clang is used to return the output in case of an error, it's version independent, so its
-		//value is set by set_values function.
+		//value is set by setValues function.
 
 		$LDLIBRARYPATH = "LD_LIBRARY_PATH=".$compiler_config["arduino_cores_dir"]."/clang/v3_5/lib:\$LD_LIBRARY_PATH";
 		$CLANG = $LDLIBRARYPATH." ".$compiler_config["clang"];
@@ -936,7 +936,7 @@ class CompilerHandler
 		$EXTERNAL_CORES_DIR = $compiler_config["external_core_files"];
 	}
 
-	private function set_variables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid, &$compiler_config)
+	private function setVariables($request, &$format, &$libraries, &$version, &$mcu, &$f_cpu, &$core, &$variant, &$vid, &$pid, &$compiler_config)
 	{
 		// Extract the request options for easier access.
 		$format = $request["format"];

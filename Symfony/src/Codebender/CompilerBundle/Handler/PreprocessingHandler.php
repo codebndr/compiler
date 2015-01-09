@@ -47,7 +47,7 @@ class PreprocessingHandler
 	 * \return string A copy of the code with no comments, single- or double- quoted strings
 	 * or pre-processor directives
 	 */
-	function remove_comments_directives_quotes($code)
+	function removeCommentsDirectivesQuotes($code)
 	{
 		// Use a copy of the code and strip comments, pre-processor directives, single- and double-quoted strings
 
@@ -61,10 +61,10 @@ class PreprocessingHandler
 	}
 
 	/**
-	 * \param string $code The code returned from remove_comments_directives_quotes function
+	 * \param string $code The code returned from removeCommentsDirectivesQuotes function
 	 * \return string The input code having all top level braces collapsed
 	 */
-	function empty_braces($code)
+	function emptyBraces($code)
 	{
 		// For every line of the code remove all the contents of top level braces
 
@@ -105,7 +105,7 @@ class PreprocessingHandler
 	 * \param string $code The code returned from empty_braces function
 	 * \return array An array including any prototypes found in the original code
 	 */
-	function find_existing_prototypes(&$code)
+	function findExistingPrototypes(&$code)
 	{
 		// In this case, the original code is used. Existing prototypes are matched, stored, and then removed from
 		//the code, so that in the next step the compiler knows which prototypes should really be generated
@@ -124,10 +124,10 @@ class PreprocessingHandler
 
 	/**
 	 * \param string $code The sketch code provided to the compiler
-	 * \param array $existing_prototypes Array of prototypes returned by find_existing_prototypes function
+	 * \param array $existing_prototypes Array of prototypes returned by findExistingPrototypes function
 	 * \return string The string including the function prototypes for the code
 	 */
-	function generate_prototypes($code, $existing_prototypes)
+	function generatePrototypes($code, $existing_prototypes)
 	{
 		// This function uses a regular expression to match all function declarations, generate the
 		// respective prototype and store all the prototypes in a string
@@ -171,7 +171,7 @@ class PreprocessingHandler
 	 * \param string $code The sketch code
 	 * \return int The position where function prototypes should be placed
 	 */
-	function insertion_position($code)
+	function insertionPosition($code)
 	{
 		// Use the following regular expression to match whitespaces, single- and multiline comments and preprocessor directives
 		$regex = "/(\s+|(\/\*[^*]*(?:\*(?!\/)[^*]*)*\*\/)|(\/\/.*?$)|(\#(?:\\\\\\n|.)*))/m";
@@ -205,15 +205,15 @@ class PreprocessingHandler
 
 	/**
 	 * \param string $code The initial sketch code
-	 * \param $function_prototypes The function prototypes returned by generate_prototypes function
+	 * \param $function_prototypes The function prototypes returned by generatePrototypes function
 	 * \param int $position The position to place the prototypes returned by insertion_position function
 	 * \return string Valid c++ code
 	 */
-	function build_code($code, $function_prototypes, $position)
+	function buildCode($code, $function_prototypes, $position)
 	{
 
 		// To build the final code, the compiler starts adding every character of the original string, until the position
-		// found by insertion_position is reached. Then, the function prototypes are added, as well as a preprocessor
+		// found by insertionPosition is reached. Then, the function prototypes are added, as well as a preprocessor
 		//directive to fix the line numbering.
 		$line = 1;
 		$return_code = "";
@@ -249,19 +249,19 @@ class PreprocessingHandler
 		return $return_code;
 	}
 
-	function ino_to_cpp($code, $filename = NULL)
+	function convertInoToCpp($code, $filename = NULL)
 	{
 		// Remove comments, preprocessor directives, single- and double- quotes
-		$no_comms_code = $this->remove_comments_directives_quotes($code);
+		$no_comms_code = $this->removeCommentsDirectivesQuotes($code);
 		// Remove any code between all top level braces
-		$empty_braces_code = $this->empty_braces($no_comms_code);
+		$empty_braces_code = $this->emptyBraces($no_comms_code);
 		// Find already existing prototypes
-		$existing_prototypes = $this->find_existing_prototypes($empty_braces_code);
+		$existing_prototypes = $this->findExistingPrototypes($empty_braces_code);
 		// Generate prototypes that do not already exist
-		$function_prototypes = $this->generate_prototypes($empty_braces_code, $existing_prototypes);
+		$function_prototypes = $this->generatePrototypes($empty_braces_code, $existing_prototypes);
 		// Find the right place to insert the function prototypes (after any preprocessor directives, comments,
 		// before any function declaration)
-		$insertion_position = $this->insertion_position($code);
+		$insertion_position = $this->insertionPosition($code);
 
 		$new_code = "";
 		// Add a preprocessor directive for line numbering.
@@ -270,7 +270,7 @@ class PreprocessingHandler
 		else
 			$new_code .= "#line 1\n";
 		// Build the new code for the cpp file that will eventually be compiled
-		$new_code .= $this->build_code($code, $function_prototypes, $insertion_position);
+		$new_code .= $this->buildCode($code, $function_prototypes, $insertion_position);
 
 		return $new_code;
 
@@ -283,7 +283,7 @@ class PreprocessingHandler
 	 * \param string $request The JSON-encoded compile request.
 	 * \return The value encoded in JSON in appropriate PHP type or <b>NULL</b>.
 	 */
-	function validate_input($request)
+	function validateInput($request)
 	{
 		$request = json_decode($request, true);
 
