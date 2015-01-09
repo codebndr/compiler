@@ -73,7 +73,7 @@ class CompilerHandler
         $files = array();
         $tmp = $this->extractFiles($request["files"], $TEMP_DIR, $compiler_dir, $files["sketch_files"], "files");
 
-        if ($tmp["success"] == false)
+        if ($tmp["success"] === false)
             return $tmp;
 
         // Add the compiler temp directory to the compiler_config struct.
@@ -84,7 +84,7 @@ class CompilerHandler
         foreach($libraries as $library => $library_files){
 
             $tmp = $this->extractFiles($library_files, $TEMP_DIR, $compiler_dir, $files["libs"][$library], "libraries/$library", true);
-            if ($tmp["success"] == false)
+            if ($tmp["success"] === false)
                 return $tmp;
         }
 
