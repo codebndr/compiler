@@ -69,4 +69,40 @@ class DeletionHandler
 			closedir($handle);
 		}
 	}
+
+	function deleteSpecificObjects(&$success, &$response, &$option, &$to_delete)
+	{
+		if ($option == "core")
+			$to_delete = str_replace(":", "_", $to_delete);
+
+		$success = true;
+		$response = array();
+		$response["deleted_files"] = "";
+		$response["undeleted_files"] = "";
+
+		if ($handle = opendir($this->object_directory))
+		{
+			while (false !== ($entry = readdir($handle)))
+			{
+				if ($entry == "." || $entry == ".." || $entry == ".DS_Store")
+					continue;
+
+				if ($option == "library" && strpos($entry, "______".$to_delete."_______") === false)
+					continue;
+
+				if ($option == "core" && strpos($entry, "_".$to_delete."_") === false)
+					continue;
+
+
+				if (@unlink($this->object_directory."/$entry") === false)
+					$response["undeleted_files"] .= $entry."\n";
+				else
+					$response["deleted_files"] .= $entry."\n";
+
+			}
+			closedir($handle);
+		}
+		else
+			$success = false;
+	}
 } 

@@ -102,39 +102,13 @@ class DefaultController extends Controller
 		if ($version != "v1")
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
 
-		$tempDir = $this->container->getParameter('temp_dir');
-		$objectFilesDir = $this->container->getParameter('objdir');
+		//Get the compiler service
+		/** @var DeletionHandler $deleter */
+		$deleter = $this->get('deletion_handler');
 
-		if ($option == "core")
-			$to_delete = str_replace(":", "_", $to_delete);
+		$deleter->deleteSpecificObjects($success, $response, $option, $to_delete);
 
-		$response = array();
-		$response["deleted_files"] = "";
-		$response["undeleted_files"] = "";
-
-		if ($handle = opendir("$tempDir/$objectFilesDir"))
-		{
-			while (false !== ($entry = readdir($handle)))
-			{
-				if ($entry == "." || $entry == ".." || $entry == ".DS_Store")
-					continue;
-
-				if ($option == "library" && strpos($entry, "______".$to_delete."_______") === false)
-					continue;
-
-				if ($option == "core" && strpos($entry, "_".$to_delete."_") === false)
-					continue;
-
-
-				if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
-					$response["undeleted_files"] .= $entry."\n";
-				else
-					$response["deleted_files"] .= $entry."\n";
-
-			}
-			closedir($handle);
-		}
-		else
+		if ($success === false)
 		{
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
 		}
