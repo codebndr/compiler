@@ -107,7 +107,7 @@ class PostprocessingHandler
 						array_push($stack, "</font>");
 						break;
 					default:
-						error_log(__FUNCTION__."(): Unhandled ANSI code '$mode' in ".__FILE__);
+						error_log(__FUNCTION__."(): Unhandled ANSI code '$mode'");
 						break;
 				}
 			}

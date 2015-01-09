@@ -92,7 +92,7 @@ class UtilityHandler
 			if (preg_match($REGEX, $filename, $matches))
 				$files[$matches[2]][] = "$directory/$matches[1]";
 			else
-				error_log(__FUNCTION__."(): Unhandled file extension '$filename' in ".__FILE__);
+				error_log(__FUNCTION__."(): Unhandled file extension '$filename'");
 		}
 
 		// All files were extracted successfully.
