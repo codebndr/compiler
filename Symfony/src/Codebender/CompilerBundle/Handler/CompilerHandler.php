@@ -112,7 +112,7 @@ class CompilerHandler
 
         // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
         $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $CORE_OVERRIDE_DIR, $version, $core, $variant);
-        if ($tmp["success"] == false)
+        if ($tmp["success"] === false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
         // Log the names of the project files and the libraries used in it.
