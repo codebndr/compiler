@@ -17,3 +17,12 @@ codebender_compiler_delete_all:
 codebender_compiler_delete_specific:
     pattern:  /{auth_key}/{version}/delete/{option}/{to_delete}
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteSpecificObjects }
+
+
+# redirecting the root
+root:
+    path: /
+    defaults:
+        _controller: FrameworkBundle:Redirect:urlRedirect
+        path: /status
+        permanent: true
