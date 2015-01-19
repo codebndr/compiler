@@ -1,0 +1,12 @@
+<VirtualHost *:80>
+	ServerAdmin root@localhost
+    DocumentRoot /opt/codebender/compiler/Symfony/web/
+    DirectoryIndex app.php
+
+	<Directory /opt/codebender/compiler/Symfony/web>
+		Options -Indexes FollowSymLinks MultiViews
+		AllowOverride All
+		Order allow,deny
+		Allow from all
+	</Directory>
+</VirtualHost>
