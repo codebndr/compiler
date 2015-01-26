@@ -554,6 +554,20 @@ class SymfonyRequirements extends RequirementCollection
             'Your project might not work properly due to the PHP bug #61453 ("Cannot dump definitions which have method calls"). Install PHP 5.4.1 or newer.'
         );
 
+        $this->addRecommendation(
+            version_compare($installedPhpVersion, '5.4.11', '>='),
+            'When using the logout handler from the Symfony Security Component, you should have at least PHP 5.4.11 due to PHP bug #63379 (as a workaround, you can also set invalidate_session to false in the security logout handler configuration)',
+            'Install PHP 5.4.11 or newer if your project uses the logout handler from the Symfony Security Component.'
+        );
+
+        $this->addRecommendation(
+            (version_compare($installedPhpVersion, '5.3.18', '>=') && version_compare($installedPhpVersion, '5.4.0', '<'))
+            ||
+            version_compare($installedPhpVersion, '5.4.8', '>='),
+            'You should use PHP 5.3.18+ or PHP 5.4.8+ to always get nice error messages for fatal errors in the development environment due to PHP bug #61767/#60909',
+            'Install PHP 5.3.18+ or PHP 5.4.8+ if you want nice error messages for all fatal errors in the development environment.'
+        );
+
         if (null !== $pcreVersion) {
             $this->addRecommendation(
                 $pcreVersion >= 8.0,
@@ -564,8 +578,8 @@ class SymfonyRequirements extends RequirementCollection
 
         $this->addRecommendation(
             class_exists('DomDocument'),
-            'PHP-XML module should be installed',
-            'Install and enable the <strong>PHP-XML</strong> module.'
+            'PHP-DOM and PHP-XML modules should be installed',
+            'Install and enable the <strong>PHP-DOM</strong> and the <strong>PHP-XML</strong> modules.'
         );
 
         $this->addRecommendation(
