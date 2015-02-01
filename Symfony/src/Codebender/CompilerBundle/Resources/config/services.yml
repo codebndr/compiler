@@ -4,6 +4,7 @@ parameters:
     utility_handler.class:	Codebender\CompilerBundle\Handler\UtilityHandler
     preprocessing_handler.class:	Codebender\CompilerBundle\Handler\PreprocessingHandler
     postprocessing_handler.class:	Codebender\CompilerBundle\Handler\PostprocessingHandler
+    arduino_command_handler.class: Codebender\CompilerBundle\Handler\ArduinoCommandHandler
 
 services:
 #    codebender_compiler.example:
@@ -26,3 +27,5 @@ services:
     compiler_log_handler:
         class: Monolog\Handler\StreamHandler
         arguments: [%kernel.logs_dir%/compiler.log]
+    arduino_command_handler:
+        class:  "%arduino_command_handler.class%"
