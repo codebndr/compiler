@@ -15,6 +15,7 @@ namespace Codebender\CompilerBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Codebender\CompilerBundle\Handler\CompilerHandler;
+use Codebender\CompilerBundle\Handler\ArduinoCommandHandler;
 
 class DefaultController extends Controller
 {
@@ -38,7 +39,7 @@ class DefaultController extends Controller
 		chdir($this->get('kernel')->getRootDir()."/../");
 
 		//TODO: replace this with a less horrible way to handle phpunit
-		exec("phpunit -c app --stderr 2>&1", $output, $return_val);
+		exec("bin/phpunit -c app --stderr 2>&1", $output, $return_val);
 
 		return new Response(json_encode(array("success" => (bool) !$return_val, "message" => implode("\n", $output))));
 	}
@@ -75,18 +76,24 @@ class DefaultController extends Controller
 		//$params = $this->generateParameters();
 
 		// JSON from Builder to send to arduino compiler
-		//$request = $this->getRequest()->getContent();
+		$request = $this->getRequest()->getContent();
+
+		//{"params":"testparams","request":"testrequest"}
+		$request = json_decode($request, true);
+
+		if ($request === null) {
+			return new Response(json_encode(array("success" => false, "json_decode_error" => json_last_error())));
+		}
 
 		// Get the arduino command line handler
-		//$compiler = $this->get('arduino_command_handler');
+		$compiler = $this->get('arduino_command_handler');
 
 		// Get resulting binary from arduino
-		//$reply = $compiler->main($request, $params);
+		$reply = $compiler->main($request["request"], $request["params"]);
 
-		// Test Successful
-		//$reply = array("test" => true);
+		if (empty($reply)) return new Response(json_encode(array("success" => false, "message" => "Arduino failed to respond")));
 
-		return new Response(json_encode(array("success" => true, "status" => "OK")));	
+		else return new Response(json_encode($reply));	
 	
 	}
 
