@@ -10,6 +10,10 @@ codebender_compiler_homepage:
     pattern:  /{auth_key}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:index }
 
+codebender_compiler_arduino_cli:
+    pattern:  /arduinocommand
+    defaults: { _controller: CodebenderCompilerBundle:Default:arduinoCommand }
+
 codebender_compiler_delete_all:
     pattern:  /{auth_key}/{version}/delete/all/
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteAllObjects }
