@@ -69,6 +69,27 @@ class DefaultController extends Controller
 		}
 	}
 
+	public function arduinoCommandAction()
+	{
+		// Get compiler parameters from paramaters.yml
+		//$params = $this->generateParameters();
+
+		// JSON from Builder to send to arduino compiler
+		//$request = $this->getRequest()->getContent();
+
+		// Get the arduino command line handler
+		//$compiler = $this->get('arduino_command_handler');
+
+		// Get resulting binary from arduino
+		//$reply = $compiler->main($request, $params);
+
+		// Test Successful
+		//$reply = array("test" => true);
+
+		return new Response(json_encode(array("success" => true, "status" => "OK")));	
+	
+	}
+
     public function deleteAllObjectsAction($auth_key, $version)
     {
         if ($this->container->getParameter('auth_key') != $auth_key)
