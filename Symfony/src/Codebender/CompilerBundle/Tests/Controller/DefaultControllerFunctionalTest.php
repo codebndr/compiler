@@ -9,21 +9,20 @@ class DefaultControllerTest extends WebTestCase
 
 	public function testArduinoCommand()
 	{
-		$params = "testparams";
-		$request = "testrequest";
+		$params = array("get_pref" => "update_check");
+		$request = array("arduino_request" => "get_pref";
 		$data = json_encode(array("params" => $params, "request" => $request));
 
 		$client = static::createClient();
 
 		$client->request('POST', '/arduinocommand', array(), array(), array(), $data);
 
-		$this->assertEquals($client->getResponse()->getContent(), '{"request":"testrequest","params":"testparams"}');
+		$this->assertEquals($client->getResponse()->getContent(), '{"get_pref":["update.check":"true"]}');
 
 	 }
 
 	public function testStatus()
 	{
-		$client = static::createClient();
 
 		$client->request('GET', '/status');
 
