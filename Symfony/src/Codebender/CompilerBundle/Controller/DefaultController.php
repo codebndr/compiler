@@ -76,25 +76,25 @@ class DefaultController extends Controller
 		//$params = $this->generateParameters();
 
 		// JSON from Builder to send to arduino compiler
-		$request = $this->getRequest()->getContent();
+		//$request = $this->getRequest()->getContent();
 
 		//{"params":"testparams","request":"testrequest"}
-		$request = json_decode($request, true);
+		//$request = json_decode($request, true);
 
-		if ($request === null) {
-			return new Response(json_encode(array("success" => false, "json_decode_error" => json_last_error())));
-		}
+		//if ($request === null) {
+		//	return new Response(json_encode(array("success" => false, "json_decode_error" => json_last_error())));
+		//}
 
 		// Get the arduino command line handler
-		$compiler = $this->get('arduino_command_handler');
+		//$compiler = $this->get('arduino_command_handler');
 
 		// Get resulting binary from arduino
-		$reply = $compiler->main($request["request"], $request["params"]);
+		//$reply = $compiler->main($request["request"], $request["params"]);
+		$reply = array("test" => true);
+		//if (empty($reply)) return new Response(json_encode(array("success" => false, "message" => "Arduino failed to respond")));
 
-		if (empty($reply)) return new Response(json_encode(array("success" => false, "message" => "Arduino failed to respond")));
+		return new Response(json_encode($reply));
 
-		else return new Response(json_encode($reply));	
-	
 	}
 
     public function deleteAllObjectsAction($auth_key, $version)
