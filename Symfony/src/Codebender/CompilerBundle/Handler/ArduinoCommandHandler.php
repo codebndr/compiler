@@ -11,13 +11,29 @@
 
 namespace Codebender\CompilerBundle\Handler;
 
+use System;
+
 class ArduinoCommandHandler
 {
 
     function main($request, $params)
     {
 
-        return array("request" => $request, "params" => $params);
+	$reply = $request;
+
+	//$eFile = extractFiles($request);
+
+	//$reply = fopen($eFile);
+
+        return array("status" => "success", "returnfile" => $reply["test"]);
+
+    }
+
+    private function extractFiles($request, $params)
+    {
+	// Extract the file from the array and save to /tmp
+	// Return the file path
+
 
     }
 }
