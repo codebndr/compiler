@@ -25,11 +25,8 @@ class ArduinoCommandHandler
 	//Todo: Extract files from request
 	$tempfiles = $this->extractFiles($request);
 
-	//Return output in reply
-	$reply = $tempfiles['files'];
-	$handle = fopen($tempfiles['files'],"r+");
-	fclose($handle);
-	unlink($tempfiles['files']);
+	
+	$reply = $request;	
         return array("success" => "false","step" =>"0", "message" => $reply);
 
     }
@@ -39,11 +36,21 @@ class ArduinoCommandHandler
 	// Extract the file from the array and save to /tmp
 	// Return the file path
 
-	$filename = $request['files'];
-	
+	$tempfiles = array();
 
-	$tempfile = tempnam(sys_get_temp_dir(),$filename);
-	$tempfiles = array("files" => $tempfile);
+	foreach ($request['files'] as $key => $val) {
+
+	if ($key == 'filename') {
+		$filename = tempnam(sys_get_temp_dir(),$val);
+		array_push($tempfiles,$filename);
+	} elseif ($key == 'content') {
+
+		$tempfile = end($files);
+		$handle = fopen($tempfile,"r+");
+		fwrite($handle,$val);
+		fclose($handle);
+	}
+	}
 	return $tempfiles;
     }
 }
