@@ -88,6 +88,7 @@ class CompilerHandler
                 return $tmp;
         }
 
+
         if (!array_key_exists("archive", $request) || ($request["archive"] !== false && $request["archive"] !== true))
             $ARCHIVE_OPTION = false;
         else
@@ -105,303 +106,37 @@ class CompilerHandler
         if($tmp["success"] === false)
             return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
-        // Step 2: Preprocess Arduino source files.
-        $tmp = $this->preprocessIno($files["sketch_files"]);
-        if ($tmp["success"] == false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
-        // Step 3: Preprocess Header includes and determine which core files directory(CORE_DIR) will be used.
-        $tmp = $this->preprocessHeaders($libraries, $include_directories, $compiler_dir, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR, $CORE_DIR, $CORE_OVERRIDE_DIR, $version, $core, $variant);
-        if ($tmp["success"] == false)
-            return array_merge($tmp, ($ARCHIVE_OPTION ===true) ? array("archive" => $ARCHIVE_PATH) : array());
 
-        // Log the names of the project files and the libraries used in it.
-        if ($format != "autocomplete") {
-            $user_id = $sketch_id = "null";
-            $req_elements = array("Files: ");
+        // Step 2: Call the Arduino Command Line tool on the extracted files
+        //return $files;
 
-            foreach ($request["files"] as $file) {
-                $req_elements[] = $file["filename"];
-                if (strpos($file["filename"], ".txt") !== false) {
-                    if (preg_match('/(?<=user_)[\d]+/', $file['filename'], $match)) $user_id = $match[0];
-                    if (preg_match('/(?<=project_)[\d]+/', $file['filename'], $match)) $sketch_id = $match[0];
 
-                }
-            }
+        $board = "--board arduino:avr:uno";                                        // Todo: Hard coded board for now
+        $sketchbookpath = "--pref sketchbook.path=$files["sketch_files"]["ino"]"; // Todo: Need to loop through all input files
+        $buildpath = "--pref build.path=$compiler_dir";                            // Compile files in main build director
+        $command = "--verify";
 
-            if ($request["libraries"]) {
-                $req_elements[] = "Libraries: ";
-                foreach ($request["libraries"] as $libname => $libfiles) {
-                    foreach ($libfiles as $libfile)
-                        $req_elements[] = $libname . "/" . $libfile["filename"];
-                }
-            }
+        chdir("/home/codebender/Downloads/arduino-1.6.0");                   // Todo: get from parameters.yml
 
-            $this->logger_id = microtime(true) . "_" . substr($compiler_config['compiler_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
+        exec("./arduino $sketchbookpath $buildpath $board $command 2>&1", $output, $ret_val);
 
-            $this->compiler_logger->addInfo($this->logger_id . " - " . implode(" ", $req_elements));
-            if ($ARCHIVE_OPTION === true)
-                $this->compiler_logger->addInfo($this->logger_id . " - " . "Archive file: $ARCHIVE_PATH");
+        return array("message" => $compiler_dir);
+
+        // Step 3: Read resulting Binary File and output to array
+
+        $bin_output_file = fopen($buildpath,"r");                     // Open the compiled binary file
+
+        $reply = fread($bin_output_file, filesize($bin_output_file)); // Read the compiled binary file
+
+        fclose($bin_output_file);                                     // Close the compiled binary file
+
+        if ($reply === null) {
+          return array("success" => false, "message" => "Could not read/find binary file.");
+        } else{
+        return array("success" => true, "output" => $reply);          // Return binary in array with success
         }
 
-        // Step 4: Syntax-check and compile source files.
-        //Use the include paths for the AVR headers that are bundled with each Arduino SDK version
-        //These may differ between linux and MAC OS versions of the Arduino core files, so check before including
-        $core_includes = "";
-        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include"))
-            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include";
-        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed"))
-            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/gcc/avr/4.3.2/include-fixed";
-        if (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include"))
-            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/avr/include ";
-        elseif (file_exists("$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include"))
-            $core_includes .= " -I$ARDUINO_CORES_DIR/v$version/hardware/tools/avr/lib/avr/include ";
-
-		if ($format == "autocomplete"){
-			$autocompleteRet = $this->handleAutocompletion($ARDUINO_CORES_DIR, "$compiler_dir/files", $include_directories["main"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $core_includes, $autocc_clang_target_arch, $TEMP_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
-
-			if ($ARCHIVE_OPTION === true){
-				$arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-				if ($arch_ret["success"] === false)
-					return $arch_ret;
-			}
-			return array_merge($autocompleteRet, array("total_compiler_exec_time" => microtime(true) - $start_time));
-		}
-
-        //handleCompile sets any include directories needed and calls the doCompile function, which does the actual compilation
-        $ret = $this->handleCompile("$compiler_dir/files", $files["sketch_files"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format);
-
-        $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
-        if ($compiler_config['logging'] === true){
-            if ($log_content !== false) {
-                $ret["log"] = $log_content;
-                file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-            }
-            else
-                $ret["log"] = "Failed to access logfile.";
-        }
-
-        if ($ARCHIVE_OPTION === true){
-            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                $ret["archive"] = $arch_ret["message"];
-            else
-                $ret["archive"] = $ARCHIVE_PATH;
-        }
-
-        if (!$ret["success"])
-            return $ret;
-
-        if ($format == "syntax")
-            return array_merge(array(
-                    "success" => true,
-                    "time" => microtime(true) - $start_time),
-                    ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
-                    ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
-
-        //Keep all object files urls needed for linking.
-        $objects_to_link = $files["sketch_files"]["o"];
-
-        //TODO: return objects if more than one file??
-        if ($format == "object")
-        {
-            $content = base64_encode(file_get_contents($files["sketch_files"]["o"][0].".o"));
-            if (count($files["sketch_files"]["o"]) != 1 || !$content){
-                return array_merge(array(
-                        "success" => false,
-                        "step" => -1, //TODO: Fix this step?
-                        "message" => ""),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
-                        ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
-            }
-            else
-                return array_merge(array(
-                        "success" => true,
-                        "time" => microtime(true) - $start_time,
-                        "output" => $content),
-                        ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
-                        ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
-        }
-
-        // Step 5: Create objects for core files (if core file does not already exist)
-        //Link all core object files to a core.a library.
-
-        //TODO: Figure out why Symfony needs "@" to suppress mkdir wanring
-        if(!file_exists($this->object_directory)){
-            //The code below was added to ensure that no error will be returned because of multithreaded execution.
-            $make_dir_success = @mkdir($this->object_directory, 0777, true);
-            if (!$make_dir_success && !is_dir($this->object_directory)) {
-                usleep(rand( 5000 , 10000 ));
-                $make_dir_success = @mkdir($this->object_directory, 0777, true);
-            }
-            if(!$make_dir_success){
-                    return array_merge(array(
-                            "success" => false,
-                            "step" => 5,
-                            "message" => "Could not create object files directory."),
-                            ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
-                            ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
-            }
-        }
-
-        //Generate full pathname of the cores library and then check if the library exists.
-        $core_library = $this->object_directory ."/". pathinfo(str_replace("/", "__", $CORE_DIR."_"), PATHINFO_FILENAME)."_______"."${mcu}_${f_cpu}_${core}_${variant}_${vid}_${pid}_______"."core.a";
-
-        $lock = fopen("$core_library.LOCK", "w");
-
-        flock($lock, LOCK_EX);
-        if (!file_exists($core_library)){
-            //makeCoresTmp scans the core files directory and return list including the urls of the files included there.
-            $tmp = $this->makeCoresTmp($CORE_DIR, $CORE_OVERRIDE_DIR, $TEMP_DIR, $compiler_dir, $files);
-
-            if(!$tmp["success"]){
-                return array_merge($tmp,
-                    ($ARCHIVE_OPTION ===true) ? array("archive" => $ret["archive"]) : array(),
-                    ($compiler_config['logging'] === true) ? array("log" => $ret["log"]) : array());
-            }
-
-            $ret = $this->handleCompile("$compiler_dir/core", $files["core"], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["core"], "object");
-
-            $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
-
-            if ($compiler_config['logging'] === true){
-                if ($log_content !== false){
-                    $ret["log"] = $log_content;
-                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                }
-                else
-                    $ret["log"] = "Failed to access logfile.";
-            }
-
-            if ($ARCHIVE_OPTION === true){
-                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-                if ($arch_ret["success"] === false)
-                    $ret["archive"] = $arch_ret["message"];
-                else
-                    $ret["archive"] = $ARCHIVE_PATH;
-            }
-
-            if (!$ret["success"])
-                return $ret;
-
-            foreach ($files["core"]["o"] as $core_object){
-                //Link object file to library.
-                exec("$AR $ARFLAGS $core_library $core_object.o", $output);
-
-                if ($compiler_config['logging'])
-                    file_put_contents($compiler_config['logFileName'], "$AR $ARFLAGS $core_library $core_object.o"."\n", FILE_APPEND);
-            }
-            flock($lock, LOCK_UN);
-            fclose($lock);
-        }
-        else{
-            flock($lock, LOCK_UN);
-            fclose($lock);
-            if($compiler_config['logging'])
-                file_put_contents($compiler_config['logFileName'],"\nUsing previously compiled version of $core_library\n", FILE_APPEND);
-        }
-
-        // Step 6: Create objects for libraries.
-        // The elements of the "build" array are needed to build the unique name of every library object file.
-        $lib_object_naming_params = $request["build"];
-        if (!array_key_exists("variant", $request["build"]))
-            $lib_object_naming_params["variant"] = "";
-        $lib_object_naming_params["vid"] = $vid;
-        $lib_object_naming_params["pid"] = $pid;
-
-        foreach ($files["libs"] as $library_name => $library_files){
-
-            $lib_object_naming_params["library"] = $library_name;
-
-            $ret = $this->handleCompile("$compiler_dir/libraries/$library_name", $files["libs"][$library_name], $compiler_config, $CC, $CFLAGS, $CPP, $CPPFLAGS, $AS, $ASFLAGS, $CLANG, $CLANG_FLAGS, $core_includes, $target_arch, $clang_target_arch, $include_directories["main"], $format, true, $lib_object_naming_params);
-
-            $log_content = (($compiler_config['logging'] === true) ? @file_get_contents($compiler_config['logFileName']) : "");
-            if ($compiler_config['logging'] === true){
-                if ($log_content !== false) {
-                    $ret["log"] = $log_content;
-                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                }
-                else
-                    $ret["log"] = "Failed to access logfile.";
-            }
-
-            if ($ARCHIVE_OPTION === true){
-                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-                if ($arch_ret["success"] === false)
-                    $ret["archive"] = $arch_ret["message"];
-                else
-                    $ret["archive"] = $ARCHIVE_PATH;
-            }
-
-            if(!$ret["success"])
-                return $ret;
-
-            $objects_to_link = array_merge($objects_to_link, $files["libs"][$library_name]["o"]);
-        }
-
-        // Step 7: Link all object files and create executable.
-        $object_files = "";
-        foreach ($objects_to_link as $object)
-            $object_files .= " ".escapeshellarg("$object.o");
-
-        //Link core.a and every other object file to a .elf binary file
-        exec("$LD $LDFLAGS $target_arch $object_files $core_library -o $compiler_dir/files/$OUTPUT.elf $LDFLAGS_TAIL 2>&1", $output, $ret_link);
-        if($compiler_config['logging']){
-            file_put_contents($compiler_config['logFileName'], "$LD $LDFLAGS $target_arch $object_files $core_library -o $compiler_dir/files/$OUTPUT.elf $LDFLAGS_TAIL\n", FILE_APPEND);
-        }
-
-        if ($ret_link){
-
-            // Log the fact that an error occurred during linking
-            $this->compiler_logger->addInfo($this->logger_id . " - An error occurred during linking: " . json_encode(implode("\n", $output)));
-
-            $returner = array(
-                "success" => false,
-                "step" => 7,
-                "message" => implode("\n", $output));
-
-            if ($compiler_config['logging'] === true) {
-                $log_content = @file_get_contents($compiler_config['logFileName']);
-                if (!$log_content)
-                    $returner["log"] = "Failed to access logfile.";
-                else {
-                    file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                    $returner["log"] = $log_content;
-                }
-            }
-
-            if ($ARCHIVE_OPTION === true){
-                $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-                if ($arch_ret["success"] === false)
-                    $returner["archive"] = $arch_ret["message"];
-                else
-                    $returner["archive"] = $ARCHIVE_PATH;
-            }
-            return $returner;
-        }
-
-        // Step 8: Convert the output to the requested format and measure its
-        // size.
-        $tmp = $this->convertOutput("$compiler_dir/files", $format, $SIZE, $SIZE_FLAGS, $OBJCOPY, $OBJCOPY_FLAGS, $OUTPUT, $start_time, $compiler_config);
-
-        if ($compiler_config['logging'] === true) {
-            $log_content = @file_get_contents($compiler_config['logFileName']);
-            if (!$log_content)
-                $tmp["log"] = "Failed to access logfile.";
-            else {
-                file_put_contents($compiler_config["compiler_dir"] . "/log", $log_content);
-                $tmp["log"] = $log_content;
-            }
-        }
-
-        if ($ARCHIVE_OPTION === true){
-            $arch_ret = $this->createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                $tmp["archive"] = $arch_ret["message"];
-            else
-                $tmp["archive"] = $ARCHIVE_PATH;
-        }
-        return $tmp;
     }
 
     private function requestValid(&$request)
