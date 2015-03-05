@@ -70,31 +70,30 @@ class DefaultController extends Controller
 		}
 	}
 
-	public function arduinoCommandAction()
+	public function arduinoCommandAction($auth_key, $version)
 	{
-		// Get compiler parameters from paramaters.yml
-		//$params = $this->generateParameters();
+		$params = $this->generateParameters();
 
-		// JSON from Builder to send to arduino compiler
-		$request = $this->getRequest()->getContent();
-
-		//{"params":"testparams","request":"testrequest"}
-		$request = json_decode($request, true);
-
-		if ($request === null) {
-			return new Response(json_encode(array("success" => false, "json_decode_error" => json_last_error())));
+		if ($auth_key !== $params["auth_key"])
+		{
+			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
 		}
 
-		// Get the arduino command line handler
-		$compiler = $this->get('arduino_command_handler');
+		if ($version == "v1")
+		{
+			$request = $this->getRequest()->getContent();
 
-		// Get resulting binary from arduino
-		$reply = $compiler->main($request);
-		//$reply = array();
-		if (empty($reply)) return new Response(json_encode(array("success" => false, "message" => "Arduino failed to respond")));
+            //Get the compiler service
+			$compiler = $this->get('arduino_command_handler');
 
-		return new Response(json_encode($reply));
+			$reply = $compiler->main($request, $params);
 
+			return new Response(json_encode($reply));
+		}
+		else
+		{
+			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
+		}
 	}
 
     public function deleteAllObjectsAction($auth_key, $version)
