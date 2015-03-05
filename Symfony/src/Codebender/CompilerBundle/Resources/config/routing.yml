@@ -11,7 +11,7 @@ codebender_compiler_homepage:
     defaults: { _controller: CodebenderCompilerBundle:Default:index }
 
 codebender_compiler_arduino_cli:
-    pattern:  /arduinocommand
+    pattern:  /arduinocommand/{auth_key}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:arduinoCommand }
 
 codebender_compiler_delete_all:
