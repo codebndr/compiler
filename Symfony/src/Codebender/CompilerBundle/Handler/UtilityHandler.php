@@ -57,6 +57,13 @@ class UtilityHandler
 			$content = $file["content"];
             $ignore = false;
 
+			/*
+			 * We use .txt files in order to recognize the user and project ids,
+			 * so we don't need to create error logs for these files.
+			 */
+			if (pathinfo($filename, PATHINFO_EXTENSION) == 'txt')
+				continue;
+
 			$failure_response = array(
 				"success" => false,
 				"step" => 1,
