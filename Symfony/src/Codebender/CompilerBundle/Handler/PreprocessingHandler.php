@@ -219,7 +219,7 @@ class PreprocessingHandler
         return $return_code;
     }
 
-    function ino_to_cpp($code, $filename = NULL)
+    function ino_to_cpp($code, $filename = null)
     {
         // Remove comments, preprocessor directives, single- and double- quotes
         $no_comms_code = $this->remove_comments_directives_quotes($code);
@@ -245,52 +245,101 @@ class PreprocessingHandler
 
     }
 
-
-
-	/**
-	\brief Decodes and performs validation checks on input data.
-
-	\param string $request The JSON-encoded compile request.
-	\return The value encoded in JSON in appropriate PHP type or <b>NULL</b>.
-	 */
-	function validate_input($request)
+    /**
+     * Decodes and performs validation checks on input data.
+     *
+     * @param string $request The JSON-encoded compile request.
+     * @return array The value encoded in JSON in appropriate PHP type or an array containing the error that occurred.
+     */
+	function validate_input(&$request)
 	{
 		$request = json_decode($request, true);
 
 		// Request must be successfully decoded.
-		if ($request === NULL)
-			return NULL;
-		// Request must contain certain entities.
-		if (!(array_key_exists("format", $request)
-			&& array_key_exists("version", $request)
-			&& array_key_exists("build", $request)
-			&& array_key_exists("files", $request)
-			&& is_array($request["build"])
-			&& array_key_exists("libraries", $request)
-			&& array_key_exists("mcu", $request["build"])
-			&& array_key_exists("f_cpu", $request["build"])
-			&& array_key_exists("core", $request["build"])
-			&& is_array($request["files"]))
-		)
-			return NULL;
+		if ($request === null || $request === false) {
+            $request = array();
+            return array('success' => false, 'error' => 'Request JSON decode: ' . json_last_error());
+        }
+
+        $isValidRequest = $this->containsNecessaryEntities($request);
+        if ($isValidRequest['success'] === false) {
+            return $isValidRequest;
+        }
 
 		// Leonardo-specific flags.
 		if (array_key_exists("variant", $request["build"]) && $request["build"]["variant"] == "leonardo")
 			if (!(array_key_exists("vid", $request["build"])
 				&& array_key_exists("pid", $request["build"]))
-			)
-				return NULL;
+			) {
+                return array('success' => false, 'error' => 'Invalid atmega32u4 board build');
+            }
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
         $values = array("version", "mcu", "f_cpu", "core", "vid", "pid");
-        if (array_key_exists("variant", $request["build"]))
+        if (array_key_exists("variant", $request["build"])) {
             $values[] = "variant";
-		foreach ($values as $i)
-			if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i])
-				return NULL;
+        }
+
+		foreach ($values as $i) {
+            if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i]) {
+                return array('success' => false, 'error' => 'Security issue raised because ' . $i . ' build entity contains special chars.');
+            }
+        }
 
 		// Request is valid.
-		return $request;
+		return array('success' => true);
 	}
+
+    /**
+     * Makes sure the request contains all the necessary entities needed in order to
+     * proceed with the compilation.
+     *
+     * @param array $request
+     * @return array
+     */
+    function containsNecessaryEntities($request)
+    {
+        $entities = array('format', 'version', 'build', 'files', 'libraries');
+        $buildEntities = array('mcu', 'f_cpu', 'core');
+        $missingEntities = array();
+        $missingBuildEntities = array();
+
+        foreach ($entities as $entity) {
+            if (!array_key_exists($entity, $request)) {
+                $missingEntities[] = $entity;
+            }
+        }
+
+        if(count($missingEntities) > 0) {
+            return array('success' => false, 'error' => 'Missing entities from request: ' . implode(', ', $missingEntities));
+        }
+
+        if (!is_array($request['files'])) {
+            return array('success' => false, 'error' => 'Invalid files format in request.');
+        }
+
+        // Each of the files must be in a [filename --> content] format
+        foreach ($request['files'] as $file) {
+            if (!array_key_exists('filename', $file) || !array_key_exists('content', $file)) {
+                return array('success' => false, 'error' => 'One of the files is not in [filename -> content] format');
+            }
+        }
+
+        if (!is_array($request['build'])) {
+            return array('success' => false, 'error' => 'Invalid build format in request.');
+        }
+
+        foreach ($buildEntities as $entity) {
+            if (!array_key_exists($entity, $request['build'])) {
+                $missingBuildEntities[] = $entity;
+            }
+        }
+
+        if (count($missingBuildEntities) > 0) {
+            return array('success' => false, 'error' => 'Missing entities from board build: ' . implode(', ', $missingBuildEntities));
+        }
+
+        return array('success' => true);
+    }
 }
