@@ -48,18 +48,30 @@ class CompilerHandler
     {
         error_reporting(E_ALL & ~E_STRICT);
 
+        // Keep track of the time it takes to compile the project
+        $start_time = microtime(true);
+
+        /*
+         * Initialize logger id
+         * In case an error occurs before we get the user and project ids,
+         * the log id depends on the current timestamp and some fixed string.
+         */
+        $this->logger_id = $start_time . '_' . 'DEFAULT_LOG_ID';
+
         $this->set_values($compiler_config,
             $BINUTILS, $CLANG, $CFLAGS, $CPPFLAGS, $ASFLAGS, $ARFLAGS, $LDFLAGS, $LDFLAGS_TAIL,
             $CLANG_FLAGS, $OBJCOPY_FLAGS, $SIZE_FLAGS, $OUTPUT, $ARDUINO_CORES_DIR, $EXTERNAL_CORES_DIR,
 			$TEMP_DIR, $ARCHIVE_DIR, $AUTOCC_DIR, $PYTHON, $AUTOCOMPLETER);
 
-        $start_time = microtime(true);
-
         // Step 0: Reject the request if the input data is not valid.
         //TODO: Replace $tmp variable name
         $tmp = $this->requestValid($request);
-        if($tmp["success"] === false)
+        $this->setLoggerId($start_time, $request);
+
+        if($tmp["success"] === false) {
+            $this->compiler_logger->addInfo($this->logger_id . " - " . $tmp['error']);
             return $tmp;
+        }
 
         $this->set_variables($request, $format, $libraries, $version, $mcu, $f_cpu, $core, $variant, $vid, $pid, $compiler_config);
 
@@ -73,8 +85,10 @@ class CompilerHandler
         $files = array();
         $tmp = $this->extractFiles($request["files"], $TEMP_DIR, $compiler_dir, $files["sketch_files"], "files");
 
-        if ($tmp["success"] == false)
+        if ($tmp["success"] == false) {
+            $this->compiler_logger->addInfo($this->logger_id . " - " . 'Project files extraction: ' . $tmp['message']);
             return $tmp;
+        }
 
         // Add the compiler temp directory to the compiler_config struct.
         $compiler_config["compiler_dir"] = $compiler_dir;
@@ -84,8 +98,10 @@ class CompilerHandler
         foreach($libraries as $library => $library_files){
 
             $tmp = $this->extractFiles($library_files, $TEMP_DIR, $compiler_dir, $files["libs"][$library], "libraries/$library", true);
-            if ($tmp["success"] == false)
+            if ($tmp["success"] == false) {
+                $this->compiler_logger->addInfo($this->logger_id . " - " . $library . ' library files extraction: ' . $tmp['message']);
                 return $tmp;
+            }
         }
 
         if (!array_key_exists("archive", $request) || ($request["archive"] !== false && $request["archive"] !== true))
@@ -137,7 +153,7 @@ class CompilerHandler
                 }
             }
 
-            $this->logger_id = microtime(true) . "_" . substr($compiler_config['compiler_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
+            $this->logger_id = $start_time . "_" . substr($compiler_config['compiler_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
 
             $this->compiler_logger->addInfo($this->logger_id . " - " . implode(" ", $req_elements));
             if ($ARCHIVE_OPTION === true)
@@ -406,15 +422,46 @@ class CompilerHandler
 
     private function requestValid(&$request)
     {
-        $request = $this->preproc->validate_input($request);
-        if (!$request)
+        $response = $this->preproc->validate_input($request);
+        if ($response['success'] === false) {
             return array(
                 "success" => false,
                 "step" => 0,
-                "message" => "Invalid input.");
-        else return array("success" => true);
+                "message" => "Invalid input.",
+                "error" => $response['error']);
+        }
+
+        return array("success" => true);
     }
 
+    /**
+     * Sets the compiler logger id, if project id and user id files exist in the request
+     *
+     * @param $timestamp
+     * @param $request
+     */
+    private function setLoggerId($timestamp, $request)
+    {
+        if (!array_key_exists('files', $request)) {
+            return;
+        }
+
+        $user_id = 'null';
+        $sketch_id = 'null';
+
+        foreach ($request["files"] as $file) {
+            if (!array_key_exists('filename', $file)) {
+                continue;
+            }
+            if (strpos($file["filename"], ".txt") !== false) {
+                if (preg_match('/(?<=user_)[\d]+/', $file['filename'], $match)) $user_id = $match[0];
+                if (preg_match('/(?<=project_)[\d]+/', $file['filename'], $match)) $sketch_id = $match[0];
+
+            }
+        }
+        $this->logger_id = $timestamp . "_" . "user:$user_id" . "_project:$sketch_id";
+        return;
+    }
     private function createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, &$ARCHIVE_PATH)
     {
         if (!file_exists($ARCHIVE_PATH)){
