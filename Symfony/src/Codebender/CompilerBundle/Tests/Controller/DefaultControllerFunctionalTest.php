@@ -194,11 +194,31 @@ class DefaultControllerFunctionalTest extends WebTestCase
         $this->assertTrue(count($coreObjectLibrary) > 0);
     }
 
+    public function testArchiveIsCreated() {
+        $files = array(array('filename' => 'Blink.ino', 'content' => "void setup(){}\nvoid loop(){}\n"));
+        $format = 'binary';
+        $version = '105';
+        $libraries = array();
+        $build = array('mcu' => 'atmega328p', 'f_cpu' => '16000000', 'core' => 'arduino', 'variant' => 'standard');
+        $data = json_encode(array('files' => $files, 'archive' => true,  'format' => $format, 'version' => $version, 'libraries' => $libraries, 'build' => $build));
+
+        $client = static::createClient();
+
+        $auth_key = $client->getContainer()->getParameter('auth_key');
+
+        $client->request('POST', '/'.$auth_key.'/v1', array(), array(), array(), $data);
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+
+        $this->assertTrue(file_exists($response['archive']));
+    }
+
     public function testAutocomplete() {
         $this->markTestIncomplete('No tests for the code completion feature yet.');
     }
 
 	public function testIncorrectInputs() {
-		$this->markTestIncomplete("No tests for invalid inputs yet");
+		$this->markTestIncomplete('No tests for invalid inputs yet');
 	}
 }
