@@ -52,7 +52,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
 	public function testBlinkUnoSyntaxCheck()
 	{
-		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13;\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
+		$files = array(array("filename" => "Blink.ino", "content" => "int led = 13;\nvoid setup() {pinMode(led, OUTPUT);}\nvoid loop() {\ndigitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);\ndelay(1000);\n}\n"));
 		$format = "syntax";
 		$version = "105";
 		$libraries = array();
@@ -75,7 +75,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
 	public function testBlinkUnoCompile()
 	{
-		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13;\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
+		$files = array(array("filename" => "Blink.ino", "content" => "\nint led = 13;\nvoid setup() {\npinMode(led, OUTPUT);\n}\nvoid loop() {\ndigitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);\ndelay(1000);\n}\n"));
 		$format = "binary";
 		$version = "105";
 		$libraries = array();
@@ -98,7 +98,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
 	public function testBlinkUnoSyntaxCheckError()
 	{
-		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);\n  pinMode(led);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
+		$files = array(array("filename" => "Blink.ino", "content" => "\nint led = 13\nvoid setup() {\npinMode(led, OUTPUT);\npinMode(led);\n}\nvoid loop() {\ndigitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);\ndelay(1000);\n}\n"));
 		$format = "syntax";
 		$version = "105";
 		$libraries = array();
@@ -117,7 +117,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 		$this->assertEquals($response["success"], false);
 		$this->assertEquals($response["success"], false);
 		$this->assertEquals($response["step"], 4);
-		$this->assertContains("Blink.ino:10:13:", $response["message"]);
+		$this->assertContains("Blink.ino:2:13:", $response["message"]);
 		$this->assertContains("expected ';' after top level declarator", $response["message"]);
 		$this->assertContains("no matching function for call to 'pinMode'", $response["message"]);
 		$this->assertContains("candidate function not viable: requires 2 arguments, but 1 was provided", $response["message"]);
@@ -126,7 +126,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
 	public function testBlinkUnoCompileError()
 	{
-		$files = array(array("filename" => "Blink.ino", "content" => "/*\n  Blink\n  Turns on an LED on for one second, then off for one second, repeatedly.\n \n  This example code is in the public domain.\n *///\n \n// Pin 13 has an LED connected on most Arduino boards.\n// give it a name:\nint led = 13\n\n// the setup routine runs once when you press reset:\nvoid setup() {                \n  // initialize the digital pin as an output.\n  pinMode(led, OUTPUT);\n  pinMode(led);     \n}\n\n// the loop routine runs over and over again forever:\nvoid loop() {\n  digitalWrite(led, HIGH);   // turn the LED on (HIGH is the voltage level)\n  delay(1000);               // wait for a second\n  digitalWrite(led, LOW);    // turn the LED off by making the voltage LOW\n  delay(1000);               // wait for a second\n}\n"));
+		$files = array(array("filename" => "Blink.ino", "content" => "\nint led = 13\nvoid setup() {\npinMode(led, OUTPUT);\npinMode(led);\n}\nvoid loop() {\ndigitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);\n  delay(1000);\n}\n"));
 		$format = "binary";
 		$version = "105";
 		$libraries = array();
@@ -144,7 +144,7 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
 		$this->assertEquals($response["success"], false);
 		$this->assertEquals($response["step"], 4);
-		$this->assertContains("Blink.ino:10:13:", $response["message"]);
+		$this->assertContains("Blink.ino:2:13:", $response["message"]);
 		$this->assertContains("expected ';' after top level declarator", $response["message"]);
 		$this->assertContains("no matching function for call to 'pinMode'", $response["message"]);
 		$this->assertContains("candidate function not viable: requires 2 arguments, but 1 was provided", $response["message"]);
