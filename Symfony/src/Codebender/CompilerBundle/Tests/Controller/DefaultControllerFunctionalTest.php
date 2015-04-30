@@ -188,7 +188,8 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
         $this->assertEquals($response['success'], true);
         $objectFilesPath = $client->getContainer()->getParameter('temp_dir') . '/' . $client->getContainer()->getParameter('objdir');
-        $coreObjectLibrary = glob("$objectFilesPath/*__external_cores__tiny__cores__tiny________attiny85_8000000_tiny__null_null_______core.a");
+        $externalCoresPath = pathinfo($client->getContainer()->getParameter('external_core_files'), PATHINFO_BASENAME);
+        $coreObjectLibrary = glob("$objectFilesPath/*__{$externalCoresPath}__tiny__cores__tiny________attiny85_8000000_tiny__null_null_______core.a");
 
         $this->assertTrue(count($coreObjectLibrary) > 0);
     }
