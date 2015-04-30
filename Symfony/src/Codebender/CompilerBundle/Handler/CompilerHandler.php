@@ -437,7 +437,7 @@ class CompilerHandler
         }
 
         // The archive files include all the files of the project and the libraries needed to compile it
-        exec("tar -zcvf $ARCHIVE_PATH -C $TEMP_DIR/ ". pathinfo($compiler_dir, PATHINFO_BASENAME), $output, $ret_var);
+        exec("tar -zcf $ARCHIVE_PATH -C $TEMP_DIR/ ". pathinfo($compiler_dir, PATHINFO_BASENAME), $output, $ret_var);
 
         if ($ret_var !=0)
             return array("success" => false, "message" => "Failed to archive project files.");
