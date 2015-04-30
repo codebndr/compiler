@@ -66,10 +66,6 @@ class DefaultControllerFunctionalTest extends WebTestCase
 		$this->assertEquals($response["success"], true);
 		$this->assertTrue(is_numeric($response["time"]));
 
-        $objectFilesPath = $client->getContainer()->getParameter('temp_dir') . '/' . $client->getContainer()->getParameter('objdir');
-        $coreObjectLibrary = glob("$objectFilesPath/*__v105__hardware__arduino__cores__arduino________atmega328p_16000000_arduino_standard_null_null_______core.a");
-        $this->assertTrue(count($coreObjectLibrary) > 0);
-
 	}
 
 	public function testBlinkUnoCompile() {
@@ -92,6 +88,10 @@ class DefaultControllerFunctionalTest extends WebTestCase
 		$this->assertEquals($response["success"], true);
 		$this->assertTrue(is_numeric($response["time"]));
 		$this->assertTrue(is_numeric($response["size"]));
+
+        $objectFilesPath = $client->getContainer()->getParameter('temp_dir') . '/' . $client->getContainer()->getParameter('objdir');
+        $coreObjectLibrary = glob("$objectFilesPath/*__v105__hardware__arduino__cores__arduino________atmega328p_16000000_arduino_standard_null_null_______core.a");
+        $this->assertTrue(count($coreObjectLibrary) > 0);
 	}
 
 	public function testBlinkUnoSyntaxCheckError() {
