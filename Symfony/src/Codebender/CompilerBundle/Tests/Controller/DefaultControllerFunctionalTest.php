@@ -4,7 +4,7 @@ namespace Codebender\CompilerBundle\Tests\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
-class DefaultControllerTest extends WebTestCase
+class DefaultControllerFunctionalTest extends WebTestCase
 {
 	public function testStatus()
 	{
