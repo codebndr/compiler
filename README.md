@@ -1,6 +1,7 @@
 This repository is part of the [codebender.cc](http://www.codebender.cc) maker and artist web platform. 
 
-[![Build Status](https://travis-ci.org/codebendercc/compiler.svg?branch=master)](https://travis-ci.org/codebendercc/compiler) [![Coverage Status](https://img.shields.io/coveralls/codebendercc/compiler.svg)](https://coveralls.io/r/codebendercc/compiler?branch=master)
+[![Build Status](https://travis-ci.org/codebendercc/compiler.svg?branch=master)](https://travis-ci.org/codebendercc/compiler) 
+[![Coverage Status](https://coveralls.io/repos/codebendercc/compiler/badge.svg?branch=master)](https://coveralls.io/r/codebendercc/compiler?branch=master)
 
 ## And what's that?
 
