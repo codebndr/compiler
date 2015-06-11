@@ -30,9 +30,9 @@ class DefaultControllerTest extends WebTestCase
 	{
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('GET', '/'.$auth_key.'/v666');
+		$client->request('GET', '/'.$authorizationKey.'/v666');
 
 		$this->assertEquals($client->getResponse()->getContent(), '{"success":false,"step":0,"message":"Invalid API version."}');
 
@@ -42,9 +42,9 @@ class DefaultControllerTest extends WebTestCase
 	{
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('GET', '/'.$auth_key.'/v1');
+		$client->request('GET', '/'.$authorizationKey.'/v1');
 
 		$this->assertEquals($client->getResponse()->getContent(), '{"success":false,"step":0,"message":"Invalid input."}');
 
@@ -62,9 +62,9 @@ class DefaultControllerTest extends WebTestCase
 
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('POST', '/'.$auth_key.'/v1', array(),array(),array(),$data);
+		$client->request('POST', '/'.$authorizationKey.'/v1', array(),array(),array(),$data);
 
 		$response = json_decode($client->getResponse()->getContent(), true);
 
@@ -85,9 +85,9 @@ class DefaultControllerTest extends WebTestCase
 
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('POST', '/'.$auth_key.'/v1', array(), array(), array(), $data);
+		$client->request('POST', '/'.$authorizationKey.'/v1', array(), array(), array(), $data);
 
 		$response = json_decode($client->getResponse()->getContent(), true);
 
@@ -110,9 +110,9 @@ class DefaultControllerTest extends WebTestCase
 
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('POST', '/'.$auth_key.'/v1', array(), array(), array(), $data);
+		$client->request('POST', '/'.$authorizationKey.'/v1', array(), array(), array(), $data);
 
 		$response = json_decode($client->getResponse()->getContent(), true);
 
@@ -138,9 +138,9 @@ class DefaultControllerTest extends WebTestCase
 
 		$client = static::createClient();
 
-		$auth_key = $client->getContainer()->getParameter("auth_key");
+		$authorizationKey = $client->getContainer()->getParameter("authorizationKey");
 
-		$client->request('POST', '/'.$auth_key.'/v1', array(), array(), array(), $data);
+		$client->request('POST', '/'.$authorizationKey.'/v1', array(), array(), array(), $data);
 
 		$response = json_decode($client->getResponse()->getContent(), true);
 

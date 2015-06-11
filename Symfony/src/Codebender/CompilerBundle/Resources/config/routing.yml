@@ -3,19 +3,19 @@ codebender_compiler_status_check:
     defaults: { _controller: CodebenderCompilerBundle:Default:status }
 
 codebender_compiler_test:
-    pattern:  /{auth_key}/test/
+    pattern:  /{authorizationKey}/test/
     defaults: { _controller: CodebenderCompilerBundle:Default:test }
 
 codebender_compiler_homepage:
-    pattern:  /{auth_key}/{version}
+    pattern:  /{authorizationKey}/{version}
     defaults: { _controller: CodebenderCompilerBundle:Default:index }
 
 codebender_compiler_delete_all:
-    pattern:  /{auth_key}/{version}/delete/all/
+    pattern:  /{authorizationKey}/{version}/delete/all/
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteAllObjects }
 
 codebender_compiler_delete_specific:
-    pattern:  /{auth_key}/{version}/delete/{option}/{to_delete}
+    pattern:  /{authorizationKey}/{version}/delete/{option}/{to_delete}
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteSpecificObjects }
 
 

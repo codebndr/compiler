@@ -18,7 +18,7 @@ parameters:
     arduino_cores_dir: "/opt/codebender/codebender-arduino-core-files"
     external_core_files: "/opt/codebender/external-core-files"
 
-    auth_key: "youMustChangeThis"
+    authorizationKey: "youMustChangeThis"
 
     # Paths to various executables used by the compiler. These depend on the
     # distribution used and the method of installation. Linking is performed by
