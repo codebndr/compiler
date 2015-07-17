@@ -18,7 +18,6 @@ codebender_compiler_delete_specific:
     pattern:  /{authorizationKey}/{version}/delete/{option}/{to_delete}
     defaults: { _controller: CodebenderCompilerBundle:Default:deleteSpecificObjects }
 
-
 # redirecting the root
 root:
     path: /

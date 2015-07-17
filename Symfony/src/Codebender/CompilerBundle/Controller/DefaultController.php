@@ -1,13 +1,13 @@
 <?php
 /**
-\file
-\brief Functions used by the compiler backend.
-
-\author Dimitrios Christidis
-\author Vasilis Georgitzikis
-
-\copyright (c) 2012-2013, The Codebender Development Team
-\copyright Licensed under the Simplified BSD License
+ * \file
+ * \brief Functions used by the compiler backend.
+ *
+ * \author Dimitrios Christidis
+ * \author Vasilis Georgitzikis
+ *
+ * \copyright (c) 2012-2013, The Codebender Development Team
+ * \copyright Licensed under the Simplified BSD License
  */
 
 namespace Codebender\CompilerBundle\Controller;
@@ -56,7 +56,8 @@ class DefaultController extends Controller
 		{
 			$request = $this->getRequest()->getContent();
 
-            //Get the compiler service
+			//Get the compiler service
+			/** @var CompilerHandler $compiler */
 			$compiler = $this->get('compiler_handler');
 
 			$reply = $compiler->main($request, $params);
@@ -178,12 +179,12 @@ class DefaultController extends Controller
     }
 
 	/**
-	\brief Creates a list of the configuration parameters to be used in the compilation process.
-
-	\return An array of the parameters.
-
-	This function accesses the Symfony global configuration parameters, and creates an array that our handlers (which
-	don't have access to them) can use them.
+	 * \brief Creates a list of the configuration parameters to be used in the compilation process.
+	 *
+	 * \return An array of the parameters.
+	 *
+	 * This function accesses the Symfony global configuration parameters, and creates an array that our handlers (which
+	 * don't have access to them) can use them.
 
 	 */
 	private function generateParameters()
