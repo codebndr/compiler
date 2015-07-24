@@ -4,6 +4,7 @@ parameters:
     utility_handler.class:	Codebender\CompilerBundle\Handler\UtilityHandler
     preprocessing_handler.class:	Codebender\CompilerBundle\Handler\PreprocessingHandler
     postprocessing_handler.class:	Codebender\CompilerBundle\Handler\PostprocessingHandler
+    deletion_handler.class:	Codebender\CompilerBundle\Handler\DeletionHandler
 
 services:
 #    codebender_compiler.example:
@@ -18,6 +19,9 @@ services:
         class:			"%preprocessing_handler.class%"
     postprocessing_handler:
         class:			"%postprocessing_handler.class%"
+    deletion_handler:
+        class:			"%deletion_handler.class%"
+        arguments:		["@compiler_logger", "%temp_dir%/%objdir%"]
     compiler_logger:
         class: Symfony\Bridge\Monolog\Logger
         arguments: [cmplr_log]
