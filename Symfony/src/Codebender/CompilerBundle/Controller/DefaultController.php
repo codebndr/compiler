@@ -24,11 +24,11 @@ class DefaultController extends Controller
 		return new Response(json_encode(array("success" => true, "status" => "OK")));
 	}
 
-	public function testAction($auth_key)
+	public function testAction($authorizationKey)
 	{
 		$params = $this->generateParameters();
 
-		if ($auth_key !== $params["auth_key"])
+		if ($authorizationKey !== $params["authorizationKey"])
 		{
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
 		}
@@ -44,11 +44,11 @@ class DefaultController extends Controller
 		return new Response(json_encode(array("success" => (bool) !$return_val, "message" => implode("\n", $output))));
 	}
 
-	public function indexAction($auth_key, $version)
+	public function indexAction($authorizationKey, $version)
 	{
 		$params = $this->generateParameters();
 
-		if ($auth_key !== $params["auth_key"])
+		if ($authorizationKey !== $params["authorizationKey"])
 		{
 			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
 		}
@@ -71,9 +71,9 @@ class DefaultController extends Controller
 		}
 	}
 
-	public function deleteAllObjectsAction($auth_key, $version)
+	public function deleteAllObjectsAction($authorizationKey, $version)
 	{
-		if ($this->container->getParameter('auth_key') != $auth_key) {
+		if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
             return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
             ));
@@ -108,9 +108,9 @@ class DefaultController extends Controller
             )));
 	}
 
-	public function deleteSpecificObjectsAction($auth_key, $version, $option, $cachedObjectToDelete)
+	public function deleteSpecificObjectsAction($authorizationKey, $version, $option, $cachedObjectToDelete)
 	{
-		if ($this->container->getParameter('auth_key') != $auth_key) {
+		if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
             return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
             ));
@@ -156,7 +156,7 @@ class DefaultController extends Controller
 	 */
 	private function generateParameters()
 	{
-		$parameters = array("binutils", "python", "clang", "logdir", "temp_dir", "archive_dir", "autocompletion_dir", "autocompleter", "cflags", "cppflags", "asflags", "arflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "arduino_cores_dir", "external_core_files", "auth_key");
+        $parameters = array("binutils", "python", "clang", "logdir", "temp_dir", "archive_dir", "autocompletion_dir", "autocompleter", "cflags", "cppflags", "asflags", "arflags", "ldflags", "ldflags_tail", "clang_flags", "objcopy_flags", "size_flags", "output", "arduino_cores_dir", "external_core_files", "authorizationKey");
 
 		$compiler_config = array();
 
