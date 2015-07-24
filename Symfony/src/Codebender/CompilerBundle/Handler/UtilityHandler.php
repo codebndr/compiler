@@ -36,17 +36,17 @@ class UtilityHandler
 		// separated by "|" to be used in regular expressions. They are also
 		// used as keys in an array that will contain the paths of all the
 		// extracted files.
-		$EXTENSIONS = array("c", "cpp", "h", "inc", "ino", "o", "S");
+		$allowedExtensions = array("c", "cpp", "h", "inc", "ino", "o", "S");
 		$files = array();
-		foreach ($EXTENSIONS as $ext)
+		foreach ($allowedExtensions as $ext)
 			$files[$ext] = array();
-		$EXTENSIONS = implode("|", $EXTENSIONS);
+        $allowedExtensions = implode("|", $allowedExtensions);
 		// Matches filename that end with an appropriate extension. The name
 		// without the extension is stored in registerd 1, the extension itself
 		// in register 2.
 		//
 		// Examples: foo.c bar.cpp
-		$REGEX = "/(.*)\.($EXTENSIONS)$/";
+        $extensionsRegex = "/(.*)\.($allowedExtensions)$/";
 
 		if (!file_exists($directory))
 			mkdir($directory, 0777, true);
@@ -57,7 +57,7 @@ class UtilityHandler
 			$content = $file["content"];
 			$ignore = false;
 
-			$failure_response = array(
+			$failureResponse = array(
 				"success" => false,
 				"step" => 1,
 				"message" => "Failed to extract file '$filename'.");
@@ -66,7 +66,7 @@ class UtilityHandler
 			// serious security risk.
 			$directories = explode("/", "$directory/$filename");
 			if (in_array("..", $directories))
-				return $failure_response;
+				return $failureResponse;
 
 			if (strpos($filename, DIRECTORY_SEPARATOR))
 			{
@@ -84,12 +84,12 @@ class UtilityHandler
 			}
 
 			if (file_put_contents("$directory/$filename", $content) === false)
-				return $failure_response;
+				return $failureResponse;
 
 			if ($ignore)
 				continue;
 
-			if (preg_match($REGEX, $filename, $matches))
+			if (preg_match($extensionsRegex, $filename, $matches))
 				$files[$matches[2]][] = "$directory/$matches[1]";
 			else
 				error_log(__FUNCTION__."(): Unhandled file extension '$filename'");

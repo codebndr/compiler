@@ -249,7 +249,7 @@ class PreprocessingHandler
 		return $return_code;
 	}
 
-	function convertInoToCpp($code, $filename = NULL)
+	function convertInoToCpp($code, $filename = null)
 	{
 		// Remove comments, preprocessor directives, single- and double- quotes
 		$no_comms_code = $this->removeCommentsDirectivesQuotes($code);
@@ -263,12 +263,12 @@ class PreprocessingHandler
 		// before any function declaration)
 		$insertion_position = $this->insertionPosition($code);
 
-		$new_code = "";
+		$new_code = "#line 1\n";
 		// Add a preprocessor directive for line numbering.
-		if ($filename)
-			$new_code .= "#line 1 \"$filename\"\n";
-		else
-			$new_code .= "#line 1\n";
+		if ($filename) {
+            $new_code .= "#line 1 \"$filename\"\n";
+        }
+
 		// Build the new code for the cpp file that will eventually be compiled
 		$new_code .= $this->buildCode($code, $function_prototypes, $insertion_position);
 
@@ -281,15 +281,15 @@ class PreprocessingHandler
 	 * \brief Decodes and performs validation checks on input data.
 	 *
 	 * \param string $request The JSON-encoded compile request.
-	 * \return The value encoded in JSON in appropriate PHP type or <b>NULL</b>.
+	 * \return The value encoded in JSON in appropriate PHP type or <b>null</b>.
 	 */
 	function validateInput($request)
 	{
 		$request = json_decode($request, true);
 
 		// Request must be successfully decoded.
-		if ($request === NULL)
-			return NULL;
+		if ($request === null)
+			return null;
 		// Request must contain certain entities.
 		if (!(array_key_exists("format", $request)
 			&& array_key_exists("version", $request)
@@ -302,23 +302,26 @@ class PreprocessingHandler
 			&& array_key_exists("core", $request["build"])
 			&& is_array($request["files"]))
 		)
-			return NULL;
+			return null;
 
 		// Leonardo-specific flags.
 		if (array_key_exists("variant", $request["build"]) && $request["build"]["variant"] == "leonardo")
 			if (!(array_key_exists("vid", $request["build"])
 				&& array_key_exists("pid", $request["build"]))
 			)
-				return NULL;
+				return null;
 
 		// Values used as command-line arguments may not contain any special
 		// characters. This is a serious security risk.
 		$values = array("version", "mcu", "f_cpu", "core", "vid", "pid");
-		if (array_key_exists("variant", $request["build"]))
-			$values[] = "variant";
-		foreach ($values as $i)
-			if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i])
-				return NULL;
+		if (array_key_exists("variant", $request["build"])) {
+            $values[] = "variant";
+        }
+		foreach ($values as $i) {
+            if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i]) {
+                return null;
+            }
+        }
 
 		// Request is valid.
 		return $request;

@@ -14,7 +14,6 @@ script:
   - ../scripts/run_tests.sh
 
 after_script:
- - php composer.phar update satooshi/php-coveralls --dev
  - php bin/coveralls -v
 
 notifications:
