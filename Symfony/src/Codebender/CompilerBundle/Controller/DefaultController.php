@@ -73,54 +73,76 @@ class DefaultController extends Controller
 
 	public function deleteAllObjectsAction($auth_key, $version)
 	{
-		if ($this->container->getParameter('auth_key') != $auth_key)
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+		if ($this->container->getParameter('auth_key') != $auth_key) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
+            ));
+        }
 
-		if ($version != "v1")
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
+		if ($version != 'v1') {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
+            ));
+        }
 
 		//Get the compiler service
 		/** @var DeletionHandler $deleter */
 		$deleter = $this->get('deletion_handler');
 
-		$deleter->deleteAllObjects($success, $fileCount, $deletionStats, $undeletedFiles);
+		$response = $deleter->deleteAllObjects();
 
-		if ($success === false)
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
-		else
-			return new Response(json_encode(array_merge(array("success" => true,
-					"message" => "Object files deletion complete. Found $fileCount files."),
-				$deletionStats,
-				array("Files not deleted" => $undeletedFiles))));
+		if ($response['success'] === false) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
+            ));
+        }
+
+        return new Response(json_encode(
+            array_merge(
+                array(
+                    'success' => true,
+                    'message' => 'Object files deletion complete. Found ' . $response['fileCount'] . ' files.'
+                ),
+                $response['deletionStats'],
+                array("Files not deleted" => $response['notDeletedFiles'])
+            )));
 	}
 
-	public function deleteSpecificObjectsAction($auth_key, $version, $option, $to_delete)
+	public function deleteSpecificObjectsAction($auth_key, $version, $option, $cachedObjectToDelete)
 	{
-		if ($this->container->getParameter('auth_key') != $auth_key)
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+		if ($this->container->getParameter('auth_key') != $auth_key) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
+            ));
+        }
 
-		if ($version != "v1")
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
+		if ($version != 'v1') {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
+            ));
+        }
 
 		//Get the compiler service
 		/** @var DeletionHandler $deleter */
 		$deleter = $this->get('deletion_handler');
 
-		$deleter->deleteSpecificObjects($success, $response, $option, $to_delete);
+		$response = $deleter->deleteSpecificObjects($option, $cachedObjectToDelete);
 
-		if ($success === false)
-		{
-			return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
+		if ($response['success'] === false) {
+			return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
+            ));
 		}
 
-		if ($response["undeleted_files"] != "")
-		{
-			$message = ($option == "library") ? "Failed to delete one or more of the specified library object files." : "Failed to delete one or more of the specified core object files.";
-			return new Response(json_encode(array_merge(array("success" => false, "step" => 0, "message" => $message), $response)));
+		if ($response["notDeletedFiles"] != '') {
+			$message = ($option == 'library') ? 'Failed to delete one or more of the specified library object files.' : 'Failed to delete one or more of the specified core object files.';
+			return new Response(json_encode(
+                array_merge(array('success' => false, 'step' => 0, 'message' => $message), $response)
+            ));
 		}
 
-		$message = ($option == "library") ? "Library deleted successfully." : "Core object files deleted successfully.";
-		return new Response(json_encode(array_merge(array("success" => true, "message" => $message), $response)));
+		$message = ($option == 'library') ? 'Library deleted successfully.' : 'Core object files deleted successfully.';
+		return new Response(json_encode(array_merge(array('success' => true, 'message' => $message), $response)));
 	}
 
 	/**

@@ -16,93 +16,101 @@
 
 namespace Codebender\CompilerBundle\Handler;
 
-use Symfony\Bridge\Monolog\Logger;
-
 class DeletionHandler
 {
-	private $compiler_logger;
-	private $object_directory;
+	private $objectCacheDirectory;
 
-	function __construct(Logger $logger, $objdir)
+	function __construct($objectFilesDirectory)
 	{
-		$this->compiler_logger = $logger;
-		$this->object_directory = $objdir;
+		$this->$objectCacheDirectory = $objectFilesDirectory;
 	}
 
-	function deleteAllObjects(&$success, &$fileCount, &$deletionStats, &$undeletedFiles)
+	function deleteAllObjects()
 	{
-		$success = false;
 		$fileCount = 0;
-		$undeletedFiles = "";
-		$deletionStats = array("success_dot_a" => 0,
-			"failure_dot_a" => 0,
-			"success_dot_o" => 0,
-			"failure_dot_o" => 0,
-			"success_dot_d" => 0,
-			"failure_dot_d" => 0,
-			"success_dot_LOCK" => 0,
-			"failure_dot_LOCK" => 0);
+		$notDeletedFiles = '';
+		$deletionStats = array('success_dot_a' => 0,
+			'failure_dot_a' => 0,
+			'success_dot_o' => 0,
+			'failure_dot_o' => 0,
+			'success_dot_d' => 0,
+			'failure_dot_d' => 0,
+			'success_dot_LOCK' => 0,
+			'failure_dot_LOCK' => 0);
 
-		if ($handle = @opendir($this->object_directory))
-		{
-			$success = true;
+		if ($handle = @opendir($this->$objectCacheDirectory)) {
 
-			while (false !== ($entry = readdir($handle)))
-			{
-				if ($entry != "." && $entry != ".." && $entry != ".DS_Store")
-				{
-					$fileCount++;
-					$extension = pathinfo($entry, PATHINFO_EXTENSION);
+			while (false !== ($entry = readdir($handle))) {
+				if ($entry == '.' || $entry == '..' || $entry != '.DS_Store') {
+                    continue;
+                }
+                $fileCount++;
+                $extension = pathinfo($entry, PATHINFO_EXTENSION);
 
-					if (!in_array($extension, array("a", "o", "d", "LOCK")))
-						continue;
+                if (!in_array($extension, array('a', 'o', 'd', 'LOCK'))) {
+                    continue;
+                }
 
-					if (@unlink($this->object_directory."/$entry") === false)
-					{
-						$deletionStats["failure_dot_$extension"]++;
-						$undeletedFiles .= $entry."\n";
-					}
-					else
-						$deletionStats["success_dot_$extension"]++;
-				}
+                if (@unlink($this->$objectCacheDirectory . '/' . $entry) === false) {
+                    $deletionStats['failure_dot_$extension']++;
+                    $notDeletedFiles .= $entry . "\n";
+                    continue;
+                }
+
+                $deletionStats['success_dot_' . $extension]++;
 			}
 			closedir($handle);
+
+            return array(
+                'success' => true,
+                'fileCount' => $fileCount,
+                'notDeletedFiles' => $notDeletedFiles,
+                'deletionStats' => $deletionStats
+                );
 		}
+
+        return array('success' => false);
 	}
 
-	function deleteSpecificObjects(&$success, &$response, &$option, &$to_delete)
+	function deleteSpecificObjects($option, $cachedObjectToDelete)
 	{
-		if ($option == "core")
-			$to_delete = str_replace(":", "_", $to_delete);
+		if ($option == 'core') {
+            $cachedObjectToDelete = str_replace(':', '_', $cachedObjectToDelete);
+        }
 
-		$success = true;
-		$response = array();
-		$response["deleted_files"] = "";
-		$response["undeleted_files"] = "";
+		$deletedFiles = '';
+		$notDeletedFiles = '';
 
-		if ($handle = @opendir($this->object_directory))
-		{
-			while (false !== ($entry = readdir($handle)))
-			{
-				if ($entry == "." || $entry == ".." || $entry == ".DS_Store")
-					continue;
+		if ($handle = @opendir($this->$objectCacheDirectory)) {
 
-				if ($option == "library" && strpos($entry, "______".$to_delete."_______") === false)
-					continue;
+			while (false !== ($entry = readdir($handle))) {
 
-				if ($option == "core" && strpos($entry, "_".$to_delete."_") === false)
-					continue;
+				if ($entry == '.' || $entry == '..' || $entry == '.DS_Store') {
+                    continue;
+                }
+
+				if ($option == 'library' && strpos($entry, '______' . $cachedObjectToDelete . '_______') === false) {
+                    continue;
+                }
+
+				if ($option == 'core' && strpos($entry, '_' . $cachedObjectToDelete . '_') === false) {
+                    continue;
+                }
 
 
-				if (@unlink($this->object_directory."/$entry") === false)
-					$response["undeleted_files"] .= $entry."\n";
-				else
-					$response["deleted_files"] .= $entry."\n";
+				if (@unlink($this->$objectCacheDirectory . '/' . $entry) === false) {
+                    $notDeletedFiles .= $entry."\n";
+                    continue;
+                }
+
+                $deletedFiles .= $entry . "\n";
 
 			}
 			closedir($handle);
+
+            return array('success' => true, 'deletedFiles' => $deletedFiles, 'notDeletedFiles' => $notDeletedFiles);
 		}
-		else
-			$success = false;
+
+		return array('success' => false);
 	}
 }
