@@ -137,6 +137,11 @@ class CompilerHandler
                 }
             }
 
+            if (isset($request['userId']) && isset($request['projectId'])) {
+                $user_id = $request['userId'];
+                $sketch_id = $request['projectId'];
+            }
+
             $this->logger_id = microtime(true) . "_" . substr($compiler_config['compiler_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
 
             $this->compiler_logger->addInfo($this->logger_id . " - " . implode(" ", $req_elements));
