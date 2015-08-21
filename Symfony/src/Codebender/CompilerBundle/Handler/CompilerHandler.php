@@ -117,7 +117,6 @@ class CompilerHandler
 
         // Log the names of the project files and the libraries used in it.
         if ($format != "autocomplete") {
-            $user_id = $sketch_id = "null";
             $req_elements = array("Files: ");
 
             foreach ($request["files"] as $file) {
@@ -136,9 +135,14 @@ class CompilerHandler
                         $req_elements[] = $libname . "/" . $libfile["filename"];
                 }
             }
-
-            if (isset($request['userId']) && isset($request['projectId'])) {
+            
+            $user_id = "null";
+            if (isset($request['userId'])) {
                 $user_id = $request['userId'];
+            }
+            
+            $sketch_id = "null";
+            if (isset($request['projectId'])) {
                 $sketch_id = $request['projectId'];
             }
 
