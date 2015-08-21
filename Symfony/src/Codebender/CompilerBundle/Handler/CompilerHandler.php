@@ -377,14 +377,44 @@ class CompilerHandler
 
 		if ($ret_link)
 		{
-
+            $originalLinkerOutput = implode("\n", $output);
 			// Log the fact that an error occurred during linking
-			$this->compiler_logger->addInfo($this->logger_id." - An error occurred during linking: ".json_encode(implode("\n", $output)));
+			$this->compiler_logger->addInfo($this->logger_id." - An error occurred during linking: ".json_encode($originalLinkerOutput));
+
+            /*
+             * Removes our weird tmp directory paths from the linker error output
+             */
+            // Prebuilt arduino core library files (.a files) are cached and stored in '/tmp/objectFilesDirectory'
+            $linkerOutput = str_replace($this->object_directory .'/', '', $originalLinkerOutput);
+            // Object files produced from sketch compilation are stored in the same folder with the project code (/tmp/compiler.RANDOM/files)
+            $linkerOutput = str_replace("$compiler_dir/files/", '(file in sketch) ', $linkerOutput);
+            /*
+             * Of all the sub-directories of a library, only `utility` folder is currently taken under consideration,
+             * so it's removed manually.
+             * TODO: Find a unique way to mark library sub-folders in cached objects filenames
+             */
+            $linkerOutput = str_replace('utility_______', 'utility/', $linkerOutput);
+
+            // Remove the cached object path from the core library, if it exists in the error output
+            $boardConfig = "${mcu}_${f_cpu}_${core}_${variant}_${vid}_${pid}";
+            $pathinfoResult = pathinfo(str_replace("/", "__", $CORE_DIR . "_"), PATHINFO_FILENAME);
+            $linkerOutput = str_replace($pathinfoResult . "_______" . $boardConfig . "_______", '', $linkerOutput);
+
+            // Do the same for libraries' cached object files
+            $linkerOutput = str_replace($boardConfig, '', $linkerOutput);
+            // Handle both system and personal libraries and add a comment in order to make it clear where the file belongs
+            $linkerOutput = preg_replace('/(______)(.*)(\d*_cb_personal_lib_)(.*)(_______)/', "(personal library file) $4/", $linkerOutput);
+            $linkerOutput = preg_replace('/(______)(.*)(_______)/', '(library file) $2/', $linkerOutput);
+            // Add a new line which makes the output look better
+            $linkerOutput = str_replace('first defined here', "first defined here\n", $linkerOutput);
+
+            // Log linker reformatted output
+            $this->compiler_logger->addInfo($this->logger_id." - Linker reformatted output: ".json_encode($linkerOutput));
 
 			$returner = array(
 				"success" => false,
 				"step" => 7,
-				"message" => implode("\n", $output));
+				"message" => $linkerOutput);
 
 			if ($compiler_config['logging'] === true)
 			{
