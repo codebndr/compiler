@@ -1401,20 +1401,26 @@ class CompilerHandler
 	private function pathRemover($output, $compiler_config)
 	{
 
-		// Remove any instance of "compiler.RANDOM/files/" folder name from the text
-		$modified = str_replace($compiler_config["compiler_dir"]."/files/", '', $output);
+		// Remove any instance of "compiler.RANDOM/files/" folder name from the text, add (sketch file) info text
+		$modified = str_replace($compiler_config["compiler_dir"]."/files/", '(sketch file) ', $output);
 
 		// Remove any remaining instance of "compiler.RANDOM/" folder name from the text.
 		$modified = str_replace($compiler_config["compiler_dir"]."/", '', $modified);
 
-		// Remove any instance of codebender arduino core files folder name from the text
-		$modified = str_replace($compiler_config["arduino_cores_dir"]."/v105/", '', $modified);
+        // Replace userId_cb_personal_lib prefix from personal libraries errors with a (personal library file) info text.
+        $modified = preg_replace('/libraries\/\d+_cb_personal_lib_/', '(personal library file) ', $modified);
 
-		// Remove any instance of codebender external core file folder name from the text
+        // Replace libraries/ prefix from personal libraries errors with a (personal library file) info text.
+        $modified = str_replace('libraries/', '(library file) ', $modified);
+
+		// Remove any instance of codebender arduino core files folder name from the text, add (arduino core file) info text
+		$modified = str_replace($compiler_config["arduino_cores_dir"]."/v105/", '(arduino core file) ', $modified);
+
+		// Remove any instance of codebender external core file folder name from the text, , add (arduino core file) info text
 		if (isset($compiler_config["external_core_files"]) && $compiler_config["external_core_files"] != "")
 		{
-			$modified = str_replace($compiler_config["external_core_files"], '', $modified);
-			$modified = str_replace("/override_cores/", '', $modified);
+			$modified = str_replace($compiler_config["external_core_files"], '(arduino core file) ', $modified);
+			$modified = str_replace("/override_cores/", '(arduino core file) ', $modified);
 		}
 
 		return $modified;
