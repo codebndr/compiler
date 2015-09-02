@@ -22,7 +22,7 @@ class DeletionHandler
 
 	function __construct($objectFilesDirectory)
 	{
-		$this->$objectCacheDirectory = $objectFilesDirectory;
+		$this->objectCacheDirectory = $objectFilesDirectory;
 	}
 
 	function deleteAllObjects()
@@ -38,7 +38,7 @@ class DeletionHandler
 			'success_dot_LOCK' => 0,
 			'failure_dot_LOCK' => 0);
 
-		if ($handle = @opendir($this->$objectCacheDirectory)) {
+		if ($handle = @opendir($this->objectCacheDirectory)) {
 
 			while (false !== ($entry = readdir($handle))) {
 				if ($entry == '.' || $entry == '..' || $entry != '.DS_Store') {
@@ -51,7 +51,7 @@ class DeletionHandler
                     continue;
                 }
 
-                if (@unlink($this->$objectCacheDirectory . '/' . $entry) === false) {
+                if (@unlink($this->objectCacheDirectory . '/' . $entry) === false) {
                     $deletionStats['failure_dot_$extension']++;
                     $notDeletedFiles .= $entry . "\n";
                     continue;
@@ -81,7 +81,7 @@ class DeletionHandler
 		$deletedFiles = '';
 		$notDeletedFiles = '';
 
-		if ($handle = @opendir($this->$objectCacheDirectory)) {
+		if ($handle = @opendir($this->objectCacheDirectory)) {
 
 			while (false !== ($entry = readdir($handle))) {
 
@@ -98,7 +98,7 @@ class DeletionHandler
                 }
 
 
-				if (@unlink($this->$objectCacheDirectory . '/' . $entry) === false) {
+				if (@unlink($this->objectCacheDirectory . '/' . $entry) === false) {
                     $notDeletedFiles .= $entry."\n";
                     continue;
                 }
