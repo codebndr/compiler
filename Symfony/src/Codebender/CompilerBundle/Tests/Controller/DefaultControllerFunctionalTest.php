@@ -295,6 +295,27 @@ main.cpp:(.text.main+0x8): undefined reference to `setup'";
         $this->assertContains('(personal library file) PseudoEthernet/Ethernet.h:1:10: </b><b><font style="color: red">fatal error: </font></b><b>\'SPI.h\' file not found', $response['message']);
     }
 
+    public function testHtmlEncodedInput()
+    {
+        $files = array(array("filename" => "Blink.ino", "content" => htmlspecialchars("#include <Ethernet.h>\nint * pointer;\nvoid setup() {\nint ** var = &pointer;\n}\nvoid loop() {\n}\n")));
+        $format = "binary";
+        $version = "105";
+        $libraries = array('Ethernet' => array('files' => array('filename' => 'Ethernet.h', 'content' => htmlspecialchars("\n"))));
+        $build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
+
+        $data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
+
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter("authorizationKey");
+
+        $client->request('POST', '/' . $authorizationKey . '/v1', array(), array(), array(), $data);
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($response["success"]);
+    }
+
     public function testAutocomplete()
     {
         $this->markTestIncomplete('No tests for the code completion feature yet.');
