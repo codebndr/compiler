@@ -142,4 +142,47 @@ class UtilityHandler
 		echo "$ $command\n";
 		passthru("$command 2>&1");
 	}
+
+    /**
+     * Decodes any HTML entities found in the list of provided files and returns the list of decoded
+     * files. Each of the files should have the following format
+     * ['filename' => filename, 'content' => code]
+     *
+     * @param $files
+     * @return array
+     */
+    function htmlDecodeFiles($files)
+    {
+        if (empty($files)) {
+            return array();
+        }
+
+        $htmlDecodedFiles = array();
+        foreach ($files as $file) {
+            $htmlDecodedFiles[] = array(
+                'filename' => $file['filename'],
+                'content' => htmlspecialchars_decode($file['content'])
+            );
+        }
+        return $htmlDecodedFiles;
+    }
+
+    /**
+     * Applies the htmlDecodeFiles method to the files of each one of the provided libraries.
+     *
+     * @param $libraries
+     * @return array
+     */
+    function htmlDecodeLibraries($libraries)
+    {
+        if (empty($libraries)) {
+            return array();
+        }
+        $htmlDecodedLibraries = array();
+        foreach ($libraries as $libraryName => $libraryFiles) {
+            $htmlDecodedLibraries[$libraryName] = $this->htmlDecodeFiles($libraryFiles);
+        }
+
+        return $htmlDecodedLibraries;
+    }
 }
