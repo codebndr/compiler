@@ -89,6 +89,6 @@ cp app/config/parameters.yml.dist app/config/parameters.yml
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	sudo cp /opt/codebender/$PACKAGENAME/apache-config /etc/apache2/sites-available/codebender-compiler
 	cd /etc/apache2/sites-enabled
-	sudo ln -s ../sites-available/codebender-compiler 00-codebender-compiler
+	sudo ln -s ../sites-available/codebender-compiler 00-codebender-compiler.conf
 	sudo service apache2 restart
 fi
