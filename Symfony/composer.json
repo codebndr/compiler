@@ -21,11 +21,14 @@
         "incenteev/composer-parameter-handler": "~2.0"
     },
     "require-dev": {
-        "phpunit/phpunit": "3.7.*",
+        "phpunit/phpunit": "4.8.*",
         "satooshi/php-coveralls": "dev-master",
         "squizlabs/php_codesniffer": "1.*",
         "sebastian/phpcpd": "*",
-        "phpmd/phpmd" : "2.0.*"
+        "phpmd/phpmd" : "2.0.*",
+        "phpunit/php-code-coverage": "~2.1",
+        "phpunit/php-token-stream": "~1.3",
+        "phpunit/phpunit-mock-objects": "~2.3"
     },
     "scripts": {
         "post-install-cmd": [
