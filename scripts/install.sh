@@ -14,7 +14,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		sudo apt-get install -y php5-intl
 	fi
 	# Install dependencies
-	sudo apt-get install -y apache2 libapache2-mod-php5 php-pear php5-curl php5-sqlite acl curl git
+	sudo apt-get install -y apache2 libapache2-mod-php5 php-pear php5-xdebug php5-curl php5-sqlite acl curl git
 	# Enable Apache configs
 	sudo a2enmod rewrite
     sudo a2enmod alias
