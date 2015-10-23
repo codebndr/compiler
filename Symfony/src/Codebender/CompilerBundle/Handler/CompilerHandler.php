@@ -67,12 +67,6 @@ class CompilerHandler
 		$clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu";
 		$autocc_clang_target_arch = "-D".MCUHandler::$MCU[$mcu]." -DARDUINO=$version -DF_CPU=$f_cpu -DUSB_VID=$vid -DUSB_PID=$pid";
 
-        /*
-         * Decode any HTML entities found in project/libraries files
-         */
-        $request['files'] = $this->utility->htmlDecodeFiles($request['files']);
-        $request['libraries'] = $this->utility->htmlDecodeLibraries($request['libraries']);
-
 		// Step 1(part 1): Extract the project files included in the request.
 		$files = array();
 		$tmpVar = $this->extractFiles($request["files"], $TEMP_DIR, $compiler_dir, $files["sketch_files"], "files");
