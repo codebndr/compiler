@@ -71,7 +71,7 @@ class CompilerHandler
          * Decode any HTML entities found in project/libraries files
          */
         $request['files'] = $this->utility->htmlDecodeFiles($request['files']);
-        $libraries = $this->utility->htmlDecodeLibraries($libraries);
+        $request['libraries'] = $this->utility->htmlDecodeLibraries($request['libraries']);
 
 		// Step 1(part 1): Extract the project files included in the request.
 		$files = array();

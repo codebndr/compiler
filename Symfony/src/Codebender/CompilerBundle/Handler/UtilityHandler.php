@@ -157,9 +157,14 @@ class UtilityHandler
             return array();
         }
 
-        array_walk($files, function(&$item){$item['content'] = htmlspecialchars_decode($item['content']);});
-
-        return $files;
+        $htmlDecodedFiles = array();
+        foreach ($files as $file) {
+            $htmlDecodedFiles[] = array(
+                'filename' => $file['filename'],
+                'content' => htmlspecialchars_decode($file['content'])
+            );
+        }
+        return $htmlDecodedFiles;
     }
 
     /**

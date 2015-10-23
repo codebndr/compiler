@@ -254,7 +254,7 @@ main.cpp:(.text.main+0x8): undefined reference to `setup'";
         $files = array(array("filename" => "Blink.ino", "content" => "#include <Ethernet.h>\nvoid setup() {\n}\nvoid loop() {\n}\n"));
         $format = "binary";
         $version = "105";
-        $libraries = array('PseudoEthernet' => array(0 => array('filename' => 'Ethernet.h', 'content' => "#include \"SPI.h\"\n")));
+        $libraries = array('PseudoEthernet' => array('files' => array('filename' => 'Ethernet.h', 'content' => "#include \"SPI.h\"\n")));
         $build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
         $data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
@@ -277,7 +277,7 @@ main.cpp:(.text.main+0x8): undefined reference to `setup'";
         $files = array(array("filename" => "Blink.ino", "content" => "#include <Ethernet.h>\nvoid setup() {\n}\nvoid loop() {\n}\n"));
         $format = "binary";
         $version = "105";
-        $libraries = array('4096_cb_personal_lib_PseudoEthernet' => array(0 => array('filename' => 'Ethernet.h', 'content' => "#include \"SPI.h\"\n")));
+        $libraries = array('4096_cb_personal_lib_PseudoEthernet' => array('files' => array('filename' => 'Ethernet.h', 'content' => "#include \"SPI.h\"\n")));
         $build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
         $data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
@@ -300,7 +300,7 @@ main.cpp:(.text.main+0x8): undefined reference to `setup'";
         $files = array(array("filename" => "Blink.ino", "content" => htmlspecialchars("#include <Ethernet.h>\nint * pointer;\nvoid setup() {\nint ** var = &pointer;\n}\nvoid loop() {\n}\n")));
         $format = "binary";
         $version = "105";
-        $libraries = array('Ethernet' => array(0 => array('filename' => 'Ethernet.h', 'content' => htmlspecialchars('#include "Arduino.h"'))));
+        $libraries = array('Ethernet' => array('files' => array('filename' => 'Ethernet.h', 'content' => htmlspecialchars("\n"))));
         $build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
 
         $data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
