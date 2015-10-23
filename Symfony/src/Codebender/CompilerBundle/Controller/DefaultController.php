@@ -91,7 +91,7 @@ class DefaultController extends Controller
 
 		$response = $deleter->deleteAllObjects();
 
-		if ($response['success'] === false) {
+		if ($response['success'] !== true) {
             return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
             ));
@@ -128,20 +128,28 @@ class DefaultController extends Controller
 
 		$response = $deleter->deleteSpecificObjects($option, $cachedObjectToDelete);
 
-		if ($response['success'] === false) {
+		if ($response['success'] !== true) {
 			return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
             ));
 		}
 
-		if ($response["notDeletedFiles"] != '') {
-			$message = ($option == 'library') ? 'Failed to delete one or more of the specified library object files.' : 'Failed to delete one or more of the specified core object files.';
+		if (!empty($response["notDeletedFiles"])) {
+			$message = 'Failed to delete one or more of the specified core object files.';
+            if ($option == 'library') {
+                $message = 'Failed to delete one or more of the specified library object files.';
+            }
+
 			return new Response(json_encode(
                 array_merge(array('success' => false, 'step' => 0, 'message' => $message), $response)
             ));
 		}
 
-		$message = ($option == 'library') ? 'Library deleted successfully.' : 'Core object files deleted successfully.';
+        $message = 'Core object files deleted successfully.';
+        if ($option == 'library'){
+            $message = 'Library deleted successfully.';
+        }
+
 		return new Response(json_encode(array_merge(array('success' => true, 'message' => $message), $response)));
 	}
 
