@@ -141,4 +141,4 @@ class Completer(object):
             log_error(COMPL_TU_LOAD)
 
         self.code_completion = \
-            self.TU.codeComplete(self.fname, self.line, self.column)
+            self.TU.codeComplete(self.fname, self.line, self.column, include_macros=True)
