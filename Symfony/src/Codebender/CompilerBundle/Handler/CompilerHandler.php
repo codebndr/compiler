@@ -986,7 +986,7 @@ class CompilerHandler
 			$compiler_config["autocmpfile"] = $request["position"]["file"];
 			$compiler_config["autocmprow"] = $request["position"]["row"];
 			$compiler_config["autocmpcol"] = $request["position"]["column"];
-			$compiler_config["autocmpmaxresults"] = $request["maxresults"];
+			$compiler_config["autocmpmaxresults"] = 500;
 			$compiler_config["autocmpprefix"] = $request["prefix"];
 		}
 
