@@ -2,7 +2,7 @@ sudo: required
 dist: trusty
 language: php
 php:
-  - 5.5
+  - 5.5.9
 
 before_install:
   - sudo apt-get update
