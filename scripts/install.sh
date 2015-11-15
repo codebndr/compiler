@@ -14,7 +14,7 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 		sudo apt-get install -y php5-intl
 	fi
 	# Install dependencies
-	sudo apt-get install -y apache2 libapache2-mod-php5 php-pear php5-curl php5-sqlite acl curl git
+	sudo apt-get install -y apache2 libapache2-mod-php5 php-pear php5-xdebug php5-curl php5-sqlite acl curl git
 	# Enable Apache configs
 	sudo a2enmod rewrite
     sudo a2enmod alias
@@ -57,21 +57,8 @@ if [[ "$OSTYPE" == "linux-gnu" ]]; then
 
 	if [[ ! $TRAVIS ]]; then
 
-		sudo dd if=/dev/zero of=cache-fs bs=1024 count=0 seek=200000
-		sudo dd if=/dev/zero of=logs-fs bs=1024 count=0 seek=200000
-
-		yes | sudo mkfs.ext4 cache-fs
-		yes | sudo mkfs.ext4 logs-fs
-
 		mkdir -p `pwd`/Symfony/app/cache/
 		mkdir -p `pwd`/Symfony/app/logs/
-
-		echo "`pwd`/cache-fs `pwd`/Symfony/app/cache/ ext4 loop,acl 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-		echo "`pwd`/logs-fs `pwd`/Symfony/app/logs/ ext4 loop,acl 0 0" | sudo tee -a /etc/fstab > /dev/null 2>&1
-		cat /etc/fstab
-
-		sudo mount `pwd`/Symfony/app/cache/
-		sudo mount `pwd`/Symfony/app/logs/
 
 		sudo rm -rf `pwd`/Symfony/app/cache/*
 		sudo rm -rf `pwd`/Symfony/app/logs/*
@@ -102,6 +89,6 @@ cp app/config/parameters.yml.dist app/config/parameters.yml
 if [[ "$OSTYPE" == "linux-gnu" ]]; then
 	sudo cp /opt/codebender/$PACKAGENAME/apache-config /etc/apache2/sites-available/codebender-compiler
 	cd /etc/apache2/sites-enabled
-	sudo ln -s ../sites-available/codebender-compiler 00-codebender-compiler
+	sudo ln -s ../sites-available/codebender-compiler 00-codebender-compiler.conf
 	sudo service apache2 restart
 fi

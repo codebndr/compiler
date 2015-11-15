@@ -1,13 +1,13 @@
 <?php
 /**
-\file
-\brief Functions used by the compiler backend.
-
-\author Dimitrios Christidis
-\author Vasilis Georgitzikis
-
-\copyright (c) 2012-2013, The Codebender Development Team
-\copyright Licensed under the Simplified BSD License
+ * \file
+ * \brief Functions used by the compiler backend.
+ *
+ * \author Dimitrios Christidis
+ * \author Vasilis Georgitzikis
+ *
+ * \copyright (c) 2012-2013, The Codebender Development Team
+ * \copyright Licensed under the Simplified BSD License
  */
 
 namespace Codebender\CompilerBundle\Controller;
@@ -15,6 +15,7 @@ namespace Codebender\CompilerBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Codebender\CompilerBundle\Handler\CompilerHandler;
+use Codebender\CompilerBundle\Handler\DeletionHandler;
 
 class DefaultController extends Controller
 {
@@ -56,7 +57,8 @@ class DefaultController extends Controller
 		{
 			$request = $this->getRequest()->getContent();
 
-            //Get the compiler service
+			//Get the compiler service
+			/** @var CompilerHandler $compiler */
 			$compiler = $this->get('compiler_handler');
 
 			$reply = $compiler->main($request, $params);
@@ -69,121 +71,95 @@ class DefaultController extends Controller
 		}
 	}
 
-    public function deleteAllObjectsAction($authorizationKey, $version)
-    {
-        if ($this->container->getParameter('authorizationKey') != $authorizationKey)
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
+	public function deleteAllObjectsAction($authorizationKey, $version)
+	{
+		if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
+            ));
+        }
 
-        if ($version != "v1")
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
+		if ($version != 'v1') {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
+            ));
+        }
 
-        $tempDir = $this->container->getParameter('temp_dir');
-        $objectFilesDir = $this->container->getParameter('objdir');
-        $fileCount = 0;
-        $undeletedFiles = "";
-        $deletionStats = array("success_dot_a" => 0,
-            "failure_dot_a" => 0,
-            "success_dot_o" => 0,
-            "failure_dot_o" => 0,
-            "success_dot_d" => 0,
-            "failure_dot_d" => 0,
-            "success_dot_LOCK" => 0,
-            "failure_dot_LOCK" => 0);
+		//Get the compiler service
+		/** @var DeletionHandler $deleter */
+		$deleter = $this->get('deletion_handler');
 
-        if ($handle = opendir("$tempDir/$objectFilesDir"))
-        {
+		$response = $deleter->deleteAllObjects();
 
-            while (false !== ($entry = readdir($handle)))
-            {
-                if ($entry != "." && $entry != ".." && $entry != ".DS_Store")
-                {
-                    $fileCount++;
-                    $extension = pathinfo($entry, PATHINFO_EXTENSION);
+		if ($response['success'] !== true) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
+            ));
+        }
 
-                    if (!in_array($extension, array("a", "o", "d", "LOCK")))
-                        continue;
+        return new Response(json_encode(
+            array_merge(
+                array(
+                    'success' => true,
+                    'message' => 'Object files deletion complete. Found ' . $response['fileCount'] . ' files.'
+                ),
+                $response['deletionStats'],
+                array("Files not deleted" => $response['notDeletedFiles'])
+            )));
+	}
 
-                    if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
-                    {
-                        $deletionStats["failure_dot_$extension"]++;
-                        $undeletedFiles .= $entry . "\n";
-                    }
-                    else
-                        $deletionStats["success_dot_$extension"]++;
-                }
+	public function deleteSpecificObjectsAction($authorizationKey, $version, $option, $cachedObjectToDelete)
+	{
+		if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
+            ));
+        }
+
+		if ($version != 'v1') {
+            return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
+            ));
+        }
+
+		//Get the compiler service
+		/** @var DeletionHandler $deleter */
+		$deleter = $this->get('deletion_handler');
+
+		$response = $deleter->deleteSpecificObjects($option, $cachedObjectToDelete);
+
+		if ($response['success'] !== true) {
+			return new Response(json_encode(
+                array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
+            ));
+		}
+
+		if (!empty($response["notDeletedFiles"])) {
+			$message = 'Failed to delete one or more of the specified core object files.';
+            if ($option == 'library') {
+                $message = 'Failed to delete one or more of the specified library object files.';
             }
-            closedir($handle);
-        }else
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
 
-        return new Response(json_encode(array_merge(array("success" => true,
-                "message" => "Object files deletion complete. Found $fileCount files."),
-                $deletionStats,
-                array("Files not deleted" => $undeletedFiles))));
-    }
+			return new Response(json_encode(
+                array_merge(array('success' => false, 'step' => 0, 'message' => $message), $response)
+            ));
+		}
 
-    public function deleteSpecificObjectsAction($authorizationKey, $version, $option, $to_delete)
-    {
-        if ($this->container->getParameter('authorizationKey') != $authorizationKey)
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid authorization key.")));
-
-        if ($version != "v1")
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Invalid API version.")));
-
-        $tempDir = $this->container->getParameter('temp_dir');
-        $objectFilesDir = $this->container->getParameter('objdir');
-
-        if ($option == "core")
-            $to_delete = str_replace(":", "_", $to_delete);
-
-        $response = array();
-        $response["deleted_files"] = "";
-        $response["undeleted_files"] = "";
-
-        if ($handle = opendir("$tempDir/$objectFilesDir"))
-        {
-            while (false !== ($entry = readdir($handle)))
-            {
-                if ($entry == "." || $entry == ".." || $entry == ".DS_Store")
-                    continue;
-
-                if ($option == "library" && strpos($entry, "______" . $to_delete . "_______") === false)
-                    continue;
-
-                if ($option == "core" && strpos($entry, "_" . $to_delete . "_") === false)
-                    continue;
-
-
-                if (@unlink("$tempDir/$objectFilesDir/$entry") === false)
-                    $response["undeleted_files"] .= $entry . "\n";
-                else
-                    $response["deleted_files"] .= $entry . "\n";
-
-            }
-            closedir($handle);
-        }
-        else
-        {
-            return new Response(json_encode(array("success" => false, "step" => 0, "message" => "Failed to access object files directory.")));
+        $message = 'Core object files deleted successfully.';
+        if ($option == 'library'){
+            $message = 'Library deleted successfully.';
         }
 
-        if ($response["undeleted_files"] != "")
-        {
-            $message = ($option == "library") ? "Failed to delete one or more of the specified library object files.": "Failed to delete one or more of the specified core object files.";
-            return new Response(json_encode(array_merge(array("success" => false, "step" => 0, "message" => $message), $response)));
-        }
-
-        $message = ($option == "library") ? "Library deleted successfully.": "Core object files deleted successfully.";
-        return new Response(json_encode(array_merge(array("success" => true, "message" => $message), $response)));
-    }
+		return new Response(json_encode(array_merge(array('success' => true, 'message' => $message), $response)));
+	}
 
 	/**
-	\brief Creates a list of the configuration parameters to be used in the compilation process.
-
-	\return An array of the parameters.
-
-	This function accesses the Symfony global configuration parameters, and creates an array that our handlers (which
-	don't have access to them) can use them.
+	 * \brief Creates a list of the configuration parameters to be used in the compilation process.
+	 *
+	 * \return An array of the parameters.
+	 *
+	 * This function accesses the Symfony global configuration parameters, and creates an array that our handlers (which
+	 * don't have access to them) can use them.
 
 	 */
 	private function generateParameters()

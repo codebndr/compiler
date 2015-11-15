@@ -1,7 +1,10 @@
-AliasMatch ^/compiler/?(.*) /opt/codebender/compiler/Symfony/web/$1
-<Directory /opt/codebender/compiler/Symfony/web>
-        Options -Indexes FollowSymLinks MultiViews
+<VirtualHost *:80>
+    DocumentRoot /opt/codebender/compiler/Symfony/web
+    DirectoryIndex index.php
+    SetEnv APPLICATION_ENV "production"
+    <Directory /opt/codebender/compiler/Symfony/web>
+        Options -Indexes +FollowSymLinks +MultiViews
+        Require all granted
         AllowOverride All
-        Order allow,deny
-        Allow from all
-</Directory>
+    </Directory>
+</VirtualHost>

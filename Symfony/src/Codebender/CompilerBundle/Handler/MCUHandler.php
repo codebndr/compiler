@@ -1,20 +1,20 @@
 <?php
 /**
-\file
-\brief MCU macros for Clang.
-
-When compiling source code for ATMEL AVR, one must specify the MCU type
-(avr-gcc's -mmcu flag). This defines a macro that is used for conditional
-compilation. Clang has no such flag, and thus the macro has to be predefined
-by hand.
-
-See <http://www.nongnu.org/avr-libc/user-manual/using_tools.html>.
-
-\author Dimitrios Christidis
-\author Vasilis Georgitzikis
-
-\copyright (c) 2012, The Codebender Development Team
-\copyright Licensed under the Simplified BSD License
+ * \file
+ * \brief MCU macros for Clang.
+ *
+ * When compiling source code for ATMEL AVR, one must specify the MCU type
+ * (avr-gcc's -mmcu flag). This defines a macro that is used for conditional
+ * compilation. Clang has no such flag, and thus the macro has to be predefined
+ * by hand.
+ *
+ * See <http://www.nongnu.org/avr-libc/user-manual/using_tools.html>.
+ *
+ * \author Dimitrios Christidis
+ * \author Vasilis Georgitzikis
+ *
+ * \copyright (c) 2012, The Codebender Development Team
+ * \copyright Licensed under the Simplified BSD License
  */
 namespace Codebender\CompilerBundle\Handler;
 
