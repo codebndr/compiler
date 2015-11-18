@@ -21,7 +21,7 @@ services:
         class:			"%postprocessing_handler.class%"
     deletion_handler:
         class:			"%deletion_handler.class%"
-        arguments:		["@compiler_logger", "%temp_dir%/%objdir%"]
+        arguments:		["%temp_dir%/%objdir%"]
     compiler_logger:
         class: Symfony\Bridge\Monolog\Logger
         arguments: [cmplr_log]
