@@ -295,6 +295,53 @@ main.cpp:(.text.main+0x8): undefined reference to `setup'";
         $this->assertContains('(personal library file) PseudoEthernet/Ethernet.h:1:10: </b><b><font style="color: red">fatal error: </font></b><b>\'SPI.h\' file not found', $response['message']);
     }
 
+    public function testDeleteTinyCoreFiles()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter("authorizationKey");
+
+        $client->request('POST', '/' . $authorizationKey . '/v1/delete/code/tiny');
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($response['success']);
+        $this->assertContains('tiny__null_null_______core.a' . "\n", $response['deletedFiles']);
+        $this->assertContains('tiny__null_null_______core.a.LOCK', $response['deletedFiles']);
+        $this->assertEmpty($response['notDeletedFiles']);
+
+        $tempDirectory = $client->getContainer()->getParameter('temp_dir');
+        $objectsDirectory = $client->getContainer()->getParameter('objdir');
+        $objectsPath = $tempDirectory . '/' . $objectsDirectory;
+
+        $fileSystemIterator = new \FilesystemIterator($objectsPath);
+        foreach ($fileSystemIterator as $file) {
+            $this->assertNotContains('tiny__null_null_______core.a' . "\n", $file->getFilename());
+            $this->assertNotContains('tiny__null_null_______core.a.LOCK', $file->getFilename());
+        }
+    }
+
+    public function testDeleteAllCachedObjects()
+    {
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter("authorizationKey");
+
+        $client->request('POST', '/' . $authorizationKey . '/v1/delete/all/');
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertTrue($response['success']);
+        $this->assertEmpty($response['Files not deleted']);
+
+        $tempDirectory = $client->getContainer()->getParameter('temp_dir');
+        $objectsDirectory = $client->getContainer()->getParameter('objdir');
+        $objectsPath = $tempDirectory . '/' . $objectsDirectory;
+
+        $fileSystemIterator = new \FilesystemIterator($objectsPath);
+        $this->assertEquals(0, iterator_count($fileSystemIterator));
+    }
+
     public function testAutocomplete()
     {
         $this->markTestIncomplete('No tests for the code completion feature yet.');
