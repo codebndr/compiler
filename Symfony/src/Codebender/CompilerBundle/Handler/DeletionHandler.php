@@ -41,7 +41,7 @@ class DeletionHandler
 		if ($handle = @opendir($this->objectCacheDirectory)) {
 
 			while (false !== ($entry = readdir($handle))) {
-				if ($entry == '.' || $entry == '..' || $entry != '.DS_Store') {
+				if ($entry == '.' || $entry == '..' || $entry == '.DS_Store') {
                     continue;
                 }
                 $fileCount++;
