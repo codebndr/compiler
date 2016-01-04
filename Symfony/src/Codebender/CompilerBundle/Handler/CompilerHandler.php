@@ -120,8 +120,12 @@ class CompilerHandler
 			$user_id = $sketch_id = "null";
 			$req_elements = array("Files: ");
 
-			$user_id = $request['userId'];
-			$sketch_id = $request['projectId'];
+			if (isset($request['userId']) && $request['userId'] != 'null') {
+				$user_id = $request['userId'];
+			}
+			if (isset($request['projectId']) && $request['projectId'] != 'null') {
+				$sketch_id = $request['projectId'];
+			}
 
 			foreach ($request["files"] as $file)
 			{
