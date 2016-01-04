@@ -120,15 +120,16 @@ class CompilerHandler
 			$user_id = $sketch_id = "null";
 			$req_elements = array("Files: ");
 
+			if (isset($request['userId']) && $request['userId'] != 'null') {
+				$user_id = $request['userId'];
+			}
+			if (isset($request['projectId']) && $request['projectId'] != 'null') {
+				$sketch_id = $request['projectId'];
+			}
+
 			foreach ($request["files"] as $file)
 			{
 				$req_elements[] = $file["filename"];
-				if (strpos($file["filename"], ".txt") !== false)
-				{
-					if (preg_match('/(?<=user_)[\d]+/', $file['filename'], $match)) $user_id = $match[0];
-					if (preg_match('/(?<=project_)[\d]+/', $file['filename'], $match)) $sketch_id = $match[0];
-
-				}
 			}
 
 			if ($request["libraries"])
