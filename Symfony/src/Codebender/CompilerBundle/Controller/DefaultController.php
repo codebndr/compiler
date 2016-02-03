@@ -52,13 +52,18 @@ class DefaultController extends Controller
         }
 
         if ($version == "v1") {
-            $request = $this->getRequest()->getContent();
+            $requestObject = $this->getRequest();
+            $request = $requestObject->getContent();
+            $mongoProjectId = $requestObject->headers->get('X-Mongo-Id');
 
             //Get the compiler service
             /** @var CompilerHandler $compiler */
             $compiler = $this->get('compiler_handler');
 
             $reply = $compiler->main($request, $params);
+            if ($mongoProjectId != '') {
+                $reply['mongo-id'] = $mongoProjectId;
+            }
 
             return new Response(json_encode($reply));
         } else {
