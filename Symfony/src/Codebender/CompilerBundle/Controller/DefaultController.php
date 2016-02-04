@@ -54,6 +54,11 @@ class DefaultController extends Controller
         if ($version == "v1") {
             $requestObject = $this->getRequest();
             $request = $requestObject->getContent();
+            // Custom headers used during library tests.
+            // They don't affect the compiler's response and make our life easier.
+            if ($requestObject->headers->get('X-Set-Exec-Time') == 'true') {
+                ini_set('max_execution_time', '30');
+            }
             $mongoProjectId = $requestObject->headers->get('X-Mongo-Id');
 
             //Get the compiler service
