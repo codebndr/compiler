@@ -15,6 +15,7 @@ namespace Codebender\CompilerBundle\Controller;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Response;
 use Codebender\CompilerBundle\Handler\CompilerHandler;
+use Codebender\CompilerBundle\Handler\CompilerV2Handler;
 use Codebender\CompilerBundle\Handler\DeletionHandler;
 
 class DefaultController extends Controller
@@ -75,6 +76,16 @@ class DefaultController extends Controller
             $reply = $compiler->main($request, $params);
 
             return new Response(json_encode($reply));
+        } elseif ($version == "v2") {
+            $request = $this->getRequest()->getContent();
+
+            //Get the compiler service
+            /** @var CompilerHandler $compiler */
+            $compiler = $this->get('compiler_v2_handler');
+
+            $reply = $compiler->main($request, $params);
+
+            return new Response(json_encode($reply));
         } else {
             return new Response(json_encode(array(
                             "success" => false,
@@ -96,7 +107,7 @@ class DefaultController extends Controller
             ));
         }
 
-        if ($version != 'v1') {
+        if (($version != 'v1') && ($version != 'v2')) {
             return new Response(json_encode(
                 array(
                     'success' => false,
@@ -141,7 +152,7 @@ class DefaultController extends Controller
             ));
         }
 
-        if ($version != 'v1') {
+        if (($version != 'v1') && ($version != 'v2')) {
             return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
             ));
