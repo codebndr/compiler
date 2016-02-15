@@ -1,6 +1,7 @@
 parameters:
 #    codebender_compiler.example.class: Codebender\CompilerBundle\Example
     compiler_handler.class:	Codebender\CompilerBundle\Handler\CompilerHandler
+    compiler_v2_handler.class:	Codebender\CompilerBundle\Handler\CompilerV2Handler
     utility_handler.class:	Codebender\CompilerBundle\Handler\UtilityHandler
     preprocessing_handler.class:	Codebender\CompilerBundle\Handler\PreprocessingHandler
     postprocessing_handler.class:	Codebender\CompilerBundle\Handler\PostprocessingHandler
@@ -12,6 +13,9 @@ services:
 #        arguments: [@service_id, "plain_value", %parameter%]
     compiler_handler:
         class:			"%compiler_handler.class%"
+        arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "@compiler_logger", "%temp_dir%/%objdir%"]
+    compiler_v2_handler:
+        class:			"%compiler_v2_handler.class%"
         arguments:		["@preprocessing_handler", "@postprocessing_handler", "@utility_handler", "@compiler_logger", "%temp_dir%/%objdir%"]
     utility_handler:
         class:			"%utility_handler.class%"
