@@ -293,32 +293,43 @@ class PreprocessingHandler
 		// Request must contain certain entities.
 		if (!(array_key_exists("format", $request)
 			&& array_key_exists("version", $request)
-			&& array_key_exists("build", $request)
 			&& array_key_exists("files", $request)
-			&& is_array($request["build"])
 			&& array_key_exists("libraries", $request)
-			&& array_key_exists("mcu", $request["build"])
-			&& array_key_exists("f_cpu", $request["build"])
-			&& array_key_exists("core", $request["build"])
+			&& ((array_key_exists("build", $request)
+                    && is_array($request["build"])
+                    && array_key_exists("mcu", $request["build"])
+                    && array_key_exists("f_cpu", $request["build"])
+                    && array_key_exists("core", $request["build"]))
+                || array_key_exists("fqbn", $request))
 			&& is_array($request["files"]))
-		)
+		) {
 			return null;
-
-		// Leonardo-specific flags.
-		if (array_key_exists("variant", $request["build"]) && $request["build"]["variant"] == "leonardo")
-			if (!(array_key_exists("vid", $request["build"])
-				&& array_key_exists("pid", $request["build"]))
-			)
-				return null;
-
-		// Values used as command-line arguments may not contain any special
-		// characters. This is a serious security risk.
-		$values = array("version", "mcu", "f_cpu", "core", "vid", "pid");
-		if (array_key_exists("variant", $request["build"])) {
-            $values[] = "variant";
         }
-		foreach ($values as $i) {
-            if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i]) {
+
+		if (array_key_exists("build", $request)) {
+
+            // Leonardo-specific flags.
+            if (array_key_exists("variant", $request["build"]) && $request["build"]["variant"] == "leonardo")
+                if (!(array_key_exists("vid", $request["build"])
+                   && array_key_exists("pid", $request["build"])))
+                    return null;
+
+            // Values used as command-line arguments may not contain any special
+            // characters. This is a serious security risk.
+            $values = array("version", "mcu", "f_cpu", "core", "vid", "pid");
+            if (array_key_exists("variant", $request["build"])) {
+                $values[] = "variant";
+            }
+            foreach ($values as $i) {
+                if (isset($request["build"][$i]) && escapeshellcmd($request["build"][$i]) != $request["build"][$i]) {
+                    return null;
+                }
+            }
+        }
+
+		$values = array("fqbn", "vid", "pid");
+        foreach ($values as $i) {
+            if (isset($request[$i]) && escapeshellcmd($request[$i]) != $request[$i]) {
                 return null;
             }
         }
