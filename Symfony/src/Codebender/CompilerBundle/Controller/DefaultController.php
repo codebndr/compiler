@@ -80,7 +80,7 @@ class DefaultController extends Controller
             $request = $this->getRequest()->getContent();
 
             //Get the compiler service
-            /** @var CompilerHandler $compiler */
+            /** @var CompilerV2Handler $compiler */
             $compiler = $this->get('compiler_v2_handler');
 
             $reply = $compiler->main($request, $params);
