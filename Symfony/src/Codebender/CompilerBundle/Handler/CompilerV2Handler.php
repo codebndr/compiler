@@ -79,8 +79,14 @@ class CompilerV2Handler
         // Add the compiler temp directory to the config struct.
         $config["project_dir"] = $project_dir;
 
+        // Where compiled files go
+        $config["output_dir"] = $project_dir . "/" . "output";
+
+        // Where the compiler and base libraries live
+        $config["base_dir"] = $config["arduino_cores_dir"] . "/v" . $config["version"];
+
         // This is used, for example, to provide object files, and to provide output files.
-        $config["project_name"] = str_replace($project_dir . "/files/",
+        $config["project_name"] = str_replace($config["project_dir"] . "/files/",
                                                        "",
                                                        $incoming_files["ino"][0]) . ".ino";
 
@@ -88,7 +94,8 @@ class CompilerV2Handler
         $files["libs"] = array();
         foreach ($libraries as $library => $library_files) {
 
-            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $project_dir, $files["libs"][$library], "libraries/$library", true);
+            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $config["project_dir"],
+                                          $files["libs"][$library], "libraries/$library", true);
             if ($tmpVar["success"] === false)
                 return $tmpVar;
         }
@@ -110,25 +117,17 @@ class CompilerV2Handler
         // Ordinarily this would convert .ino files into .cpp files, but arduino-builder
         // and ctypes takes care of that for us already.
 
-        // Step 3: Copy cached config files into directory
-        $this->copyCachedCoreDirectory($config);
-
         // Log the names of the project files and the libraries used in it.
         $this->makeLogEntry($request, $config, $should_archive, $ARCHIVE_PATH);
 
         // Step 4: Syntax-check and compile source files.
         $ret = $this->handleCompile("$project_dir/files", $incoming_files, $config, $format);
+        if (array_key_exists("builder_time", $ret))
+            $config["builder_time"] = $ret["builder_time"];
 
-        /*
-        $log_content = (($config['logging'] === true) ? @file_get_contents($config['logFileName']) : "");
-        if ($config['logging'] === true) {
-            if ($log_content !== false) {
-                $ret["log"] = $log_content;
-                file_put_contents($config["project_dir"]."/log", $log_content);
-            } else
-                $ret["log"] = "Failed to access logfile.";
-        }
-        */
+        // Step 4.5: Save the cache for future builds
+        $this->saveCache($config);
+
         if (($config['logging'] === true) && $ret["log"]) {
             foreach ($ret["log"] as $line) {
                 array_push($log, $line);
@@ -214,26 +213,261 @@ class CompilerV2Handler
         return $tmpVar;
     }
 
-    private function copyCachedCoreDirectory($config)
-    {
-        $cache_path = $this->object_directory
-                    . "/" . $config["version"]
-                    . "/" . $config["fqbn"]
-                    . "/" . $config["vid"]
-                    . "/" . $config["pid"]
-                    ;
-        if (!file_exists($cache_path))
+    private function copyRecursive($src, $dst) {
+
+        if (is_file($src)) {
+            if (file_exists($dst) && is_dir($dst))
+                return array(
+                    "success" => false,
+                    "message" => "Destination exists already, and is a directory.");
+
+            if (!copy($src, $dst))
+                return array(
+                    "success" => false,
+                    "message" => "Unable to copy $src to $dst.");
+            return array("success" => true);
+        }
+
+        if (!is_dir($dst))
+            if (!mkdir($dst, 0775, true))
+                return array(
+                    "success" => false,
+                    "message" => "Unable to create directory $dst.");
+
+        // The target directory exists.  Copy all files over.
+        $dirent = dir($src);
+        if (!$dirent)
             return array(
                 "success" => false,
-                "message" => "No existing cache found");
+                "message" => "Unable to open directory " . $base_dir . "/" . $sub_dir . " for copying files.");
+
+        while (false !== ($filename = $dirent->read())) {
+            if (($filename == '.') || ($filename == '..'))
+                continue;
+
+            $ret = $this->copyRecursive($src . "/" . $filename, $dst . "/" . $filename);
+            if ($ret["success"] != true) {
+                $dirent->close();
+                return $ret;
+            }
+        }
+        $dirent->close();
+
+        return array("success" => true);
     }
 
-    private function createCachedCoreDirectory($config)
+    private function copyCaches($src_dir, $dst_dir, $caches)
     {
-        if (!@mkdir($directory, 0777, true))
+        if (!file_exists($src_dir))
+            return array(
+                "success" => null,
+                "message" => "No existing cache found.");
+
+        // Ensure the target core directory exists
+        if (!file_exists($dst_dir))
+            if (!mkdir($dst_dir, 0777, true))
+                return array(
+                    "success" => false,
+                    "message" => "Unable to create output dir.");
+
+        // Go through each of the cache types and copy them, if they exist
+        foreach ($caches as $dir) {
+            if (!file_exists($src_dir . "/" . $dir))
+                continue;
+
+            $ret = $this->copyRecursive($src_dir . "/" . $dir, $dst_dir . "/" . $dir);
+            if ($ret["success"] != true)
+                return $ret;
+        }
+
+        return array("success" => true);
+    }
+
+    private function updateAccessTimesRecursive($dir, $pattern)
+    {
+        // The target directory exists.  Copy all files over.
+        if (!file_exists($dir))
+            return array(
+                "success" => true,
+                "message" => "Cache directory " . $dir . " does not exist.");
+
+        if (!is_dir($dir))
             return array(
                 "success" => false,
-                "message" => "Unable to create cache path.");
+                "message" => "Cache directory " . $dir . " is not a directory.");
+
+        $dirent = dir($dir);
+        if (!$dirent)
+            return array(
+                "success" => false,
+                "message" => "Unable to open directory " . $dir . " for updating access times.");
+
+        while (false !== ($filename = $dirent->read())) {
+            if (($filename == '.') || ($filename == '..'))
+                continue;
+
+            if ((substr($filename, strlen($filename) - strlen($pattern)) === $pattern)
+                && file_exists($dir . "/" . $filename)) {
+                $ret = touch($dir . "/" . $filename);
+                if (!$ret) {
+                    $dirent->close();
+                    return array(
+                        "success" => false,
+                        "message" => "Unable to update " . $dir . "/" . $filename . " access time.");
+                }
+            }
+
+            // Recurse into subdirectories, if we've encountered a subdir.
+            if (is_dir($dir . "/" . $filename)) {
+                $ret = $this->updateAccessTimesRecursive($dir . "/" . $filename, $pattern);
+                if ($ret["success"] != true) {
+                    $dirent->close();
+                    return $ret;
+                }
+            }
+        }
+        $dirent->close();
+
+        return array("success" => true);
+    }
+
+    private function updateDependencyPathsRecursive($dir, $old_dir, $new_dir)
+    {
+        $pattern = ".d";
+
+        // The target directory exists.  Copy all files over.
+        if (!file_exists($dir))
+            return array(
+                "success" => true,
+                "message" => "Cache directory " . $dir . " does not exist.");
+
+        if (!is_dir($dir))
+            return array(
+                "success" => false,
+                "message" => "Cache directory " . $dir . " is not a directory.");
+
+        $dirent = dir($dir);
+        if (!$dirent)
+            return array(
+                "success" => false,
+                "message" => "Unable to open directory " . $dir . " for updating access times.");
+
+        while (false !== ($filename = $dirent->read())) {
+            if (($filename == '.') || ($filename == '..'))
+                continue;
+
+            if ((substr($filename, strlen($filename) - strlen($pattern)) === $pattern)
+                && file_exists($dir . "/" . $filename)) {
+                $ret = touch($dir . "/" . $filename);
+                $content = file_get_contents($dir . "/" . $filename);
+                $ret = file_put_contents($dir . "/" . $filename, str_replace($old_dir, $new_dir, $content));
+                if (!$ret) {
+                    $dirent->close();
+                    return array(
+                        "success" => false,
+                        "message" => "Unable to update " . $dir . "/" . $filename . " paths.");
+                }
+            }
+
+            // Recurse into subdirectories, if we've encountered a subdir.
+            if (is_dir($dir . "/" . $filename)) {
+                $ret = $this->updateDependencyPathsRecursive($dir . "/" . $filename, $old_dir, $new_dir);
+                if ($ret["success"] != true) {
+                    $dirent->close();
+                    return $ret;
+                }
+            }
+        }
+        $dirent->close();
+
+        return array("success" => true);
+    }
+
+    private function updateAccessTimes($base_dir, $sub_dirs, $pattern)
+    {
+        foreach ($sub_dirs as $sub_dir) {
+            if (file_exists($base_dir . "/" . $sub_dir)) {
+                $ret = touch($base_dir . "/" . $sub_dir);
+                if (!$ret)
+                    return array(
+                        "success" => false,
+                        "message" => "Unable to update directory " . $base_dir . "/" . $sub_dir . " access time.");
+            }
+
+            $ret = $this->updateAccessTimesRecursive($base_dir . "/" . $sub_dir, $pattern);
+            if ($ret["success"] != true)
+                return $ret;
+        }
+        return array("success" => true);
+    }
+
+    private function updateDependencyPaths($output_dir, $sub_dirs, $old_dir, $new_dir)
+    {
+        foreach ($sub_dirs as $sub_dir) {
+            $ret = $this->updateDependencyPathsRecursive($output_dir . "/" . $sub_dir, $old_dir, $new_dir);
+            if ($ret["success"] != true)
+                return $ret;
+        }
+
+        return array("success" => true);
+    }
+
+    private function cacheDirs()
+    {
+        return array("core", "libraries");
+    }
+
+    private function restoreCache($config)
+    {
+        $cache_dir = $this->object_directory
+                   . "/" . $config["version"]
+                   . "/" . $config["fqbn"]
+                   . "/" . $config["vid"]
+                   . "/" . $config["pid"]
+                   ;
+        $output_dir = $config["output_dir"];
+
+        // Copy the files from the existing cache directory to the new project.
+        $ret = $this->copyCaches($cache_dir, $output_dir, $this->cacheDirs());
+
+        // A success of "null" indicates it was not successful, but didn't fail, probably
+        // due to the lack of an existing cache directory.  That's fine, we just won't use
+        // a cache.
+        if ($ret["success"] == null)
+            return array("success" => true);
+
+        if ($ret["success"] != true)
+            return $ret;
+
+        // arduino-builder looks through dependency files.  Update the paths
+        // in the cached files we're copying back.
+        $this->updateDependencyPaths($output_dir, $this->cacheDirs(), "::BUILD_DIR::", $output_dir);
+
+        $suffixes = array(".d", ".o", ".a");
+        foreach ($suffixes as $suffix) {
+            $ret = $this->updateAccessTimes($output_dir, $this->cacheDirs(), $suffix);
+            if ($ret["success"] != true)
+                return $ret;
+        }
+
+        return array("success" => true);
+    }
+
+    private function saveCache($config)
+    {
+        $cache_dir = $this->object_directory
+                   . "/" . $config["version"]
+                   . "/" . $config["fqbn"]
+                   . "/" . $config["vid"]
+                   . "/" . $config["pid"]
+                   ;
+        $output_dir = $config["output_dir"];
+
+//        $this->copyRecursive($config["project_dir"] . "/", "/tmp/saveme" . "/");
+        $this->copyCaches($output_dir, $cache_dir, $this->cacheDirs());
+        $this->updateDependencyPaths($cache_dir, $this->cacheDirs(), $output_dir, "::BUILD_DIR::");
+
+        return array("success" => true);
     }
 
     private function requestValid(&$request)
@@ -344,21 +578,25 @@ class CompilerV2Handler
 
     private function convertOutput($format, $start_time, $config)
     {
+        $builder_time = 0;
+        if (array_key_exists("builder_time", $config))
+            $builder_time = $config["builder_time"];
+
         $content = "";
         if ($format == "elf") {
-            $content_path = $config["project_dir"] . "/" . $config["project_name"] . ".elf";
+            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".elf";
             if (file_exists($content_path))
                 $content = base64_encode(file_get_contents($content_path));
             else
                 $content = "";
         } elseif ($format == "hex") {
-            $content_path = $config["project_dir"] . "/" . $config["project_name"] . ".hex";
+            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".hex";
             if (file_exists($content_path))
                 $content = file_get_contents($content_path);
             else
                 $content = "";
         } elseif ($format == "binary") {
-            $content_path = $config["project_dir"] . "/" . $config["project_name"] . ".bin";
+            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".bin";
             if (file_exists($content_path))
                $content = base64_encode(file_get_contents($content_path));
             else
@@ -367,8 +605,9 @@ class CompilerV2Handler
             return array(
                 "success" => false,
                 "time"    => microtime(true) - $start_time,
+                "builder_time" => $builder_time,
                 "step"    => 8,
-                "message" => "Unrecognized format requested"
+                "message" => "Unrecognized format requested."
             );
         }
 
@@ -377,15 +616,17 @@ class CompilerV2Handler
             return array(
                 "success" => false,
                 "time"    => microtime(true) - $start_time,
+                "builder_time" => $builder_time,
                 "step"    => 8,
-                "message" => "There was a problem while generating the your binary file");
+                "message" => "There was a problem while generating the your binary file from " . $content_path . ".");
 
-        $size = $config["project_dir"] . "/" . $config["project_name"] . ".size";
+        $size = $config["output_dir"] . "/" . $config["project_name"] . ".size";
         $size = intval(file_get_contents($size));
 
         return array(
             "success" => true,
             "time"    => microtime(true) - $start_time,
+            "builder_time" => $builder_time,
             "size"    => $size,
             "output"  => $content);
     }
@@ -468,27 +709,36 @@ class CompilerV2Handler
     private function handleCompile($compile_directory, $files_array, $config, $format,
                                    $caching = false, $name_params = null)
     {
-        $base_path = $config["arduino_cores_dir"] . "/v" . $config["version"];
-        $core_path = $config["external_core_files"];
-        $output_path = $config["project_dir"];
+        $base_dir = $config["base_dir"];
+        $core_dir = $config["external_core_files"];
+        $output_dir = $config["output_dir"];
         $fqbn = $config["fqbn"];
         $filename = $files_array["ino"][0] . ".ino";
         $size_script = $config["project_dir"] . "/get_size.sh";
 
-        if (!file_exists($output_path))
-            return array(
-                    "success" => false,
-                    "step"    => 4,
-                    "message" => "Output path does not exist.",
-                    "debug"   => $output_path
-            );
+        // Set the VID and PID, if they exist
+        $vid_pid = "";
+        if (($config["vid"] != "null") && ($config["pid"] != "null")) {
+            $vid = intval($config["vid"], 0);
+            $pid = intval($config["pid"], 0);
+            $vid_pid = sprintf(" -vid-pid=0X%1$04X_%2$04X", $vid, $pid);
+        }
 
-        if (!file_exists($base_path))
+        if (!file_exists($output_dir))
+            if (!mkdir($output_dir, 0777, true))
+                return array(
+                        "success" => false,
+                        "step"    => 4,
+                        "message" => "Unable to make output path.",
+                        "debug"   => $output_dir
+                );
+
+        if (!file_exists($base_dir))
             return array(
                     "success" => false,
                     "step"    => 4,
                     "message" => "Base path does not exist.",
-                    "debug"   => $base_path
+                    "debug"   => $base_dir
             );
 
         if (!file_exists($filename))
@@ -499,39 +749,72 @@ class CompilerV2Handler
                     "debug"   => $filename
             );
 
-        /* The arduino-builder tool automatically processes multiple .ino files into one,
-         * so we only need to specify the first file to build.
-         */
+        $hardware_dirs = array(
+            $base_dir . "/" . "hardware",
+            $base_dir . "/" . "packages"
+        );
+        $tools_dirs = array(
+            $base_dir . "/" . "tools-builder",
+            $base_dir . "/" . "hardware/tools/avr",
+            $base_dir . "/" . "packages"
+        );
+
+        // Create build.options.json, which is used for caching object files.
+        // Also use it for passing parameters to the arduino-builder program.
+        $build_options =
+                "{\n"
+              . "  \"builtInLibrariesFolders\": \"\",\n"
+              . "  \"customBuildProperties\": \"recipe.hooks.objcopy.postobjcopy.0.pattern=" . $size_script . " \\\"{compiler.path}{compiler.size.cmd}\\\" \\\"{build.path}/{build.project_name}.elf\\\" \\\"{build.path}/{build.project_name}.size\\\"\",\n"
+              . "  \"fqbn\": \"" . $fqbn . "\",\n"
+              . "  \"hardwareFolders\": \"" . implode(",", $hardware_dirs) . "\",\n"
+              . "  \"otherLibrariesFolders\": \"" . $base_dir . "/" . "libraries" . "\",\n"
+              . "  \"runtime.ide.version\": \"" . ($config["version"] * 100) . "\",\n"
+              . "  \"sketchLocation\": \"" . $filename . "\",\n"
+              . "  \"toolsFolders\": \"" . implode(",", $tools_dirs) . "\"\n"
+              . "}"
+              ;
+
+        // Copy cached config files into directory (if they exist)
+        file_put_contents($output_dir . "/" . "build.options.json", $build_options);
+        $ret = $this->restoreCache($config);
+        if ($ret["success"] != true)
+            return $ret;
+
+        // The arduino-builder tool automatically processes multiple .ino files into one,
+        // so we only need to specify the first file to build.
         file_put_contents($size_script,
                   "#!/bin/sh\n"
                 . "\"$1\" -A \"$2\" | grep Total | awk '{print $2}' > \"$3\"\n"
                 );
         system("chmod a+x $size_script");
 
-        $vid_pid = "";
-        if (($config["vid"] != "null") && ($config["pid"] != "null")) {
-            $vid = intval($config["vid"], 0);
-            $pid = intval($config["pid"], 0);
-            $vid_pid = sprintf(" -vid-pid=0X%1$04X_%2$04X", $vid, $pid);
-        }
+        $hardware_args = "";
+        foreach ($hardware_dirs as $hardware)
+            $hardware_args .= " -hardware=\"" . $hardware . "\"";
 
-        $cmd = $base_path . "/arduino-builder"
+        $tools_args = "";
+        foreach ($tools_dirs as $tools)
+            $tools_args .= " -tools=\"" . $tools . "\"";
+
+        $cmd = $base_dir . "/arduino-builder"
                 . " -logger=machine"
                 . " -compile"
+                . " -verbose"
+                . " -ide-version=\"" . ($config["version"] * 100) . "\""
                 . " -warnings=all"
-                . " -hardware=" . $base_path . "/hardware"
-                . " -hardware=" . $base_path . "/packages"
-                . " -build-path=" . $output_path
-                . " -tools=" . $base_path . "/tools-builder"
-                . " -tools=" . $base_path . "/hardware/tools/avr"
-                . " -tools=" . $base_path . "/packages"
-                . " -prefs='recipe.hooks.objcopy.postobjcopy.0.pattern=$size_script \"{compiler.path}{compiler.size.cmd}\" \"{build.path}/{build.project_name}.hex\" \"{build.path}/{build.project_name}.size\"'"
+                . $hardware_args
+                . " -libraries=\"" . $base_dir . "/" . "libraries" . "\""
+                . " -build-path=" . $output_dir
+                . $tools_args
+                . " -prefs='recipe.hooks.objcopy.postobjcopy.0.pattern=$size_script \"{compiler.path}{compiler.size.cmd}\" \"{build.path}/{build.project_name}.elf\" \"{build.path}/{build.project_name}.size\"'"
                 . " -fqbn=" . $fqbn
                 . $vid_pid
                 . " " . escapeshellarg($filename)
                 . " 2>&1"
                 ;
+        $arduino_builder_time_start = microtime(true);
         exec($cmd, $output, $ret_link);
+        $arduino_builder_time_end = microtime(true);
 
         if ($config["logging"]) {
             file_put_contents($config['logFileName'], $cmd, FILE_APPEND);
@@ -544,7 +827,7 @@ class CompilerV2Handler
                 "retcode" => $ret_link,
                 "output" => $output,
                 "cmd" => $cmd,
-                "output_dir" => $output_path,
+                "output_dir" => $output_dir,
                 "message" => $this->pathRemover($output, $config),
                 "log"     => array($cmd, implode("\n", $output)),
                 "filename" => $filename
@@ -553,6 +836,7 @@ class CompilerV2Handler
 
         return array(
             "success" => true,
+            "builder_time" => $arduino_builder_time_end - $arduino_builder_time_start,
             "log"     => array($cmd, $output)
         );
     }
