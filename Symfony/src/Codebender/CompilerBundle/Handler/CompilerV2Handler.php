@@ -796,10 +796,14 @@ class CompilerV2Handler
         foreach ($tools_dirs as $tools)
             $tools_args .= " -tools=\"" . $tools . "\"";
 
+        $verbose_compile = "";
+        if (array_key_exists("verbose_compile", $config) && $config["verbose_compile"])
+            $verbose_compile = " -verbose";
+
         $cmd = $base_dir . "/arduino-builder"
                 . " -logger=machine"
                 . " -compile"
-                . " -verbose"
+                . $verbose_compile
                 . " -ide-version=\"" . ($config["version"] * 100) . "\""
                 . " -warnings=all"
                 . $hardware_args
