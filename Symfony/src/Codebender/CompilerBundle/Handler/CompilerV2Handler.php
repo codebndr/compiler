@@ -90,14 +90,20 @@ class CompilerV2Handler
                                                        "",
                                                        $incoming_files["ino"][0]) . ".ino";
 
+        // Set up a default library dir, but set it to empty so it won't be used by default.
+        $config["lib_dir"] = "";
+
         // Step 1(part 2): Extract the library files included in the request.
         $files["libs"] = array();
         foreach ($libraries as $library => $library_files) {
 
-            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $config["project_dir"],
-                                          $files["libs"][$library], "libraries/$library", true);
+            $lib_dir = $config["lib_dir"];
+            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $lib_dir,
+                                          $files["libs"][$library], $library, true);
             if ($tmpVar["success"] === false)
                 return $tmpVar;
+
+            $config["lib_dir"] = $lib_dir;
         }
 
         if ($should_archive) {
@@ -463,7 +469,8 @@ class CompilerV2Handler
                    ;
         $output_dir = $config["output_dir"];
 
-//        $this->copyRecursive($config["project_dir"] . "/", "/tmp/saveme" . "/");
+//        $this->copyRecursive($config["project_dir"] . "/", "/tmp/saveme-proj" . "/");
+//        $this->copyRecursive($config["lib_dir"] . "/", "/tmp/saveme-lib" . "/");
         $this->copyCaches($output_dir, $cache_dir, $this->cacheDirs());
         $this->updateDependencyPaths($cache_dir, $this->cacheDirs(), $output_dir, "::BUILD_DIR::");
 
@@ -583,20 +590,26 @@ class CompilerV2Handler
             $builder_time = $config["builder_time"];
 
         $content = "";
+        $base_path = $config["output_dir"] . "/" . $config["project_name"];
         if ($format == "elf") {
-            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".elf";
+            $content_path = $base_path . ".elf";
             if (file_exists($content_path))
                 $content = base64_encode(file_get_contents($content_path));
             else
                 $content = "";
         } elseif ($format == "hex") {
-            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".hex";
+            $content_path = $base_path . ".hex";
             if (file_exists($content_path))
                 $content = file_get_contents($content_path);
-            else
-                $content = "";
+            else {
+                $content_path = $base_path . ".bin";
+                if (file_exists($content_path))
+                    $content = base64_encode(file_get_contents($content_path));
+                else
+                    $content = "";
+            }
         } elseif ($format == "binary") {
-            $content_path = $config["output_dir"] . "/" . $config["project_name"] . ".bin";
+            $content_path = $base_path . ".bin";
             if (file_exists($content_path))
                $content = base64_encode(file_get_contents($content_path));
             else
@@ -715,6 +728,12 @@ class CompilerV2Handler
         $fqbn = $config["fqbn"];
         $filename = $files_array["ino"][0] . ".ino";
         $size_script = $config["project_dir"] . "/get_size.sh";
+        $libraries = array();
+
+        // Set up a default library directory
+        array_push($libraries, $base_dir . "/" . "libraries");
+        if ($config["lib_dir"])
+            array_push($libraries, $config["lib_dir"]);
 
         // Set the VID and PID, if they exist
         $vid_pid = "";
@@ -767,7 +786,7 @@ class CompilerV2Handler
               . "  \"customBuildProperties\": \"recipe.hooks.objcopy.postobjcopy.0.pattern=" . $size_script . " \\\"{compiler.path}{compiler.size.cmd}\\\" \\\"{build.path}/{build.project_name}.elf\\\" \\\"{build.path}/{build.project_name}.size\\\"\",\n"
               . "  \"fqbn\": \"" . $fqbn . "\",\n"
               . "  \"hardwareFolders\": \"" . implode(",", $hardware_dirs) . "\",\n"
-              . "  \"otherLibrariesFolders\": \"" . $base_dir . "/" . "libraries" . "\",\n"
+              . "  \"otherLibrariesFolders\": \"" . implode(",", $libraries) . "\",\n"
               . "  \"runtime.ide.version\": \"" . ($config["version"] * 100) . "\",\n"
               . "  \"sketchLocation\": \"" . $filename . "\",\n"
               . "  \"toolsFolders\": \"" . implode(",", $tools_dirs) . "\"\n"
@@ -800,14 +819,20 @@ class CompilerV2Handler
         if (array_key_exists("verbose_compile", $config) && $config["verbose_compile"])
             $verbose_compile = " -verbose";
 
+        // Ensure the lib_str lists the libraries in the same order as the build.options.json, in
+        // order to allow arduino-builder to reuse files.
+        $lib_str = "";
+        foreach ($libraries as $lib)
+            $lib_str .= " -libraries=\"" . $lib . "\"";
+
         $cmd = $base_dir . "/arduino-builder"
-                . " -logger=machine"
+                . " -logger=human"
                 . " -compile"
                 . $verbose_compile
                 . " -ide-version=\"" . ($config["version"] * 100) . "\""
                 . " -warnings=all"
                 . $hardware_args
-                . " -libraries=\"" . $base_dir . "/" . "libraries" . "\""
+                . $lib_str
                 . " -build-path=" . $output_dir
                 . $tools_args
                 . " -prefs='recipe.hooks.objcopy.postobjcopy.0.pattern=$size_script \"{compiler.path}{compiler.size.cmd}\" \"{build.path}/{build.project_name}.elf\" \"{build.path}/{build.project_name}.size\"'"
