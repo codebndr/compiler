@@ -21,12 +21,12 @@ use Symfony\Bridge\Monolog\Logger;
 
 class CompilerHandler
 {
-	private $preproc;
-	private $postproc;
-	private $utility;
-	private $compiler_logger;
-	private $object_directory;
-	private $logger_id;
+	protected $preproc;
+	protected $postproc;
+	protected $utility;
+	protected $compiler_logger;
+	protected $object_directory;
+	protected $logger_id;
 
 	function __construct(PreprocessingHandler $preprocHandl, PostprocessingHandler $postprocHandl, UtilityHandler $utilHandl, Logger $logger, $objdir)
 	{
@@ -467,7 +467,7 @@ class CompilerHandler
 		return $tmpVar;
 	}
 
-	private function requestValid(&$request)
+	protected function requestValid(&$request)
 	{
 		$request = $this->preproc->validateInput($request);
 		if (!$request)
@@ -478,7 +478,7 @@ class CompilerHandler
 		else return array("success" => true);
 	}
 
-	private function createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, &$ARCHIVE_PATH)
+	protected function createArchive($compiler_dir, $TEMP_DIR, $ARCHIVE_DIR, &$ARCHIVE_PATH)
 	{
 		if (!file_exists($ARCHIVE_PATH))
 		{
@@ -511,7 +511,7 @@ class CompilerHandler
 		return array("success" => true);
 	}
 
-	private function extractFiles($request, $temp_dir, &$dir, &$files, $suffix, $lib_extraction = false)
+	protected function extractFiles($request, $temp_dir, &$dir, &$files, $suffix, $lib_extraction = false)
 	{
 		// Create a temporary directory to place all the files needed to process
 		// the compile request. This directory is created in $TMPDIR or /tmp by
@@ -997,7 +997,7 @@ class CompilerHandler
 		$pid = (isset($request["build"]["pid"])) ? $request["build"]["pid"] : "null";
 	}
 
-	private function setLoggingParams($request, &$compiler_config, $temp_dir, $compiler_dir)
+	protected function setLoggingParams($request, &$compiler_config, $temp_dir, $compiler_dir)
 	{
 		//Check if $request['logging'] exists and is true, then make the logfile, otherwise set
 		//$compiler_config['logdir'] to false and return to caller
@@ -1272,7 +1272,7 @@ class CompilerHandler
 		return $gcc_elements;
 	}
 
-	private function cleanUpClangOutput($clang_output, $compiler_config, $option)
+	protected function cleanUpClangOutput($clang_output, $compiler_config, $option)
 	{
 
 		$content_line_array = explode("\n", $clang_output);
@@ -1399,7 +1399,7 @@ class CompilerHandler
 		return $final;
 	}
 
-	private function pathRemover($output, $compiler_config)
+	protected function pathRemover($output, $compiler_config)
 	{
 
 		// Remove any instance of "compiler.RANDOM/files/" folder name from the text, add (sketch file) info text

@@ -1,47 +1,9 @@
 <?php
-/**
- * \file
- * \brief Functions used by the compiler backend.
- *
- * \author Dimitrios Christidis
- * \author Vasilis Georgitzikis
- *
- * \copyright (c) 2012-2013, The Codebender Development Team
- * \copyright Licensed under the Simplified BSD License
- */
 
 namespace Codebender\CompilerBundle\Handler;
 
-// This file uses mktemp() to create a temporary directory where all the files
-// needed to process the compile request are stored.
-require_once "System.php";
-use System;
-use Codebender\CompilerBundle\Handler\MCUHandler;
-use Symfony\Bridge\Monolog\Logger;
-
-class CompilerV2Handler
+class CompilerV2Handler extends CompilerHandler
 {
-    private $preproc;
-    private $postproc;
-    private $utility;
-    private $compiler_logger;
-    private $object_directory;
-    private $logger_id;
-
-    function __construct(
-            PreprocessingHandler $preprocHandl,
-            PostprocessingHandler $postprocHandl,
-            UtilityHandler $utilHandl,
-            Logger $logger,
-            $objdir
-    ) {
-        $this->preproc = $preprocHandl;
-        $this->postproc = $postprocHandl;
-        $this->utility = $utilHandl;
-        $this->compiler_logger = $logger;
-        $this->object_directory = $objdir;
-    }
-
     /**
      * \brief Processes a compile request.
      *
@@ -119,10 +81,6 @@ class CompilerV2Handler
         if ($tmpVar["success"] === false)
             return array_merge($tmpVar, ($should_archive) ? array("archive" => $ARCHIVE_PATH) : array());
 
-        // Step 2: Preprocess Arduino source files.
-        // Ordinarily this would convert .ino files into .cpp files, but arduino-builder
-        // and ctypes takes care of that for us already.
-
         // Log the names of the project files and the libraries used in it.
         $this->makeLogEntry($request, $config, $should_archive, $ARCHIVE_PATH);
 
@@ -178,34 +136,11 @@ class CompilerV2Handler
                     ($config['logging'] === true) ? array("log" => $log) : array());
         }
 
-        // Step 5: Create objects for core files (if core file does not already exist)
-        //Link all core object files to a core.a library.
-        //
-        // This has become a no-op in v2, but perhaps we could speed things up in the future.
-
-        // Step 6: Create objects for libraries.
-        // The elements of the "build" array are needed to build the unique name of every library object file.
-        //
-        // This has also become a no-op in v2.
-
-        // Step 7: Link all object files and create executable.
-        //
-        // The arduino builder already pre-links files for us.
-
         // Step 8: Convert the output to the requested format and measure its
         // size.
         $tmpVar = $this->convertOutput($format, $start_time, $config);
 
         if ($config['logging'] === true) {
-            /*
-            $log_content = @file_get_contents($config['logFileName']);
-            if (!$log_content)
-                $tmpVar["log"] = "Failed to access logfile.";
-            else {
-                file_put_contents($config["project_dir"]."/log", $log_content);
-                $tmpVar["log"] = $log_content;
-            }
-            */
             $tmpVar["log"] = $log;
         }
 
@@ -245,7 +180,7 @@ class CompilerV2Handler
         if (!$dirent)
             return array(
                 "success" => false,
-                "message" => "Unable to open directory " . $base_dir . "/" . $sub_dir . " for copying files.");
+                "message" => "Unable to open directory " . $src . " for copying files.");
 
         while (false !== ($filename = $dirent->read())) {
             if (($filename == '.') || ($filename == '..'))
@@ -262,26 +197,24 @@ class CompilerV2Handler
         return array("success" => true);
     }
 
-    private function copyCaches($src_dir, $dst_dir, $caches)
+    private function copyCaches($sourceDirectory, $destinationDirectory, $caches)
     {
-        if (!file_exists($src_dir))
-            return array(
-                "success" => null,
-                "message" => "No existing cache found.");
+        if (!file_exists($sourceDirectory))
+            return ['success' => null, 'message' => 'No existing cache found.'];
 
         // Ensure the target core directory exists
-        if (!file_exists($dst_dir))
-            if (!mkdir($dst_dir, 0777, true))
+        if (!file_exists($destinationDirectory))
+            if (!mkdir($destinationDirectory, 0777, true))
                 return array(
                     "success" => false,
                     "message" => "Unable to create output dir.");
 
         // Go through each of the cache types and copy them, if they exist
         foreach ($caches as $dir) {
-            if (!file_exists($src_dir . "/" . $dir))
+            if (!file_exists($sourceDirectory . "/" . $dir))
                 continue;
 
-            $ret = $this->copyRecursive($src_dir . "/" . $dir, $dst_dir . "/" . $dir);
+            $ret = $this->copyRecursive($sourceDirectory . "/" . $dir, $destinationDirectory . "/" . $dir);
             if ($ret["success"] != true)
                 return $ret;
         }
@@ -469,85 +402,8 @@ class CompilerV2Handler
                    ;
         $output_dir = $config["output_dir"];
 
-//        $this->copyRecursive($config["project_dir"] . "/", "/tmp/saveme-proj" . "/");
-//        $this->copyRecursive($config["lib_dir"] . "/", "/tmp/saveme-lib" . "/");
         $this->copyCaches($output_dir, $cache_dir, $this->cacheDirs());
         $this->updateDependencyPaths($cache_dir, $this->cacheDirs(), $output_dir, "::BUILD_DIR::");
-
-        return array("success" => true);
-    }
-
-    private function requestValid(&$request)
-    {
-        $request = $this->preproc->validateInput($request);
-        if (!$request)
-            return array(
-                "success" => false,
-                "step" => 0,
-                "message" => "Invalid input.");
-        else
-            return array("success" => true);
-    }
-
-    private function createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, &$ARCHIVE_PATH)
-    {
-        if (!file_exists($ARCHIVE_PATH)) {
-            // Create a directory in tmp folder and store archive files there
-            if (!file_exists("$TEMP_DIR/$ARCHIVE_DIR")) {
-                //The code below was added to ensure that no error will be returned because of multithreaded execution.
-                $make_dir_success = @mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true);
-                if (!$make_dir_success && !is_dir("$TEMP_DIR/$ARCHIVE_DIR")) {
-                    usleep(rand(5000, 10000));
-                    $make_dir_success = @mkdir("$TEMP_DIR/$ARCHIVE_DIR", 0777, true);
-                }
-                if (!$make_dir_success)
-                    return array(
-                            "success" => false,
-                            "message" => "Failed to create archive directory."
-                    );
-            }
-
-            do {
-                $tar_random_name = uniqid(rand(), true).'.tar.gz';
-            } while (file_exists("$TEMP_DIR/$ARCHIVE_DIR/$tar_random_name"));
-            $ARCHIVE_PATH = "$TEMP_DIR/$ARCHIVE_DIR/$tar_random_name";
-        }
-
-        // The archive files include all the files of the project and the libraries needed to compile it
-        exec("tar -zcf $ARCHIVE_PATH -C $TEMP_DIR/ ".pathinfo($project_dir, PATHINFO_BASENAME), $output, $ret_var);
-
-        if ($ret_var != 0)
-            return array(
-                    "success" => false,
-                    "message" => "Failed to archive project files."
-            );
-        return array("success" => true);
-    }
-
-    private function extractFiles($request, $temp_dir, &$dir, &$files, $suffix, $lib_extraction = false)
-    {
-        // Create a temporary directory to place all the files needed to process
-        // the compile request. This directory is created in $TMPDIR or /tmp by
-        // default and is automatically removed upon execution completion.
-        $cnt = 0;
-        if (!$dir)
-            do {
-                $dir = @System::mktemp("-t $temp_dir/ -d compiler.");
-                $cnt++;
-            } while (!$dir && $cnt <= 2);
-
-        if (!$dir)
-            return array(
-                "success" => false,
-                "step" => 1,
-                "message" => "Failed to create temporary directory."
-            );
-
-        $response = $this->utility->extractFiles("$dir/$suffix", $request, $lib_extraction);
-        if ($response["success"] === false)
-            return $response;
-
-        $files = $response["files"];
 
         return array("success" => true);
     }
@@ -586,66 +442,72 @@ class CompilerV2Handler
     private function convertOutput($format, $start_time, $config)
     {
         $builder_time = 0;
-        if (array_key_exists("builder_time", $config))
-            $builder_time = $config["builder_time"];
+        if (array_key_exists('builder_time', $config)) {
+            $builder_time = $config['builder_time'];
+        }
 
-        $content = "";
-        $base_path = $config["output_dir"] . "/" . $config["project_name"];
-        if ($format == "elf") {
-            $content_path = $base_path . ".elf";
-            if (file_exists($content_path))
+        if (!in_array($format, ['elf', 'binary', 'hex'])) {
+            return [
+                'success' => false,
+                'time' => microtime(true) - $start_time,
+                'builder_time' => $builder_time,
+                'step' => 8,
+                'message' => 'Unrecognized format requested.'
+            ];
+        }
+
+        // Set the output file base path. All the product files (bin/hex/elf) have the same base name.
+        $base_path = $config['output_dir'] . '/' . $config['project_name'];
+
+        $content = '';
+        if ($format == 'elf') {
+            $content_path = $base_path . '.elf';
+            if (file_exists($content_path)) {
                 $content = base64_encode(file_get_contents($content_path));
-            else
-                $content = "";
-        } elseif ($format == "hex") {
-            $content_path = $base_path . ".hex";
+            }
+        }
+        if ($format == 'hex') {
+            $content_path = $base_path . '.hex';
             if (file_exists($content_path))
                 $content = file_get_contents($content_path);
             else {
-                $content_path = $base_path . ".bin";
+                $content_path = $base_path . '.bin';
                 if (file_exists($content_path))
                     $content = base64_encode(file_get_contents($content_path));
-                else
-                    $content = "";
             }
-        } elseif ($format == "binary") {
-            $content_path = $base_path . ".bin";
-            if (file_exists($content_path))
-               $content = base64_encode(file_get_contents($content_path));
-            else
-                $content = "";
-        } else {
-            return array(
-                "success" => false,
-                "time"    => microtime(true) - $start_time,
-                "builder_time" => $builder_time,
-                "step"    => 8,
-                "message" => "Unrecognized format requested."
-            );
+        }
+        if ($format == 'binary') {
+            $content_path = $base_path . '.bin';
+            if (file_exists($content_path)) {
+                $content = base64_encode(file_get_contents($content_path));
+            }
         }
 
-        // If everything went well, return the reply to the caller.
-        if ($content === "")
-            return array(
-                "success" => false,
-                "time"    => microtime(true) - $start_time,
-                "builder_time" => $builder_time,
-                "step"    => 8,
-                "message" => "There was a problem while generating the your binary file from " . $content_path . ".");
+        // If content is still empty, something went wrong
+        if ($content == '') {
+            return [
+                'success' => false,
+                'time' => microtime(true) - $start_time,
+                'builder_time' => $builder_time,
+                'step' => 8,
+                'message' => 'There was a problem while generating the your binary file from ' . $content_path . '.'
+            ];
+        }
 
-        $size = $config["output_dir"] . "/" . $config["project_name"] . ".size";
+        // Get the size of the requested output file and return to the caller
+        $size = $config['output_dir'] . '/' . $config['project_name'] . '.size';
         $size = intval(file_get_contents($size));
 
-        return array(
-            "success" => true,
-            "time"    => microtime(true) - $start_time,
-            "builder_time" => $builder_time,
-            "size"    => $size,
-            "output"  => $content);
+        return [
+            'success' => true,
+            'time' => microtime(true) - $start_time,
+            'builder_time' => $builder_time,
+            'size' => $size,
+            'output'  => $content
+        ];
     }
 
-    private function setVariables($request,
-            &$format, &$libraries, &$should_archive, &$config)
+    private function setVariables($request, &$format, &$libraries, &$should_archive, &$config)
     {
         // Extract the request options for easier access.
         $format = $request["format"];
@@ -668,55 +530,6 @@ class CompilerV2Handler
         $config["vid"] = $vid;
         $config["pid"] = $pid;
         $config["version"] = $version;
-    }
-
-    private function setLoggingParams($request, &$config, $temp_dir, $project_dir)
-    {
-        //Check if $request['logging'] exists and is true, then make the logfile, otherwise set
-        //$config['logdir'] to false and return to caller
-        if (array_key_exists('logging', $request) && $request['logging']) {
-            /*
-            Generate a random part for the log name based on current date and time,
-            in order to avoid naming different Blink projects for which we need logfiles
-            */
-            $randPart = date('YmdHis');
-            /*
-            Then find the name of the arduino file which usually is the project name itself
-            and mix them all together
-            */
-
-            foreach ($request['files'] as $file) {
-                if (strcmp(pathinfo($file['filename'], PATHINFO_EXTENSION), "ino") == 0) {
-                    $basename = pathinfo($file['filename'], PATHINFO_FILENAME);
-                }
-            }
-            if (!isset($basename)) {
-                $basename = "logfile";
-            }
-
-            $config['logging'] = true;
-            $directory = $temp_dir."/".$config['logdir'];
-            //The code below was added to ensure that no error will be returned because of multithreaded execution.
-            if (!file_exists($directory)) {
-                $make_dir_success = @mkdir($directory, 0777, true);
-                if (!$make_dir_success && !is_dir($directory)) {
-                    usleep(rand(5000, 10000));
-                    $make_dir_success = @mkdir($directory, 0777, true);
-                }
-                if (!$make_dir_success)
-                    return array("success" => false, "message" => "Failed to create logfiles directory.");
-            }
-
-            $compiler_part = str_replace(".", "_", substr($project_dir, strpos($project_dir, "compiler")));
-
-            $config['logFileName'] = $directory."/".$basename."_".$compiler_part."_".$randPart.".txt";
-
-            file_put_contents($config['logFileName'], '');
-        }
-        elseif (!array_key_exists('logging', $request) || (!$request['logging']))
-            $config['logging'] = false;
-
-        return array("success" => true);
     }
 
     private function handleCompile($compile_directory, $files_array, $config, $format,
@@ -870,39 +683,12 @@ class CompilerV2Handler
         );
     }
 
-    private function getGccErrorFileList($avr_output)
+    protected function pathRemover($output, $config)
     {
-        /**
-         * Avr gcc's output processing
-         */
-        // Get all 'filename.extension:line' elements.
-        // Note that avr-gcc output only includes filenames and lines in error reporting, not collumns.
-        preg_match_all('/([\w*\s*(!@#$%^&*()-+;\'{}\[\])*]+\.\w+:\d+:[\d+:]?)/', $avr_output, $gcc_matches, PREG_PATTERN_ORDER);
-
-        $gcc_elements = array();
-        foreach ($gcc_matches[0] as $element)
-        {
-
-            // The first part is filename.extension, the second represents the line.
-            $split = explode(':', $element);
-            if (!array_key_exists($split[0], $gcc_elements))
-            {
-                $gcc_elements[$split[0]] = array();
-                $gcc_elements[$split[0]][] = $split[1];
-                continue;
-            }
-            $gcc_elements[$split[0]][] = $split[1];
-        }
-        return $gcc_elements;
-    }
-
-    private function pathRemover($output, $config)
-    {
-
-        // Remove any instance of "compiler.RANDOM/files/" folder name from the text, add (sketch file) info text
+        // Remove the path of the project directory, add (sketch file) info text
         $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $output);
 
-        // Remove any remaining instance of "compiler.RANDOM/" folder name from the text.
+        // Remove any remaining instance of the project directory name from the text.
         $modified = str_replace($config["project_dir"]."/", '', $modified);
 
         // Replace userId_cb_personal_lib prefix from personal libraries errors with a (personal library file) info text.
