@@ -118,7 +118,7 @@ class CompilerV2Handler extends CompilerHandler
 
         //TODO: return objects if more than one file??
         if ($format == "object") {
-            $path = $config["project_dir"] . "/sketch/" . $config["project_name"] . ".cpp.o";
+            $path = $config["project_dir"] . "/output/sketch/" . $config["project_name"] . ".cpp.o";
             $content = base64_encode(file_get_contents($path));
             if (count($incoming_files["ino"]) != 1 || !$content) {
                 return array_merge(array(
