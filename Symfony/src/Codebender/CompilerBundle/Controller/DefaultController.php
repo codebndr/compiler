@@ -58,17 +58,17 @@ class DefaultController extends Controller
     {
         $params = $this->generateParameters();
 
-        if ($authorizationKey !== $params["authorizationKey"]) {
-            return new Response(json_encode(array(
-                            "success" => false,
-                            "step"    => 0,
-                            "message" => "Invalid authorization key."
-            )));
+        if ($authorizationKey !== $params['authorizationKey']) {
+            return new Response(json_encode([
+                    'success' => false,
+                    'step' => 0,
+                    'message' => 'Invalid authorization key.'
+                ]
+            ));
         }
 
-        if ($version == "v1") {
-            $request = $this->getRequest()->getContent();
-
+        $request = $this->getRequest()->getContent();
+        if ($version == 'v1') {
             //Get the compiler service
             /** @var CompilerHandler $compiler */
             $compiler = $this->get('compiler_handler');
@@ -76,23 +76,22 @@ class DefaultController extends Controller
             $reply = $compiler->main($request, $params);
 
             return new Response(json_encode($reply));
-        } elseif ($version == "v2") {
-            $request = $this->getRequest()->getContent();
-
-            //Get the compiler service
+        }
+        if ($version == 'v2') {
             /** @var CompilerV2Handler $compiler */
             $compiler = $this->get('compiler_v2_handler');
 
             $reply = $compiler->main($request, $params);
 
             return new Response(json_encode($reply));
-        } else {
-            return new Response(json_encode(array(
-                            "success" => false,
-                            "step"    => 0,
-                            "message" => "Invalid API version."
-            )));
         }
+
+        return new Response(json_encode([
+                'success' => false,
+                'step' => 0,
+                'message' => 'Invalid API version.'
+            ]
+        ));
     }
 
     public function deleteAllObjectsAction($authorizationKey, $version)
@@ -107,7 +106,7 @@ class DefaultController extends Controller
             ));
         }
 
-        if (($version != 'v1') && ($version != 'v2')) {
+        if (!in_array($version, ['v1', 'v2'])) {
             return new Response(json_encode(
                 array(
                     'success' => false,
@@ -152,7 +151,7 @@ class DefaultController extends Controller
             ));
         }
 
-        if (($version != 'v1') && ($version != 'v2')) {
+        if (!in_array($version, ['v1', 'v2'])) {
             return new Response(json_encode(
                 array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
             ));
