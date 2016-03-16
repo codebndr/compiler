@@ -471,15 +471,17 @@ class CompilerV2Handler extends CompilerHandler
             if (file_exists($content_path))
                 $content = file_get_contents($content_path);
             else {
-                $content_path = $base_path . '.bin';
-                if (file_exists($content_path))
-                    $content = base64_encode(file_get_contents($content_path));
+                // TODO
+                // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
             }
         }
         if ($format == 'binary') {
             $content_path = $base_path . '.bin';
             if (file_exists($content_path)) {
                 $content = base64_encode(file_get_contents($content_path));
+            } else {
+                // TODO
+                // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
             }
         }
 
