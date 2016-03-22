@@ -467,19 +467,23 @@ class CompilerV2Handler extends CompilerHandler
             $content_path = $base_path . '.elf';
             if (file_exists($content_path)) {
                 $content = base64_encode(file_get_contents($content_path));
+            } else {
+                // TODO
+                // Print an error if the elf file doesn't exist, which should only happen if the package file
+                // uses a nonstandard name for the elf file.
             }
         }
         if ($format == 'hex') {
-            $content_path = $base_path . '.hex';
-            if (file_exists($content_path))
+            $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
+            if (file_exists($content_path)) {
                 $content = file_get_contents($content_path);
-            else {
+            } else {
                 // TODO
                 // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
             }
         }
         if ($format == 'binary') {
-            $content_path = $base_path . '.bin';
+            $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
             if (file_exists($content_path)) {
                 $content = base64_encode(file_get_contents($content_path));
             } else {
