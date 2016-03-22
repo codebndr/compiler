@@ -4,6 +4,9 @@ namespace Codebender\CompilerBundle\Handler;
 
 class CompilerV2Handler extends CompilerHandler
 {
+    private $builder_prefs_raw;
+    private $builder_prefs;
+
     /**
      * \brief Processes a compile request.
      *
@@ -678,11 +681,91 @@ class CompilerV2Handler extends CompilerHandler
             );
         }
 
+        // Pull out Arduino's internal build variables, useful for determining sizes and output files
+        $cmd = $base_dir . "/arduino-builder"
+                . " -logger=human"
+                . " -compile"
+                . " -dump-prefs=true"
+                . " -ide-version=\"" . ($config["version"] * 100) . "\""
+                . $hardware_args
+                . $lib_str
+                . " -build-path=" . $output_dir
+                . $tools_args
+                . " -fqbn=" . $fqbn
+                . $vid_pid
+                . " " . escapeshellarg($filename)
+                . " 2>&1"
+                ;
+        exec($cmd, $this->builder_prefs_raw, $ret_link);
+
+        if ($ret_link) {
+            return array(
+                "success" => false,
+                "retcode" => $ret_link,
+                "output" => $output,
+                "cmd" => $cmd,
+                "output_dir" => $output_dir,
+                "message" => $this->pathRemover($output, $config),
+                "log"     => array($cmd, implode("\n", $output)),
+                "filename" => $filename
+            );
+        }
+
         return array(
             "success" => true,
             "builder_time" => $arduino_builder_time_end - $arduino_builder_time_start,
             "log"     => array($cmd, $output)
         );
+    }
+
+    protected function builderPref($key)
+    {
+        // Ensure the builder prefs actually exists.
+        if ($this->builder_prefs == null) {
+
+            // If builder_prefs_raw does not exist, then the compile has not yet been run.
+            if ($this->builder_prefs_raw == null) {
+                return "";
+            }
+
+            // Parse $builder_prefs_raw into an array.  It comes in as
+            // a bunch of lines of the format:
+            //
+            // key=val
+            //
+            // Additionally, val can contain values that need substitution with other keys.
+            // This substitution will take place at a later time.
+            $this->builder_prefs = array();
+            foreach ($this->builder_prefs_raw as $line) {
+                $line = rtrim($line);
+                $parts = explode("=", $line, 2);
+                $this->builder_prefs[$parts[0]] = $parts[1];
+            }
+        }
+
+        if (!array_key_exists($key, $this->builder_prefs))
+            return "";
+
+        // Recursively expand the key.  arduino-builder limits it to 10 recursion attempts.
+        return $this->builderPrefExpand($this->builder_prefs[$key], 10);
+    }
+
+    private function builderPrefExpand($str, $recurse)
+    {
+
+        // Don't allow infinite recursion.
+        if ($recurse <= 0)
+            return $str;
+
+        // Replace all keys in the string with their value.
+        foreach ($this->builder_prefs as $key => $value)
+            $str = str_replace("{" . $key . "}", $value, $str);
+
+        // If there is more to expand, recurse.
+        if (strpos($str, "{"))
+            return $this->buildPrefExpand($str, $recurse - 1);
+
+        return $str;
     }
 
     protected function pathRemover($output, $config)
