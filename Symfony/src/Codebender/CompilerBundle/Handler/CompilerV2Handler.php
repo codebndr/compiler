@@ -504,14 +504,22 @@ class CompilerV2Handler extends CompilerHandler
         }
 
         // Get the size of the requested output file and return to the caller
-        $size = $config['output_dir'] . '/' . $config['project_name'] . '.size';
-        $size = intval(file_get_contents($size));
+        $size_cmd = $this->builderPref("recipe.size.pattern");
+        exec($size_cmd, $output);
+        $output = implode("\n", $output);
+        $size_regex = $this->builderPref("recipe.size.regex");
+        $data_regex = $this->builderPref("recipe.size.regex.data");
+        $eeprom_regex = $this->builderPref("recipe.size.regex.eeprom");
+
+        $full_size = "0";
+        if (preg_match("/" . $size_regex . "/", $output, $matches))
+            $full_size = $matches[1];
 
         return [
             'success' => true,
             'time' => microtime(true) - $start_time,
             'builder_time' => $builder_time,
-            'size' => $size,
+            'size' => $full_size,
             'output'  => $content
         ];
     }
@@ -549,7 +557,6 @@ class CompilerV2Handler extends CompilerHandler
         $output_dir = $config["output_dir"];
         $fqbn = $config["fqbn"];
         $filename = $files_array["ino"][0] . ".ino";
-        $size_script = $config["project_dir"] . "/get_size.sh";
         $libraries = array();
 
         // Set up a default library directory
@@ -605,7 +612,7 @@ class CompilerV2Handler extends CompilerHandler
         $build_options =
                 "{\n"
               . "  \"builtInLibrariesFolders\": \"\",\n"
-              . "  \"customBuildProperties\": \"recipe.hooks.objcopy.postobjcopy.0.pattern=" . $size_script . " \\\"{compiler.path}{compiler.size.cmd}\\\" \\\"{build.path}/{build.project_name}.elf\\\" \\\"{build.path}/{build.project_name}.size\\\"\",\n"
+              . "  \"customBuildProperties\": \"\",\n"
               . "  \"fqbn\": \"" . $fqbn . "\",\n"
               . "  \"hardwareFolders\": \"" . implode(",", $hardware_dirs) . "\",\n"
               . "  \"otherLibrariesFolders\": \"" . implode(",", $libraries) . "\",\n"
@@ -620,14 +627,6 @@ class CompilerV2Handler extends CompilerHandler
         $ret = $this->restoreCache($config);
         if ($ret["success"] != true)
             return $ret;
-
-        // The arduino-builder tool automatically processes multiple .ino files into one,
-        // so we only need to specify the first file to build.
-        file_put_contents($size_script,
-                  "#!/bin/sh\n"
-                . "\"$1\" -A \"$2\" | grep Total | awk '{print $2}' > \"$3\"\n"
-                );
-        system("chmod a+x $size_script");
 
         $hardware_args = "";
         foreach ($hardware_dirs as $hardware)
@@ -657,7 +656,6 @@ class CompilerV2Handler extends CompilerHandler
                 . $lib_str
                 . " -build-path=" . $output_dir
                 . $tools_args
-                . " -prefs='recipe.hooks.objcopy.postobjcopy.0.pattern=$size_script \"{compiler.path}{compiler.size.cmd}\" \"{build.path}/{build.project_name}.elf\" \"{build.path}/{build.project_name}.size\"'"
                 . " -fqbn=" . $fqbn
                 . $vid_pid
                 . " " . escapeshellarg($filename)
