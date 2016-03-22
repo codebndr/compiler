@@ -520,6 +520,7 @@ class CompilerV2Handler extends CompilerHandler
             'time' => microtime(true) - $start_time,
             'builder_time' => $builder_time,
             'size' => $full_size,
+            'tool' => $this->builderPref("upload.tool"),
             'output'  => $content
         ];
     }
