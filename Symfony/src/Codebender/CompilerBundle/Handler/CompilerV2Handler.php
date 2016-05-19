@@ -787,8 +787,13 @@ class CompilerV2Handler extends CompilerHandler
 
     protected function pathRemover($output, $config)
     {
+        // If the incoming output is still an array, implode it.
+        $message = $output;
+        if (is_array($output))
+            $message = implode("\n", $message);
+
         // Remove the path of the project directory, add (sketch file) info text
-        $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $output);
+        $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $message);
 
         // Remove any remaining instance of the project directory name from the text.
         $modified = str_replace($config["project_dir"]."/", '', $modified);
