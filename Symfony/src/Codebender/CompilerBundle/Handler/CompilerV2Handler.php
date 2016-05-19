@@ -689,12 +689,8 @@ class CompilerV2Handler extends CompilerHandler
             return array(
                 "success" => false,
                 "retcode" => $ret_link,
-                "output" => $output,
-                "cmd" => $cmd,
-                "output_dir" => $output_dir,
                 "message" => $this->pathRemover($output, $config),
-                "log"     => array($cmd, implode("\n", $output)),
-                "filename" => $filename
+                "log"     => array($cmd, implode("\n", $output))
             );
         }
 
@@ -719,12 +715,8 @@ class CompilerV2Handler extends CompilerHandler
             return array(
                 "success" => false,
                 "retcode" => $ret_link,
-                "output" => $output,
-                "cmd" => $cmd,
-                "output_dir" => $output_dir,
                 "message" => $this->pathRemover($output, $config),
-                "log"     => array($cmd, implode("\n", $output)),
-                "filename" => $filename
+                "log"     => array($cmd, implode("\n", $output))
             );
         }
 
