@@ -505,24 +505,38 @@ class CompilerV2Handler extends CompilerHandler
 
         // Get the size of the requested output file and return to the caller
         $size_cmd = $this->builderPref("recipe.size.pattern");
-        exec($size_cmd, $output);
-        $output = implode("\n", $output);
         $size_regex = $this->builderPref("recipe.size.regex");
         $data_regex = $this->builderPref("recipe.size.regex.data");
         $eeprom_regex = $this->builderPref("recipe.size.regex.eeprom");
 
-        $full_size = "0";
-        if (preg_match("/" . $size_regex . "/", $output, $matches))
-            $full_size = $matches[1];
+        // Run the actual "size" command, and prepare to tally the results.
+        exec($size_cmd, $size_output);
 
-        return [
+        // Go through each line of "size" output and execute the various size regexes.
+        $full_size = 0;
+        $data_size = 0;
+        $eeprom_size = 0;
+        foreach ($size_output as $size_line) {
+            if ($size_regex && preg_match("/" . $size_regex . "/", $size_line, $matches))
+                $full_size += $matches[1];
+
+            if ($data_regex && preg_match("/" . $data_regex . "/", $size_line, $matches))
+                $data_size += $matches[1];
+
+            if ($eeprom_regex && preg_match("/" . $eeprom_regex . "/", $size_line, $matches))
+                $eeprom_size += $matches[1];
+        }
+
+        return array_merge(array(
             'success' => true,
             'time' => microtime(true) - $start_time,
             'builder_time' => $builder_time,
             'size' => $full_size,
             'tool' => $this->builderPref("upload.tool"),
-            'output'  => $content
-        ];
+            'output'  => $content),
+            $data_size ? array('data_size' => $data_size) : array(),
+            $eeprom_size ? array('eeprom_size' => $eeprom_size) : array()
+        );
     }
 
     private function setVariables($request, &$format, &$libraries, &$should_archive, &$config)
