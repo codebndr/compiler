@@ -482,7 +482,7 @@ class CompilerV2Handler extends CompilerHandler
         if ($format == 'elf') {
             $content_path = $base_path . '.elf';
             if (file_exists($content_path)) {
-                $content = base64_encode(file_get_contents($content_path));
+                $content = file_get_contents($content_path);
             } else {
                 // TODO
                 // Print an error if the elf file doesn't exist, which should only happen if the package file
@@ -501,7 +501,7 @@ class CompilerV2Handler extends CompilerHandler
         if ($format == 'binary') {
             $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
             if (file_exists($content_path)) {
-                $content = base64_encode(file_get_contents($content_path));
+                $content = file_get_contents($content_path);
             } else {
                 // TODO
                 // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
@@ -518,6 +518,10 @@ class CompilerV2Handler extends CompilerHandler
                 'message' => 'There was a problem while generating the your binary file from ' . $content_path . '.'
             ];
         }
+
+        // Don't return unprintable characters.  Base64 encode if necessary.
+        if ($this->isBinaryObject($content))
+            $content = base64_encode($content);
 
         // Get the size of the requested output file and return to the caller
         $size_cmd = $this->builderPref("recipe.size.pattern");
