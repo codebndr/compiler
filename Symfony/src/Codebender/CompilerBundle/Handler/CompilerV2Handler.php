@@ -442,6 +442,22 @@ class CompilerV2Handler extends CompilerHandler
             $this->compiler_logger->addInfo($this->logger_id." - "."Archive file: $archive_path");
     }
 
+    /**
+     * \brief Determines whether a string contains unprintable chars.
+     *
+     * \param string $str String to check for binary-ness.
+     * \return true if the stirng contains binary, false if it's printable.
+     */
+    private function isBinaryObject($str) {
+
+        for ($i = 0; $i < strlen($str); $i++) {
+            $c = substr($str, $i, 1);
+            if ($c > chr(127))
+                return true;
+        }
+        return false;
+    }
+
     private function convertOutput($format, $start_time, $config)
     {
         $builder_time = 0;
