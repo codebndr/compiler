@@ -817,7 +817,7 @@ class CompilerV2Handler extends CompilerHandler
         $modified = str_replace('libraries/', '(library file) ', $modified);
 
         // Remove any instance of codebender arduino core files folder name from the text, add (arduino core file) info text
-        $modified = str_replace($config["arduino_cores_dir"]."/v105/", '(arduino core file) ', $modified);
+        $modified = str_replace($config["arduino_cores_dir"]."/v167/", '(arduino core file) ', $modified);
 
         // Remove any instance of codebender external core file folder name from the text, , add (arduino core file) info text
         if (isset($config["external_core_files"]) && $config["external_core_files"] != "") {
