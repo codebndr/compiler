@@ -739,31 +739,39 @@ class CompilerV2Handler extends CompilerHandler
     protected function pathRemover($output, $config)
     {
         // If the incoming output is still an array, implode it.
-        $message = $output;
-        if (is_array($output))
-            $message = implode("\n", $message);
+        $message = "";
+        if (!is_array($output))
+            $output = explode("\n", $output);
 
-        // Remove the path of the project directory, add (sketch file) info text
-        $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $message);
+        foreach ($output as $modified) {
 
-        // Remove any remaining instance of the project directory name from the text.
-        $modified = str_replace($config["project_dir"]."/", '', $modified);
+            // Remove the path of the project directory, add (sketch file) info text
+            $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $modified);
 
-        // Replace userId_cb_personal_lib prefix from personal libraries errors with a (personal library file) info text.
-        $modified = preg_replace('/libraries\/\d+_cb_personal_lib_/', '(personal library file) ', $modified);
+            // Remove any remaining instance of the project directory name from the text.
+            $modified = str_replace($config["project_dir"]."/", '', $modified);
 
-        // Replace libraries/ prefix from personal libraries errors with a (personal library file) info text.
-        $modified = str_replace('libraries/', '(library file) ', $modified);
+            // Replace userId_cb_personal_lib prefix from personal libraries errors with a (personal library file) info text.
+            $modified = preg_replace('/libraries\/\d+_cb_personal_lib_/', '(personal library file) ', $modified);
 
-        // Remove any instance of codebender arduino core files folder name from the text, add (arduino core file) info text
-        $modified = str_replace($config["arduino_cores_dir"]."/v167/", '(arduino core file) ', $modified);
+            // Replace libraries/ prefix from personal libraries errors with a (personal library file) info text.
+            $modified = str_replace('libraries/', '(library file) ', $modified);
 
-        // Remove any instance of codebender external core file folder name from the text, , add (arduino core file) info text
-        if (isset($config["external_core_files"]) && $config["external_core_files"] != "") {
-            $modified = str_replace($config["external_core_files"], '(arduino core file) ', $modified);
-            $modified = str_replace("/override_cores/", '(arduino core file) ', $modified);
+            // Remove any instance of codebender arduino core files folder name from the text, add (arduino core file) info text
+            $modified = str_replace($config["arduino_cores_dir"]."/v167/", '(arduino core file) ', $modified);
+
+            // Remove any instance of codebender external core file folder name from the text, , add (arduino core file) info text
+            if (isset($config["external_core_files"]) && $config["external_core_files"] != "") {
+                $modified = str_replace($config["external_core_files"], '(arduino core file) ', $modified);
+                $modified = str_replace("/override_cores/", '(arduino core file) ', $modified);
+            }
+
+            // Remove column numbers from error messages
+            $modified = preg_replace('/^([^:]+:\d+):\d+/', '$1', $modified);
+
+            $message .= $modified . "\n";
         }
 
-        return $modified;
+        return $message;
     }
 }
