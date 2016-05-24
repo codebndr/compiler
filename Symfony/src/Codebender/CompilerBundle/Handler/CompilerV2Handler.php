@@ -32,7 +32,7 @@ class CompilerV2Handler extends CompilerHandler
         if ($tmpVar["success"] === false)
             return $tmpVar;
 
-        $this->setVariables($request, $format, $libraries, $should_archive, $config);
+        $this->setVariables($request, $libraries, $should_archive, $config);
 
         $incoming_files = array();
 
@@ -88,7 +88,7 @@ class CompilerV2Handler extends CompilerHandler
         $this->makeLogEntry($request, $config, $should_archive, $ARCHIVE_PATH);
 
         // Step 4: Syntax-check and compile source files.
-        $ret = $this->handleCompile("$project_dir/files", $incoming_files, $config, $format);
+        $ret = $this->handleCompile("$project_dir/files", $incoming_files, $config);
         if (array_key_exists("builder_time", $ret))
             $config["builder_time"] = $ret["builder_time"];
 
@@ -112,40 +112,11 @@ class CompilerV2Handler extends CompilerHandler
         if (!$ret["success"])
             return $ret;
 
-        if ($format == "syntax")
-            return array_merge(array(
-                    "success" => true,
-                    "time" => microtime(true) - $start_time),
-                ($should_archive) ? array("archive" => $ret["archive"]) : array(),
-                ($config['logging'] === true) ? array("log" => $log) : array());
+        // Step 8: Convert the output to hex and measure its size.
+        $tmpVar = $this->convertOutput($start_time, $config);
 
-        //TODO: return objects if more than one file??
-        if ($format == "object") {
-            $path = $config["project_dir"] . "/output/sketch/" . $config["project_name"] . ".cpp.o";
-            $content = base64_encode(file_get_contents($path));
-            if (count($incoming_files["ino"]) != 1 || !$content) {
-                return array_merge(array(
-                        "success" => false,
-                        "step" => -1, //TODO: Fix this step?
-                        "message" => ""),
-                    ($should_archive) ? array("archive" => $ret["archive"]) : array(),
-                    ($config['logging'] === true) ? array("log" => $log) : array());
-            } else
-                return array_merge(array(
-                        "success" => true,
-                        "time" => microtime(true) - $start_time,
-                        "output" => $content),
-                    ($should_archive) ? array("archive" => $ret["archive"]) : array(),
-                    ($config['logging'] === true) ? array("log" => $log) : array());
-        }
-
-        // Step 8: Convert the output to the requested format and measure its
-        // size.
-        $tmpVar = $this->convertOutput($format, $start_time, $config);
-
-        if ($config['logging'] === true) {
+        if ($config['logging'] === true)
             $tmpVar["log"] = $log;
-        }
 
         if ($should_archive) {
             $arch_ret = $this->createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
@@ -458,54 +429,23 @@ class CompilerV2Handler extends CompilerHandler
         return false;
     }
 
-    private function convertOutput($format, $start_time, $config)
+    private function convertOutput($start_time, $config)
     {
         $builder_time = 0;
         if (array_key_exists('builder_time', $config)) {
             $builder_time = $config['builder_time'];
         }
 
-        if (!in_array($format, ['elf', 'binary', 'hex'])) {
-            return [
-                'success' => false,
-                'time' => microtime(true) - $start_time,
-                'builder_time' => $builder_time,
-                'step' => 8,
-                'message' => 'Unrecognized format requested.'
-            ];
-        }
-
         // Set the output file base path. All the product files (bin/hex/elf) have the same base name.
         $base_path = $config['output_dir'] . '/' . $config['project_name'];
 
         $content = '';
-        if ($format == 'elf') {
-            $content_path = $base_path . '.elf';
-            if (file_exists($content_path)) {
-                $content = file_get_contents($content_path);
-            } else {
-                // TODO
-                // Print an error if the elf file doesn't exist, which should only happen if the package file
-                // uses a nonstandard name for the elf file.
-            }
-        }
-        if ($format == 'hex') {
-            $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
-            if (file_exists($content_path)) {
-                $content = file_get_contents($content_path);
-            } else {
-                // TODO
-                // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
-            }
-        }
-        if ($format == 'binary') {
-            $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
-            if (file_exists($content_path)) {
-                $content = file_get_contents($content_path);
-            } else {
-                // TODO
-                // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
-            }
+        $content_path = $config['output_dir'] . '/' . $this->builderPref("recipe.output.tmp_file");
+        if (file_exists($content_path)) {
+            $content = file_get_contents($content_path);
+        } else {
+            // TODO
+            // Locate the correct objcopy (depends on AVR/SAM) and create the hex output from the .elf file.
         }
 
         // If content is still empty, something went wrong
@@ -559,10 +499,9 @@ class CompilerV2Handler extends CompilerHandler
         );
     }
 
-    private function setVariables($request, &$format, &$libraries, &$should_archive, &$config)
+    private function setVariables($request, &$libraries, &$should_archive, &$config)
     {
         // Extract the request options for easier access.
-        $format = $request["format"];
         $libraries = $request["libraries"];
         $version = $request["version"];
 
@@ -584,7 +523,7 @@ class CompilerV2Handler extends CompilerHandler
         $config["version"] = $version;
     }
 
-    private function handleCompile($compile_directory, $files_array, $config, $format,
+    private function handleCompile($compile_directory, $files_array, $config,
                                    $caching = false, $name_params = null)
     {
         $base_dir = $config["base_dir"];
