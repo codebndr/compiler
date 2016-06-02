@@ -731,7 +731,7 @@ class CompilerV2Handler extends CompilerHandler
 
         // If there is more to expand, recurse.
         if (strpos($str, "{"))
-            return $this->buildPrefExpand($str, $recurse - 1);
+            return $this->builderPrefExpand($str, $recurse - 1);
 
         return $str;
     }
