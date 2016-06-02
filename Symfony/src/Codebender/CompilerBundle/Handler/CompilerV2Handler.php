@@ -15,116 +15,122 @@ class CompilerV2Handler extends CompilerHandler
      */
     function main($request, $config)
     {
-        $log = array();
+        $log = [];
 
         error_reporting(E_ALL & ~E_STRICT);
 
         // The tmp folder where logfiles and object files are placed
-        $TEMP_DIR = $config["temp_dir"];
+        $temporaryDirectory = $config['temp_dir'];
 
-        // The directory name where archive files are stored in $TEMP_DIR
-        $ARCHIVE_DIR = $config["archive_dir"];
+        // The directory name where archive files are stored in $temporaryDirectory
+        $ARCHIVE_DIR = $config['archive_dir'];
 
         $start_time = microtime(true);
 
         // Step 0: Reject the request if the input data is not valid.
-        $tmpVar = $this->requestValid($request);
-        if ($tmpVar["success"] === false)
-            return $tmpVar;
+        $isRequestValid = $this->requestValid($request);
+        if ($isRequestValid['success'] !== true) {
+            return $isRequestValid;
+        }
 
         $this->setVariables($request, $libraries, $should_archive, $config);
 
         $incoming_files = array();
 
         // Step 1(part 1): Extract the project files included in the request.
-        $tmpVar = $this->extractFiles($request["files"], $TEMP_DIR, $project_dir, $incoming_files, "files");
-        if ($tmpVar["success"] === false)
-            return $tmpVar;
-
-        // Add the compiler temp directory to the config struct.
-        $config["project_dir"] = $project_dir;
-
-        // Where compiled files go
-        $config["output_dir"] = $project_dir . "/" . "output";
-
-        // Where the compiler and base libraries live
-        $config["base_dir"] = $config["arduino_cores_dir"] . "/v" . $config["version"];
-
-        // This is used, for example, to provide object files, and to provide output files.
-        $config["project_name"] = str_replace($config["project_dir"] . "/files/",
-                "",
-                $incoming_files["ino"][0]) . ".ino";
-
-        // Set up a default library dir, but set it to empty so it won't be used by default.
-        $config["lib_dir"] = "";
-
-        // Step 1(part 2): Extract the library files included in the request.
-        $files["libs"] = array();
-        foreach ($libraries as $library => $library_files) {
-
-            $lib_dir = $config["lib_dir"];
-            $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $lib_dir,
-                $files["libs"][$library], $library, true);
-            if ($tmpVar["success"] === false)
-                return $tmpVar;
-
-            $config["lib_dir"] = $lib_dir;
+        $filesExtracted = $this->extractFiles($request['files'], $temporaryDirectory, $project_dir, $incoming_files, 'files');
+        if ($filesExtracted['success'] !== true) {
+            return $filesExtracted;
         }
 
+        // Add the compiler temp directory to the config struct.
+        $config['project_dir'] = $project_dir;
+
+        // Where compiled files go
+        $config['output_dir'] = "$project_dir/output";
+
+        // Where the compiler and base libraries live
+        $config['base_dir'] = $config['arduino_cores_dir'] . '/v' . $config['version'];
+
+        // This is used, for example, to provide object files, and to provide output files.
+        $config['project_name'] = str_replace($config['project_dir'] . '/files/',
+                '',
+                $incoming_files['ino'][0]) . '.ino';
+
+        // Set up a default library dir, but set it to empty so it won't be used by default.
+        $config['lib_dir'] = '';
+
+        // Step 1(part 2): Extract the library files included in the request.
+        $files['libs'] = [];
+        foreach ($libraries as $library => $library_files) {
+            $lib_dir = $config['lib_dir'];
+            $libraryExtracted = $this->extractFiles($library_files, $temporaryDirectory, $lib_dir,
+                $files['libs'][$library], $library, true);
+            if ($libraryExtracted['success'] !== true) {
+                return $libraryExtracted;
+            }
+            $config['lib_dir'] = $lib_dir;
+        }
+
+        $ARCHIVE_PATH = '';
         if ($should_archive) {
-            $arch_ret = $this->createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                return $arch_ret;
-        } else
-            $ARCHIVE_PATH = "";
+            $archiveCreated = $this->createArchive($project_dir, $temporaryDirectory, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            if ($archiveCreated['success'] !== true) {
+                return $archiveCreated;
+            }
+        }
 
         //Set logging to true if requested, and create the directory where logfiles are stored.
-        $tmpVar = $this->setLoggingParams($request, $config, $TEMP_DIR, $project_dir);
-        if ($tmpVar["success"] === false)
-            return array_merge($tmpVar, ($should_archive) ? array("archive" => $ARCHIVE_PATH) : array());
+        $loggingSet = $this->setLoggingParams($request, $config, $temporaryDirectory, $project_dir);
+        if ($loggingSet['success'] !== true) {
+            return array_merge($loggingSet, ($should_archive) ? array("archive" => $ARCHIVE_PATH) : array());
+        }
 
         // Log the names of the project files and the libraries used in it.
         $this->makeLogEntry($request, $config, $should_archive, $ARCHIVE_PATH);
 
         // Step 4: Syntax-check and compile source files.
-        $ret = $this->handleCompile("$project_dir/files", $incoming_files, $config);
-        if (array_key_exists("builder_time", $ret))
-            $config["builder_time"] = $ret["builder_time"];
+        $arduinoBuilderResult = $this->handleCompile("$project_dir/files", $incoming_files, $config);
+        if (array_key_exists('builder_time', $arduinoBuilderResult)) {
+            $config['builder_time'] = $arduinoBuilderResult['builder_time'];
+        }
 
         // Step 4.5: Save the cache for future builds
         $this->saveCache($config);
 
-        if (($config['logging'] === true) && $ret["log"]) {
-            foreach ($ret["log"] as $line) {
+        if ($config['logging'] === true && $arduinoBuilderResult['log']) {
+            foreach ($arduinoBuilderResult['log'] as $line) {
                 array_push($log, $line);
             }
         }
 
         if ($should_archive) {
-            $arch_ret = $this->createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                $ret["archive"] = $arch_ret["message"];
-            else
-                $ret["archive"] = $ARCHIVE_PATH;
+            $archiveCreated = $this->createArchive($project_dir, $temporaryDirectory, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            $arduinoBuilderResult['archive'] = $ARCHIVE_PATH;
+            if ($archiveCreated['success'] !== true) {
+                $arduinoBuilderResult['archive'] = $archiveCreated['message'];
+            }
         }
 
-        if (!$ret["success"])
-            return $ret;
+        if ($arduinoBuilderResult['success'] !== true) {
+            return $arduinoBuilderResult;
+        }
 
         // Step 8: Convert the output to hex and measure its size.
-        $tmpVar = $this->convertOutput($start_time, $config);
+        $convertedOutput = $this->convertOutput($start_time, $config);
 
-        if ($config['logging'] === true)
-            $tmpVar["log"] = $log;
+        if ($config['logging'] === true) {
+            $convertedOutput['log'] =$log;
+        }
 
         if ($should_archive) {
-            $arch_ret = $this->createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
-            if ($arch_ret["success"] === false)
-                $tmpVar["archive"] = $arch_ret["message"];
-            else
-                $tmpVar["archive"] = $ARCHIVE_PATH;
+            $archiveCreated = $this->createArchive($project_dir, $temporaryDirectory, $ARCHIVE_DIR, $ARCHIVE_PATH);
+            $convertedOutput['archive'] = $ARCHIVE_PATH;
+            if ($archiveCreated['success'] !== true) {
+                $convertedOutput['archive'] = $archiveCreated['message'];
+            }
         }
-        return $tmpVar;
+        return $convertedOutput;
     }
 
     private function copyRecursive($src, $dst)
