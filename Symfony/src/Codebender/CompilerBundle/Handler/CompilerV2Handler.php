@@ -52,8 +52,8 @@ class CompilerV2Handler extends CompilerHandler
 
         // This is used, for example, to provide object files, and to provide output files.
         $config["project_name"] = str_replace($config["project_dir"] . "/files/",
-                                                       "",
-                                                       $incoming_files["ino"][0]) . ".ino";
+                "",
+                $incoming_files["ino"][0]) . ".ino";
 
         // Set up a default library dir, but set it to empty so it won't be used by default.
         $config["lib_dir"] = "";
@@ -64,7 +64,7 @@ class CompilerV2Handler extends CompilerHandler
 
             $lib_dir = $config["lib_dir"];
             $tmpVar = $this->extractFiles($library_files, $TEMP_DIR, $lib_dir,
-                                          $files["libs"][$library], $library, true);
+                $files["libs"][$library], $library, true);
             if ($tmpVar["success"] === false)
                 return $tmpVar;
 
@@ -75,8 +75,7 @@ class CompilerV2Handler extends CompilerHandler
             $arch_ret = $this->createArchive($project_dir, $TEMP_DIR, $ARCHIVE_DIR, $ARCHIVE_PATH);
             if ($arch_ret["success"] === false)
                 return $arch_ret;
-        }
-        else
+        } else
             $ARCHIVE_PATH = "";
 
         //Set logging to true if requested, and create the directory where logfiles are stored.
@@ -128,7 +127,8 @@ class CompilerV2Handler extends CompilerHandler
         return $tmpVar;
     }
 
-    private function copyRecursive($src, $dst) {
+    private function copyRecursive($src, $dst)
+    {
 
         if (is_file($src)) {
             if (file_exists($dst) && is_dir($dst))
@@ -220,7 +220,8 @@ class CompilerV2Handler extends CompilerHandler
                 continue;
 
             if ((substr($filename, strlen($filename) - strlen($pattern)) === $pattern)
-                && file_exists($dir . "/" . $filename)) {
+                && file_exists($dir . "/" . $filename)
+            ) {
                 $ret = touch($dir . "/" . $filename);
                 if (!$ret) {
                     $dirent->close();
@@ -270,7 +271,8 @@ class CompilerV2Handler extends CompilerHandler
                 continue;
 
             if ((substr($filename, strlen($filename) - strlen($pattern)) === $pattern)
-                && file_exists($dir . "/" . $filename)) {
+                && file_exists($dir . "/" . $filename)
+            ) {
                 $ret = touch($dir . "/" . $filename);
                 $content = file_get_contents($dir . "/" . $filename);
                 $ret = file_put_contents($dir . "/" . $filename, str_replace($old_dir, $new_dir, $content));
@@ -333,11 +335,10 @@ class CompilerV2Handler extends CompilerHandler
     private function restoreCache($config)
     {
         $cache_dir = $this->object_directory
-                   . "/" . $config["version"]
-                   . "/" . $config["fqbn"]
-                   . "/" . $config["vid"]
-                   . "/" . $config["pid"]
-                   ;
+            . "/" . $config["version"]
+            . "/" . $config["fqbn"]
+            . "/" . $config["vid"]
+            . "/" . $config["pid"];
         $output_dir = $config["output_dir"];
 
         // Copy the files from the existing cache directory to the new project.
@@ -369,11 +370,10 @@ class CompilerV2Handler extends CompilerHandler
     private function saveCache($config)
     {
         $cache_dir = $this->object_directory
-                   . "/" . $config["version"]
-                   . "/" . $config["fqbn"]
-                   . "/" . $config["vid"]
-                   . "/" . $config["pid"]
-                   ;
+            . "/" . $config["version"]
+            . "/" . $config["fqbn"]
+            . "/" . $config["vid"]
+            . "/" . $config["pid"];
         $output_dir = $config["output_dir"];
 
         $this->copyCaches($output_dir, $cache_dir, $this->cacheDirs());
@@ -402,15 +402,15 @@ class CompilerV2Handler extends CompilerHandler
             $req_elements[] = "Libraries: ";
             foreach ($request["libraries"] as $libname => $libfiles) {
                 foreach ($libfiles as $libfile)
-                    $req_elements[] = $libname."/".$libfile["filename"];
+                    $req_elements[] = $libname . "/" . $libfile["filename"];
             }
         }
 
-        $this->logger_id = microtime(true)."_".substr($config['project_dir'], -6)."_user:$user_id"."_project:$sketch_id";
+        $this->logger_id = microtime(true) . "_" . substr($config['project_dir'], -6) . "_user:$user_id" . "_project:$sketch_id";
 
-        $this->compiler_logger->addInfo($this->logger_id." - ".implode(" ", $req_elements));
+        $this->compiler_logger->addInfo($this->logger_id . " - " . implode(" ", $req_elements));
         if ($should_archive)
-            $this->compiler_logger->addInfo($this->logger_id." - "."Archive file: $archive_path");
+            $this->compiler_logger->addInfo($this->logger_id . " - " . "Archive file: $archive_path");
     }
 
     /**
@@ -419,7 +419,8 @@ class CompilerV2Handler extends CompilerHandler
      * \param string $str String to check for binary-ness.
      * \return true if the stirng contains binary, false if it's printable.
      */
-    private function isBinaryObject($str) {
+    private function isBinaryObject($str)
+    {
 
         for ($i = 0; $i < strlen($str); $i++) {
             $c = substr($str, $i, 1);
@@ -493,7 +494,7 @@ class CompilerV2Handler extends CompilerHandler
             'builder_time' => $builder_time,
             'size' => $full_size,
             'tool' => $this->builderPref("upload.tool"),
-            'output'  => $content),
+            'output' => $content),
             $data_size ? array('data_size' => $data_size) : array(),
             $eeprom_size ? array('eeprom_size' => $eeprom_size) : array()
         );
@@ -549,26 +550,26 @@ class CompilerV2Handler extends CompilerHandler
         if (!file_exists($output_dir))
             if (!mkdir($output_dir, 0777, true))
                 return array(
-                        "success" => false,
-                        "step"    => 4,
-                        "message" => "Unable to make output path.",
-                        "debug"   => $output_dir
+                    "success" => false,
+                    "step" => 4,
+                    "message" => "Unable to make output path.",
+                    "debug" => $output_dir
                 );
 
         if (!file_exists($base_dir))
             return array(
-                    "success" => false,
-                    "step"    => 4,
-                    "message" => "Base path does not exist.",
-                    "debug"   => $base_dir
+                "success" => false,
+                "step" => 4,
+                "message" => "Base path does not exist.",
+                "debug" => $base_dir
             );
 
         if (!file_exists($filename))
             return array(
-                    "success" => false,
-                    "step"    => 4,
-                    "message" => "Source file does not exist.",
-                    "debug"   => $filename
+                "success" => false,
+                "step" => 4,
+                "message" => "Source file does not exist.",
+                "debug" => $filename
             );
 
         $hardware_dirs = array(
@@ -584,17 +585,16 @@ class CompilerV2Handler extends CompilerHandler
         // Create build.options.json, which is used for caching object files.
         // Also use it for passing parameters to the arduino-builder program.
         $build_options =
-                "{\n"
-              . "  \"builtInLibrariesFolders\": \"\",\n"
-              . "  \"customBuildProperties\": \"\",\n"
-              . "  \"fqbn\": \"" . $fqbn . "\",\n"
-              . "  \"hardwareFolders\": \"" . implode(",", $hardware_dirs) . "\",\n"
-              . "  \"otherLibrariesFolders\": \"" . implode(",", $libraries) . "\",\n"
-              . "  \"runtime.ide.version\": \"" . ($config["version"] * 100) . "\",\n"
-              . "  \"sketchLocation\": \"" . $filename . "\",\n"
-              . "  \"toolsFolders\": \"" . implode(",", $tools_dirs) . "\"\n"
-              . "}"
-              ;
+            "{\n"
+            . "  \"builtInLibrariesFolders\": \"\",\n"
+            . "  \"customBuildProperties\": \"\",\n"
+            . "  \"fqbn\": \"" . $fqbn . "\",\n"
+            . "  \"hardwareFolders\": \"" . implode(",", $hardware_dirs) . "\",\n"
+            . "  \"otherLibrariesFolders\": \"" . implode(",", $libraries) . "\",\n"
+            . "  \"runtime.ide.version\": \"" . ($config["version"] * 100) . "\",\n"
+            . "  \"sketchLocation\": \"" . $filename . "\",\n"
+            . "  \"toolsFolders\": \"" . implode(",", $tools_dirs) . "\"\n"
+            . "}";
 
         // Copy cached config files into directory (if they exist)
         file_put_contents($output_dir . "/" . "build.options.json", $build_options);
@@ -621,20 +621,19 @@ class CompilerV2Handler extends CompilerHandler
             $lib_str .= " -libraries=\"" . $lib . "\"";
 
         $cmd = $base_dir . "/arduino-builder"
-                . " -logger=human"
-                . " -compile"
-                . $verbose_compile
-                . " -ide-version=\"" . ($config["version"] * 100) . "\""
-                . " -warnings=all"
-                . $hardware_args
-                . $lib_str
-                . " -build-path=" . $output_dir
-                . $tools_args
-                . " -fqbn=" . $fqbn
-                . $vid_pid
-                . " " . escapeshellarg($filename)
-                . " 2>&1"
-                ;
+            . " -logger=human"
+            . " -compile"
+            . $verbose_compile
+            . " -ide-version=\"" . ($config["version"] * 100) . "\""
+            . " -warnings=all"
+            . $hardware_args
+            . $lib_str
+            . " -build-path=" . $output_dir
+            . $tools_args
+            . " -fqbn=" . $fqbn
+            . $vid_pid
+            . " " . escapeshellarg($filename)
+            . " 2>&1";
         $arduino_builder_time_start = microtime(true);
         exec($cmd, $output, $ret_link);
         $arduino_builder_time_end = microtime(true);
@@ -649,25 +648,24 @@ class CompilerV2Handler extends CompilerHandler
                 "success" => false,
                 "retcode" => $ret_link,
                 "message" => $this->pathRemover($output, $config),
-                "log"     => array($cmd, implode("\n", $output))
+                "log" => array($cmd, implode("\n", $output))
             );
         }
 
         // Pull out Arduino's internal build variables, useful for determining sizes and output files
         $cmd = $base_dir . "/arduino-builder"
-                . " -logger=human"
-                . " -compile"
-                . " -dump-prefs=true"
-                . " -ide-version=\"" . ($config["version"] * 100) . "\""
-                . $hardware_args
-                . $lib_str
-                . " -build-path=" . $output_dir
-                . $tools_args
-                . " -fqbn=" . $fqbn
-                . $vid_pid
-                . " " . escapeshellarg($filename)
-                . " 2>&1"
-                ;
+            . " -logger=human"
+            . " -compile"
+            . " -dump-prefs=true"
+            . " -ide-version=\"" . ($config["version"] * 100) . "\""
+            . $hardware_args
+            . $lib_str
+            . " -build-path=" . $output_dir
+            . $tools_args
+            . " -fqbn=" . $fqbn
+            . $vid_pid
+            . " " . escapeshellarg($filename)
+            . " 2>&1";
         exec($cmd, $this->builder_prefs_raw, $ret_link);
 
         if ($ret_link) {
@@ -675,14 +673,14 @@ class CompilerV2Handler extends CompilerHandler
                 "success" => false,
                 "retcode" => $ret_link,
                 "message" => $this->pathRemover($output, $config),
-                "log"     => array($cmd, implode("\n", $output))
+                "log" => array($cmd, implode("\n", $output))
             );
         }
 
         return array(
             "success" => true,
             "builder_time" => $arduino_builder_time_end - $arduino_builder_time_start,
-            "log"     => array($cmd, $output)
+            "log" => array($cmd, $output)
         );
     }
 
@@ -746,10 +744,10 @@ class CompilerV2Handler extends CompilerHandler
         foreach ($output as $modified) {
 
             // Remove the path of the project directory, add (sketch file) info text
-            $modified = str_replace($config["project_dir"]."/files/", '(sketch file) ', $modified);
+            $modified = str_replace($config["project_dir"] . "/files/", '(sketch file) ', $modified);
 
             // Remove any remaining instance of the project directory name from the text.
-            $modified = str_replace($config["project_dir"]."/", '', $modified);
+            $modified = str_replace($config["project_dir"] . "/", '', $modified);
 
             // Replace userId_cb_personal_lib prefix from personal libraries errors with a (personal library file) info text.
             $modified = preg_replace('/libraries\/\d+_cb_personal_lib_/', '(personal library file) ', $modified);
@@ -758,7 +756,7 @@ class CompilerV2Handler extends CompilerHandler
             $modified = str_replace('libraries/', '(library file) ', $modified);
 
             // Remove any instance of codebender arduino core files folder name from the text, add (arduino core file) info text
-            $modified = str_replace($config["arduino_cores_dir"]."/v167/", '(arduino core file) ', $modified);
+            $modified = str_replace($config["arduino_cores_dir"] . "/v167/", '(arduino core file) ', $modified);
 
             // Remove any instance of codebender external core file folder name from the text, , add (arduino core file) info text
             if (isset($config["external_core_files"]) && $config["external_core_files"] != "") {
