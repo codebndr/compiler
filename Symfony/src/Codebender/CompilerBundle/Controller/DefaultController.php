@@ -13,6 +13,7 @@
 namespace Codebender\CompilerBundle\Controller;
 
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 use Codebender\CompilerBundle\Handler\CompilerHandler;
 use Codebender\CompilerBundle\Handler\CompilerV2Handler;
@@ -22,10 +23,7 @@ class DefaultController extends Controller
 {
     public function statusAction()
     {
-        return new Response(json_encode(array(
-                        "success" => true,
-                        "status"  => "OK"
-        )));
+        return new JsonResponse(['success' => true, 'status' => 'OK']);
     }
 
     public function testAction($authorizationKey)
@@ -33,11 +31,11 @@ class DefaultController extends Controller
         $params = $this->generateParameters();
 
         if ($authorizationKey !== $params["authorizationKey"]) {
-            return new Response(json_encode(array(
-                            "success" => false,
-                            "step"    => 0,
-                            "message" => "Invalid authorization key."
-            )));
+            return new JsonResponse([
+                "success" => false,
+                "step"    => 0,
+                "message" => "Invalid authorization key."
+            ]);
         }
 
         set_time_limit(0); // make the script execution time unlimited (otherwise the request may time out)
@@ -48,10 +46,10 @@ class DefaultController extends Controller
         //TODO: replace this with a less horrible way to handle phpunit
         exec("phpunit -c app --stderr 2>&1", $output, $return_val);
 
-        return new Response(json_encode(array(
-                        "success" => (bool) !$return_val,
-                        "message" => implode("\n", $output)
-        )));
+        return new JsonResponse([
+            "success" => (bool) !$return_val,
+            "message" => implode("\n", $output)
+        ]);
     }
 
     public function indexAction($authorizationKey, $version)
@@ -59,12 +57,11 @@ class DefaultController extends Controller
         $params = $this->generateParameters();
 
         if ($authorizationKey !== $params['authorizationKey']) {
-            return new Response(json_encode([
-                    'success' => false,
-                    'step' => 0,
-                    'message' => 'Invalid authorization key.'
-                ]
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step' => 0,
+                'message' => 'Invalid authorization key.'
+            ]);
         }
 
         $request = $this->getRequest()->getContent();
@@ -75,7 +72,7 @@ class DefaultController extends Controller
 
             $reply = $compiler->main($request, $params);
 
-            return new Response(json_encode($reply));
+            return new JsonResponse($reply);
         }
         if ($version == 'v2') {
             /** @var CompilerV2Handler $compiler */
@@ -83,37 +80,32 @@ class DefaultController extends Controller
 
             $reply = $compiler->main($request, $params);
 
-            return new Response(json_encode($reply));
+            return new JsonResponse($reply);
         }
 
-        return new Response(json_encode([
-                'success' => false,
-                'step' => 0,
-                'message' => 'Invalid API version.'
-            ]
-        ));
+        return new JsonResponse([
+            'success' => false,
+            'step' => 0,
+            'message' => 'Invalid API version.'
+        ]);
     }
 
     public function deleteAllObjectsAction($authorizationKey, $version)
     {
         if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
-            return new Response(json_encode(
-                array(
-                    'success' => false,
-                    'step'    => 0,
-                    'message' => 'Invalid authorization key.'
-                )
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step'    => 0,
+                'message' => 'Invalid authorization key.'
+            ]);
         }
 
         if (!in_array($version, ['v1', 'v2'])) {
-            return new Response(json_encode(
-                array(
-                    'success' => false,
-                    'step'    => 0,
-                    'message' => 'Invalid API version.'
-                )
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step'    => 0,
+                'message' => 'Invalid API version.'
+            ]);
         }
 
         //Get the compiler service
@@ -123,38 +115,38 @@ class DefaultController extends Controller
         $response = $deleter->deleteAllObjects();
 
         if ($response['success'] !== true) {
-            return new Response(json_encode(
-                array(
-                    'success' => false,
-                    'step'    => 0,
-                    'message' => 'Failed to access object files directory.'
-                )
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step'    => 0,
+                'message' => 'Failed to access object files directory.'
+            ]);
         }
 
-        return new Response(json_encode(
-            array_merge(
-                array(
-                    'success' => true,
-                    'message' => 'Object files deletion complete. Found ' . $response['fileCount'] . ' files.'
-                ),
-                $response['deletionStats'],
-                array("Files not deleted" => $response['notDeletedFiles'])
-            )));
+        return new JsonResponse(array_merge(
+            [
+                'success' => true,
+                'message' => 'Object files deletion complete. Found ' . $response['fileCount'] . ' files.'
+            ],
+            $response['deletionStats'],
+            ["Files not deleted" => $response['notDeletedFiles']]
+        ));
     }
 
     public function deleteSpecificObjectsAction($authorizationKey, $version, $option, $cachedObjectToDelete)
     {
         if ($this->container->getParameter('authorizationKey') != $authorizationKey) {
-            return new Response(json_encode(
-                array('success' => false, 'step' => 0, 'message' => 'Invalid authorization key.')
-            ));
+            return new JsonResponse([
+                'success' => false, 'step' => 0,
+                'message' => 'Invalid authorization key.'
+            ]);
         }
 
         if (!in_array($version, ['v1', 'v2'])) {
-            return new Response(json_encode(
-                array('success' => false, 'step' => 0, 'message' => 'Invalid API version.')
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step' => 0,
+                'message' => 'Invalid API version.'
+            ]);
         }
 
         //Get the compiler service
@@ -164,9 +156,11 @@ class DefaultController extends Controller
         $response = $deleter->deleteSpecificObjects($option, $cachedObjectToDelete);
 
         if ($response['success'] !== true) {
-            return new Response(json_encode(
-                array('success' => false, 'step' => 0, 'message' => 'Failed to access object files directory.')
-            ));
+            return new JsonResponse([
+                'success' => false,
+                'step' => 0,
+                'message' => 'Failed to access object files directory.'
+            ]);
         }
 
         if (!empty($response["notDeletedFiles"])) {
@@ -175,9 +169,12 @@ class DefaultController extends Controller
                 $message = 'Failed to delete one or more of the specified library object files.';
             }
 
-            return new Response(json_encode(
-                array_merge(array('success' => false, 'step' => 0, 'message' => $message), $response)
-            ));
+            return new JsonResponse(
+                array_merge(
+                    ['success' => false, 'step' => 0, 'message' => $message],
+                    $response
+                )
+            );
         }
 
         $message = 'Core object files deleted successfully.';
@@ -185,7 +182,12 @@ class DefaultController extends Controller
             $message = 'Library deleted successfully.';
         }
 
-        return new Response(json_encode(array_merge(array('success' => true, 'message' => $message), $response)));
+        return new JsonResponse(
+            array_merge(
+                ['success' => true, 'message' => $message],
+                $response
+            )
+        );
     }
 
     /**
