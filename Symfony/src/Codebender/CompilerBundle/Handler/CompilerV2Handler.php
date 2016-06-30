@@ -494,15 +494,23 @@ class CompilerV2Handler extends CompilerHandler
                 $eeprom_size += $matches[1];
         }
 
-        return array_merge(array(
-            'success' => true,
-            'time' => microtime(true) - $start_time,
-            'builder_time' => $builder_time,
-            'size' => $full_size,
-            'tool' => $this->builderPref("upload.tool"),
-            'output' => $content),
-            $data_size ? array('data_size' => $data_size) : array(),
-            $eeprom_size ? array('eeprom_size' => $eeprom_size) : array()
+        $sizeValues = [];
+        if ($data_size) {
+            $sizeValues['data_size'] = $data_size;
+        }
+        if ($eeprom_size) {
+            $sizeValues['eeprom_size'] = $eeprom_size;
+        }
+        return array_merge(
+            [
+                'success' => true,
+                'time' => microtime(true) - $start_time,
+                'builder_time' => $builder_time,
+                'size' => $full_size,
+                'tool' => $this->builderPref("upload.tool"),
+                'output' => base64_encode($content)
+            ],
+            $sizeValues
         );
     }
 
