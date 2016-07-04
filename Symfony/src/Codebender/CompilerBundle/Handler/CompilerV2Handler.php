@@ -466,10 +466,6 @@ class CompilerV2Handler extends CompilerHandler
             ];
         }
 
-        // Don't return unprintable characters.  Base64 encode if necessary.
-        if ($this->isBinaryObject($content))
-            $content = base64_encode($content);
-
         // Get the size of the requested output file and return to the caller
         $size_cmd = $this->builderPref("recipe.size.pattern");
         $size_regex = $this->builderPref("recipe.size.regex");
