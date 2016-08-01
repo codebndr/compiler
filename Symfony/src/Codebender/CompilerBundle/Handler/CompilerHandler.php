@@ -1134,7 +1134,7 @@ class CompilerHandler
 
 		$ext = pathinfo($file, PATHINFO_EXTENSION);
 		if (!in_array($ext, array("ino", "c", "cpp", "h", "hpp")))
-			return array("success" => false, "message" => "Sorry, autocompletion is only supported for .ino, .c, .cpp or .h files.");
+			return array("success" => false, "message" => "Sorry, autocompletion is only supported for .ino, .c, .cpp, .h or .hpp files.");
 		if ($ext == "ino")
 		{
 			$ext = "cpp";
@@ -1149,7 +1149,7 @@ class CompilerHandler
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
 
 		}
-		elseif ($ext == "cpp" || $ext == "h")
+		elseif ($ext == "cpp" || $ext == "h" || $ext == "hpp" )
 		{
 			$commandline = "$CPP $CPPFLAGS $core_includes $target_arch -MMD $include_directories -c -o $filename.o $filename.$ext 2>&1";
 			$json_array = array("file" => $compiler_config["autocmpfile"], "row" => $compiler_config["autocmprow"], "column" => $compiler_config["autocmpcol"], "prefix" => $compiler_config["autocmpprefix"], "command" => $commandline);
