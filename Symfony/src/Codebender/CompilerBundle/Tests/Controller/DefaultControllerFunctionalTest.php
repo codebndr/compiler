@@ -50,6 +50,30 @@ class DefaultControllerFunctionalTest extends WebTestCase
 
     }
 
+    public function testSkchHppUnoSyntaxCheck()
+    {
+        $files = array(array("filename" => "SkchHpp.ino", "content" => "#include<jsonhp.hpp>\nvoid setup()\n{\nSerial.begin(9600);\n\tint x = vardeb+5;\nSerial.println(x);\n}\n\nvoid loop()\n{\n\n}\n"));
+        $format = "syntax";
+        $version = "105";
+        $libraries = array('jsonlib' => array('files' => array('filename' => 'jsonhp.hpp', 'content' => "#define vardeb 3;\n")));
+        $build = array("mcu" => "atmega328p", "f_cpu" => "16000000", "core" => "arduino", "variant" => "standard");
+
+        $data = json_encode(array("files" => $files, "format" => $format, "version" => $version, "libraries" => $libraries, "build" => $build));
+
+        $client = static::createClient();
+
+        $authorizationKey = $client->getContainer()->getParameter("authorizationKey");
+
+        $client->request('POST', '/' . $authorizationKey . '/v1', array(), array(), array(), $data);
+
+        $response = json_decode($client->getResponse()->getContent(), true);
+
+        $this->assertEquals($response["success"], true);
+        $this->assertTrue(is_numeric($response["time"]));
+
+    }
+
+
     public function testBlinkUnoSyntaxCheck()
     {
         $files = array(array("filename" => "Blink.ino", "content" => "int led = 13;\nvoid setup() {pinMode(led, OUTPUT);}\nvoid loop() {\ndigitalWrite(led, HIGH);\ndelay(1000);\ndigitalWrite(led, LOW);\ndelay(1000);\n}\n"));
