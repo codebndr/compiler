@@ -36,7 +36,7 @@ class UtilityHandler
 		// separated by "|" to be used in regular expressions. They are also
 		// used as keys in an array that will contain the paths of all the
 		// extracted files.
-		$allowedExtensions = array("c", "cpp", "h", "inc", "ino", "o", "S");
+		$allowedExtensions = array("c", "cpp", "h", "inc", "ino", "o", "S", "hpp");
 		$files = array();
 		foreach ($allowedExtensions as $ext)
 			$files[$ext] = array();
