@@ -780,6 +780,9 @@ class CompilerV2Handler extends CompilerHandler
             $message .= $modified . "\n";
         }
 
+        // Escape HTML special characters
+        $message = htmlspecialchars($message);
+
         return $message;
     }
 }
